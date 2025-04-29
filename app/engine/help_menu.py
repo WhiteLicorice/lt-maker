@@ -252,7 +252,10 @@ class ItemHelpDialog(HelpDialog):
 
         self.vals = [weapon_rank, rng, weight, might, hit, crit]
 
-        desc = self.item.desc
+        desc = text_funcs.translate_and_text_evaluate(
+            self.item.desc,
+            unit=self.unit,
+            self=self.item)
 
         self.num_present = len([v for v in self.vals if v is not None])
 

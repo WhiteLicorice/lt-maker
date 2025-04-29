@@ -68,7 +68,7 @@ class PromotionChoiceState(State):
             platform_type = DB.terrain.get(terrain).platform
         else:
             platform_type = 'Floor'
-        platform = RESOURCES.platforms.get(platform_type + '-Melee', RESOURCES.platform.get('Arena-Melee'))
+        platform = RESOURCES.platforms.get(platform_type + '-Melee', RESOURCES.platforms.get('Arena-Melee'))
         self.left_platform = engine.image_load(platform)
         self.right_platform = engine.flip_horiz(self.left_platform.copy())
 
