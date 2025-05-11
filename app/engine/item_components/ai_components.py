@@ -1,3 +1,5 @@
+import logging
+from app.data.database.components import ComponentType
 from app.data.database.item_components import ItemComponent, ItemTags
 
 class NoAI(ItemComponent):
@@ -26,7 +28,7 @@ class EvalAIPriority(ItemComponent):
         }
         if value:
             self.value.update(value)
-    
+
     def ai_priority(self, unit, item, target, move):
         if target:
             from app.engine import evaluate
@@ -42,4 +44,3 @@ class EvalAIPriority(ItemComponent):
                     except Exception as e:
                         logging.error("eval_ai_priority failed to evaluate priority %s with error %s", self.value['priority'], e)
         return 0
-    
