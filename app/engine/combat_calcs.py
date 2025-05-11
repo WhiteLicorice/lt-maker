@@ -272,7 +272,6 @@ def damage(unit, item=None):
 
     might += item_system.modify_damage(unit, item)
     might += skill_system.modify_damage(unit, item)
-
     return might
 
 def defense(atk_unit, def_unit, item, item_to_avoid=None):
@@ -532,6 +531,8 @@ def compute_damage(unit, target, item, def_item, mode, attack_info, crit=False, 
 
     might *= skill_system.damage_multiplier(unit, item, target, resolve_weapon(target), mode, attack_info, might)
     might *= skill_system.resist_multiplier(target, resolve_weapon(target), unit, item, mode, attack_info, might)
+    
+    might+= skill_system.true_damage(unit,item)
 
     return int(max(int(DB.constants.get('min_damage').value), might))
 

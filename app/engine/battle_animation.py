@@ -856,7 +856,14 @@ def get_palette(anim_prefab: CombatAnimation, unit) -> tuple:
     palette_nids = [palette[1] for palette in palettes]
     team_obj = DB.teams.get(unit.team)
     team_palette = team_obj.combat_variant_palette if team_obj else None
-    if unit.name in palette_names:
+    L = []
+    if skill_system.change_palette(unit):
+        L = [sk for sk in unit.skills if sk.change_palette]
+    if len(L)>0 and L[0].change_palette.value in palette_names:
+        idx = palette_names.index(L[0].change_palette.value)
+        palette_name = L[0].change_palette.value
+        palette_nid = palette_nids[idx]
+    elif unit.name in palette_names:
         idx = palette_names.index(unit.name)
         palette_name = unit.name
         palette_nid = palette_nids[idx]

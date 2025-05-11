@@ -33,6 +33,7 @@ SKILL_HOOKS: Dict[str, HookInfo] = {
     'can_unlock':                           HookInfo(['unit', 'region'], ResolvePolicy.ANY_DEFAULT_FALSE),
     'has_canto':                            HookInfo(['unit', 'target'], ResolvePolicy.ANY_DEFAULT_FALSE),
     'has_immune':                           HookInfo(['unit'], ResolvePolicy.ANY_DEFAULT_FALSE),
+    'change_palette':                       HookInfo(['unit'], ResolvePolicy.ANY_DEFAULT_FALSE),
     # exclusive (returns last component value, returns None if not defined)
     'alternate_splash':                     HookInfo(['unit'], ResolvePolicy.UNIQUE),
     # exclusive (returns last component value, has default value if not defined)
@@ -96,6 +97,7 @@ SKILL_HOOKS: Dict[str, HookInfo] = {
     'modify_defense_speed':                 HookInfo(['unit', 'item'], ResolvePolicy.NUMERIC_ACCUM),
     'modify_maximum_range':                 HookInfo(['unit', 'item'], ResolvePolicy.NUMERIC_ACCUM),
     'modify_minimum_range':                 HookInfo(['unit', 'item'], ResolvePolicy.NUMERIC_ACCUM),
+    'true_damage':                        HookInfo(['unit', 'item'], ResolvePolicy.NUMERIC_ACCUM),
 
     # dynamic numeric modifiers (as item numberic modifiers)
     'dynamic_damage':                       HookInfo(['unit', 'item', 'target', 'item2', 'mode', 'attack_info', 'base_value'], ResolvePolicy.NUMERIC_ACCUM),
