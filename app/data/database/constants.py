@@ -13,6 +13,7 @@ class ConstantType(Enum):
     STR = 4
     MUSIC = 5
     POSITIVE_INT = 6
+    NID = 7
 
 class ConstantTag(str, Enum):
     MAJOR_FEATURES = 'major_features'
@@ -130,7 +131,7 @@ constants = ConstantCatalog([
     Constant('attack_zero_hit', "Enemy AI attacks even if Hit is 0", ConstantType.BOOL, True, ConstantTag.AI),
     Constant('attack_zero_dam', "Enemy AI attacks even if Damage is 0", ConstantType.BOOL, True, ConstantTag.AI),
     Constant('zero_move', "Show Movement as 0 if AI does not move", ConstantType.BOOL, False, ConstantTag.AI),
-    Constant('game_nid', "Game Unique Identifier", ConstantType.STR, "LT", ConstantTag.TITLE),
+    Constant('game_nid', "Game Unique Identifier", ConstantType.NID, "LT", ConstantTag.TITLE),
     Constant('title', "Game Title", ConstantType.STR, "Lex Talionis Game", ConstantTag.TITLE),
     Constant('title_particles', "Display particle effect on title screen", ConstantType.BOOL, True, ConstantTag.TITLE),
     Constant('title_sound', "Access sound room in Extras on title screen", ConstantType.BOOL, True, ConstantTag.TITLE),

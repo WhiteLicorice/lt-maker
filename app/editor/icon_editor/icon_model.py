@@ -66,6 +66,7 @@ class IconModel(ResourceCollectionModel):
         raise NotImplementedError
 
     def append(self):
+        self.layoutAboutToBeChanged.emit()
         self.create_new()
         view = self.window.view
         # self.dataChanged.emit(self.index(0), self.index(self.rowCount()))
@@ -83,6 +84,12 @@ class IconModel(ResourceCollectionModel):
 
     def on_nid_changed(self, old_nid, new_nid):
         pass
+
+    def do_add(self, icon: IconSheet):
+        self._data.append(icon)
+        new_icons = icon_view.icon_slice(icon, self.width, self.height)
+        for i in new_icons:
+            self.sub_data.append(i)
 
     def do_delete(self, nid):
         self.layoutAboutToBeChanged.emit()
@@ -112,10 +119,7 @@ class Icon16Model(IconModel):
                         nid = str_utils.get_next_name(nid, [d.nid for d in self.database])
                         icon = IconSheet(nid, fn)
                         icon.pixmap = pix
-                        self._data.append(icon)
-                        new_icons = icon_view.icon_slice(icon, self.width, self.height)
-                        for i in new_icons:
-                            self.sub_data.append(i)
+                        self.do_add(icon)
                     else:
                         QMessageBox.critical(self.window, "File Size Error!", "Icon width and height must be exactly divisible by %dx%d pixels!" % (self.width, self.height))
                 else:

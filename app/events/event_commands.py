@@ -72,6 +72,7 @@ class EventCommand(Prefab):
 
     def to_plain_text(self) -> str:
         as_string = [str(self.parameters.get(kwd) or "") for kwd in (self.keywords + self.optional_keywords)]
+        as_string += [flag for flag in self.chosen_flags]
         return ';'.join([self.nid] + as_string).rstrip(';')
 
     def __repr__(self):

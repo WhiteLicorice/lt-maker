@@ -12,10 +12,10 @@ from app.data.database.database import DB
 from app.editor.base_database_gui import DatabaseTab
 from app.editor.data_editor import SingleDatabaseEditor
 from app.editor.sound_editor import sound_tab
+from app.editor.lib.components.validated_line_edit import NidLineEdit
 from app.engine.exp_calculator import ExpCalcType, ExpCalculator
 from app.extensions.checkable_list_dialog import ComponentModel
 from app.extensions.custom_gui import ComboBox, PropertyBox
-from app.extensions.frame_layout import FrameLayout
 from app.utilities.data import Data
 from app.utilities import str_utils
 
@@ -561,6 +561,10 @@ class ConstantDatabase(DatabaseTab):
                 box.edit.valueChanged.connect(constant.set_value)
             elif constant.attr == ConstantType.STR:
                 box = PropertyBox(constant.name, QLineEdit, self)
+                box.edit.setText(constant.value)
+                box.edit.textChanged.connect(constant.set_value)
+            elif constant.attr == ConstantType.NID:
+                box = PropertyBox(constant.name, NidLineEdit, self)
                 box.edit.setText(constant.value)
                 box.edit.textChanged.connect(constant.set_value)
             elif constant.attr == ConstantType.MUSIC:

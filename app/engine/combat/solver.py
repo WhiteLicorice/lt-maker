@@ -57,7 +57,6 @@ class AttackerState(SolverState):
 
         if solver.attacker_alive() and (not solver.defender or solver.defender_alive()):
             if command == '--':
-
                 # Calculate the number of phases in this combat
                 attacker_num_phases = combat_calcs.compute_attack_phases(
                     solver.attacker, solver.defender, solver.main_item, solver.def_item, 'attack', solver.get_attack_info())
@@ -67,7 +66,7 @@ class AttackerState(SolverState):
                 else:
                     defender_num_phases = 1
 
-                if solver.attacker.strike_partner and \
+                if solver.attacker.strike_partner and solver.attacker_partner_alive() and \
                         (solver.num_attacks == 1 or can_double_in_pairup) and \
                         solver.num_subattacks >= self.num_multiattacks:
                     solver.num_subattacks = 0
@@ -91,12 +90,6 @@ class AttackerState(SolverState):
                 return None
             else:
                 return self.process_command(command)
-        elif solver.attacker_alive() and not solver.defender:
-            if solver.attacker.strike_partner and \
-                    (solver.num_attacks == 1 or can_double_in_pairup) and \
-                    solver.num_subattacks >= self.num_multiattacks:
-                solver.num_subattacks = 0
-                return 'attacker_partner'
         else:
             return 'done'
 
@@ -161,7 +154,7 @@ class AttackerPartnerState(SolverState):
                 else:
                     defender_num_phases = 1
 
-                if solver.item_has_uses() and \
+                if solver.item_has_uses() and solver.attacker_partner_alive() and \
                         solver.num_subattacks < self.num_multiattacks:
                     return 'attacker_partner'
                 elif solver.item_has_uses() and \
@@ -227,7 +220,7 @@ class DefenderState(SolverState):
                 attacker_num_phases = combat_calcs.compute_attack_phases(solver.attacker, solver.defender, solver.main_item, solver.def_item, 'attack', solver.get_attack_info())
                 defender_num_phases = combat_calcs.compute_attack_phases(solver.defender, solver.attacker, solver.def_item, solver.main_item, 'defense', solver.get_defense_info())
 
-                if solver.defender.strike_partner and \
+                if solver.defender.strike_partner and solver.defender_partner_alive() and \
                         (solver.num_defends == 1 or can_double_in_pairup) and \
                         solver.num_subdefends >= self.num_multiattacks:
                     solver.num_subdefends = 0
@@ -290,7 +283,7 @@ class DefenderPartnerState(SolverState):
                 attacker_num_phases = combat_calcs.compute_attack_phases(solver.attacker, solver.defender, solver.main_item, solver.def_item, 'attack', solver.get_attack_info())
                 defender_num_phases = combat_calcs.compute_attack_phases(solver.defender, solver.attacker, solver.def_item, solver.main_item, 'defense', solver.get_defense_info())
 
-                if solver.allow_counterattack() and \
+                if solver.allow_counterattack() and solver.defender_partner_alive() and \
                         solver.num_subdefends < self.num_multiattacks:
                     return 'defender_partner'
                 elif solver.allow_counterattack() and \
@@ -448,6 +441,10 @@ class CombatPhaseSolver():
         unclamped_hit = combat_calcs.compute_hit(attacker, defender, item, def_item, mode, attack_info, clamp_hit=False)
         if game.rng_mode == RNGOption.FATES_HIT:
             to_hit = self.calculate_fates_hit(utils.clamp(unclamped_hit, 0, 100))
+            # Recalculate unclamped hit so it matches fates to_hit
+            # Otherwise, unclamped hit could be 75 when fates to_hit is 85, which ruins
+            # the glancing hit calculation below.
+            unclamped_hit = self.calculate_fates_hit(unclamped_hit)
         else:
             to_hit = utils.clamp(unclamped_hit, 0, 100)
 
@@ -532,6 +529,16 @@ class CombatPhaseSolver():
 
     def defender_alive(self):
         return self.defender and (self.defender.get_hp() > 0 or skill_system.ignore_dying_in_combat(self.defender))
+
+    def attacker_partner_alive(self):
+        return self.attacker.strike_partner \
+            and (self.attacker.strike_partner.get_hp() > 0 
+                 or skill_system.ignore_dying_in_combat(self.attacker.strike_partner))
+
+    def defender_partner_alive(self):
+        return self.defender and self.defender.strike_partner \
+            and (self.defender.strike_partner.get_hp() > 0 
+                 or skill_system.ignore_dying_in_combat(self.defender.strike_partner))
 
     def defender_has_vantage(self) -> bool:
         return self.defender and self.allow_counterattack() and \

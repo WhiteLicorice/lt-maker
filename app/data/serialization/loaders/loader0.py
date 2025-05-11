@@ -38,6 +38,8 @@ def _load_as_dict(data_dir: Path) -> NestedPrimitiveDict:
     category_suffix = database.CATEGORY_SUFFIX
     for key in database.Database.save_data_types:
         as_dict[key] = _json_load(data_dir, key)
+        if as_dict[key] is None:
+            raise FileNotFoundError(f"Data directory {data_dir / key} does not exist!\nPlease recover or copy from default.ltproj the missing directory.")
         # Load any of the categories we need
         if Path(data_dir, key + category_suffix + '.json').exists():
             as_dict[key + category_suffix] = _json_load(data_dir, key + category_suffix)

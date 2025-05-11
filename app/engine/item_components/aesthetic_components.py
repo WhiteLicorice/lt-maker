@@ -206,3 +206,23 @@ class HoverDescription(ItemComponent):
 
     def hover_description(self, unit, item):
         return self.value
+
+class ShowAdvantageArrow(ItemComponent):
+    nid = 'show_advantage_arrow'
+    desc = 'Shows the advantage arrow in combat.'
+    tag = ItemTags.AESTHETIC
+    
+    author = 'Eretein'
+    
+    def show_weapon_advantage(self, unit, item, target, item2):
+        return True
+    
+class ShowDisadvantageArrow(ItemComponent):
+    nid = 'show_disadvantage_arrow'
+    desc = 'Shows the disadvantage arrow in combat.'
+    tag = ItemTags.AESTHETIC
+    
+    author = 'Eretein'
+    
+    def show_weapon_disadvantage(self, unit, item, target, item2):
+        return True

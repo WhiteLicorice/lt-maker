@@ -235,7 +235,7 @@ class PositionSpecification(QWidget):
         if target_spec == "Starting":
             self.window.current.target_spec = "Starting"
             self.starting.setChecked(True)
-        elif target_spec:
+        elif isinstance(target_spec, tuple):
             self.starting.setChecked(False)
             self.x_spinbox.setValue(int(target_spec[0]))
             self.y_spinbox.setValue(int(target_spec[1]))

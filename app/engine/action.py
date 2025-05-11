@@ -476,13 +476,24 @@ class IncrementTurn(Action):
 
 
 class MarkPhase(Action):
-    def __init__(self, phase_name):
+    def __init__(self, phase_name: str):
         self.phase_name = phase_name
 
 
 class LockTurnwheel(Action):
-    def __init__(self, lock):
+    def __init__(self, lock: bool):
         self.lock = lock
+
+
+class MarkActionGroupStart(Action):
+    def __init__(self, unit: NID, state: str):
+        self.unit = unit
+        self.state = state
+
+
+class MarkActionGroupEnd(Action):
+    def __init__(self, state: str):
+        self.state = state
 
 
 class ChangePhaseMusic(Action):

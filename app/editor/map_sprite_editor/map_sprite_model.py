@@ -112,6 +112,7 @@ class MapSpriteModel(ResourceCollectionModel):
             return
         starting_path = settings.get_last_open_path()
         fn, mok = QFileDialog.getOpenFileName(self.window, "Choose Moving Map Sprite", starting_path)
+        gba_overhang = False
         if mok:
             if fn.endswith('.png'):
                 moving_pix = QPixmap(fn)
@@ -125,8 +126,10 @@ class MapSpriteModel(ResourceCollectionModel):
                 else:
                     if moving_pix.width() == 32 and moving_pix.height() == 32 * 15:
                         pass
+                    elif moving_pix.width() == 32 and moving_pix.height() == 32 * 15 + 8:
+                        gba_overhang = True
                     else:
-                        QMessageBox.critical(self.window, "Error", "Moving Map Sprite is not correct size for GBA import (32x480 px)")
+                        QMessageBox.critical(self.window, "Error", "Moving Map Sprite is not correct size for GBA import (either 32x480 or 32x488 px)")
                         return
 
             else:
@@ -140,7 +143,7 @@ class MapSpriteModel(ResourceCollectionModel):
             else:
                 current_proj = settings.get_current_project()
                 if current_proj:
-                    standing_pix, moving_pix = self.import_gba_map_sprite(standing_pix, moving_pix)
+                    standing_pix, moving_pix = self.import_gba_map_sprite(standing_pix, moving_pix, gba_overhang)
                     stand_full_path = os.path.join(current_proj, 'resources', 'map_sprites', nid + '-stand.png')
                     move_full_path = os.path.join(current_proj, 'resources', 'map_sprites', nid + '-move.png')
                     standing_pix.save(stand_full_path)
@@ -180,7 +183,7 @@ class MapSpriteModel(ResourceCollectionModel):
             if klass.map_sprite_nid == old_nid:
                 klass.map_sprite_nid = new_nid
 
-    def import_gba_map_sprite(self, standing_pix, moving_pix):
+    def import_gba_map_sprite(self, standing_pix, moving_pix, gba_overhang=False):
         s_width = standing_pix.width()
         s_height = standing_pix.height()
         new_s = QPixmap(192, 144)
@@ -211,6 +214,9 @@ class MapSpriteModel(ResourceCollectionModel):
         focus2 = moving_pix.copy(0, 32*13, 32, 32)
         focus3 = moving_pix.copy(0, 32*14, 32, 32)
 
+        if gba_overhang:
+            overhang = moving_pix.copy(0, 32*15, 32, 8)
+
         if s_height//3 == 16:
             new_height = 24
         else:
@@ -229,6 +235,10 @@ class MapSpriteModel(ResourceCollectionModel):
         painter.drawPixmap(16, 8 + 96, focus1)
         painter.drawPixmap(16 + 64, 8 + 96, focus2)
         painter.drawPixmap(16 + 128, 8 + 96, focus3)
+
+        if gba_overhang:
+            painter.drawPixmap(16 + 128, 8 + 96 - 8, overhang)  # right above focus3
+
         painter.end()
         # Moving pixmap
         painter.begin(new_m)

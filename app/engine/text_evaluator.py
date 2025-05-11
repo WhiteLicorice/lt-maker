@@ -38,9 +38,18 @@ class TextEvaluator():
 
     def _evaluate_phrase(self, text: str, local_args=None) -> str:
         """Accepts a string such as {eval:expr}, and returns its evaluation
+           Nested phrases that get passed to this function result in the text
+           being passed back without evaluation
         """
         if re.match(r'\{e:[^{}]*\}', text) or re.match(r'\{eval:[^{}]*\}', text): # eval statement
-            return self._evaluate_evals(text)
+            # check for a fallback term
+            expr, fallback = self._split_eval(text)
+            eval_text, err = self._evaluate_evals(expr)
+            # if any evaluations in expr fails, try fallback
+            if err and fallback:
+                eval_text, _ = self._evaluate_evals(fallback)
+            # if fallback fails we don't care
+            return eval_text
         elif re.match(r'\{d:[^{}]*\}', text) or re.findall(r'\{data:[^{}]*\}', text):
             return self._evaluate_data(text)
         elif re.match(r'\{f:[^{}]*\}', text) or re.match(r'\{field:[^{}]*\}', text):
@@ -251,10 +260,12 @@ class TextEvaluator():
             text = text.replace(to_evaluate[idx], evaluated[idx])
         return text
 
-    def _evaluate_evals(self, text: str) -> str:
+    def _evaluate_evals(self, text: str) -> Tuple[str, bool]:
+        """Returns evaluated text with no nesting, also returns whether any evaluations failed"""
         # Set up variables so evals work well
         to_evaluate = re.findall(r'\{e:[^{}]*\}', text) + re.findall(r'\{eval:[^{}]*\}', text)
         evaluated = []
+        err = False
         for to_eval in to_evaluate:
             to_eval = self.trim_eval_tags(to_eval)
             try:
@@ -262,10 +273,15 @@ class TextEvaluator():
                 evaluated.append(self._object_to_str(val))
             except Exception as e:
                 self.logger.error("Could not evaluate %s (%s)" % (to_eval, e))
-                evaluated.append('??')
+                evaluated.append("??")
+                err = True
         for idx in range(len(to_evaluate)):
             text = text.replace(to_evaluate[idx], evaluated[idx])
-        return text
+        return text, err
+
+    def _split_eval(self, text: str) -> Tuple[str, str | None]:
+        text = self.trim_eval_tags(text)
+        return ('{e:' + e + '}' if e else e for e in str_utils.split_expr_on_comma(text))
 
     def _evaluate_vars(self, text) -> str:
         if not self.game:

@@ -58,6 +58,8 @@ class Event():
             event_args['unit'] = event_args['unit1']
         self.unit = event_args.get('unit1', None)
         self.unit2 = event_args.get('unit2', None)
+        if 'unit2' in event_args:
+            event_args['target'] = event_args['unit2']
         self.created_unit = None
         self.position = event_args.get('position', None)
         self.local_args = event_args or {}

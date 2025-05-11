@@ -283,6 +283,8 @@ class FreeState(MapState):
                 game.boundary.recalculate_unit(unit)
         phase.fade_in_phase_music()
 
+        action.do(action.MarkActionGroupEnd(self.name))
+
         # Auto-end turn
         autoend_turn = True
         if not cf.SETTINGS['autoend_turn']:
@@ -729,6 +731,7 @@ class MoveState(MapState):
                     game.state.change('canto_wait')
                 else:
                     # Just move in place
+                    action.do(action.MarkActionGroupStart(cur_unit, 'free'))
                     cur_unit.current_move = action.Move(cur_unit, game.cursor.position)
                     action.execute(cur_unit.current_move)
                     game.state.change('menu')
@@ -746,9 +749,11 @@ class MoveState(MapState):
                             cur_unit.current_move = action.CantoMove(cur_unit, game.cursor.position)
                         game.state.change('canto_wait')
                     elif game.cursor.position in witch_warp and game.cursor.position not in normal_moves:
+                        action.do(action.MarkActionGroupStart(cur_unit, 'free'))
                         cur_unit.current_move = action.Warp(cur_unit, game.cursor.position)
                         game.state.change('menu')
                     else:
+                        action.do(action.MarkActionGroupStart(cur_unit, 'free'))
                         cur_unit.current_move = action.Move(cur_unit, game.cursor.position)
                         game.state.change('menu')
                     game.state.change('movement')
@@ -855,7 +860,7 @@ class CantoWaitState(MapState):
 
         elif event == 'BACK':
             if self.cur_unit.current_move:
-                action.reverse(self.cur_unit.current_move)
+                game.action_log.reverse_move_to_action_group_start(self.cur_unit.current_move)
                 self.cur_unit.current_move = None
                 game.cursor.set_pos(self.cur_unit.position)
             game.state.back()
@@ -1040,7 +1045,7 @@ class MenuState(MapState):
                         game.cursor.cur_unit = u
                     if self.cur_unit.current_move:
                         logging.info("Reversing " + self.cur_unit.nid + "'s move")
-                        action.reverse(self.cur_unit.current_move)
+                        game.action_log.reverse_move_to_action_group_start(self.cur_unit.current_move)
                         self.cur_unit.current_move = None
                     game.state.change('move')
                     game.cursor.construct_arrows(game.cursor.path[::-1])
@@ -2293,6 +2298,7 @@ class CombatTargetingState(MapState):
                 ignore = [not item_system.item_restrict(self.cur_unit, self.item, target_unit, item) for item in target_unit.items]
                 game.ui_view.draw_trade_preview(target_unit, surf, ignore)
             elif item_system.is_weapon(self.cur_unit, self.item):
+                self.find_strike_partners(game.cursor.position, atk=False)
                 game.ui_view.draw_attack_info(surf, self.cur_unit, self.item, target_unit, self.attacker_assist, self.defender_assist)
             else:
                 game.ui_view.draw_spell_info(surf, self.cur_unit, self.item, target_unit)
@@ -2582,6 +2588,7 @@ class AIState(MapState):
                 self.cur_unit.has_run_ai = True
                 if did_something:  # Don't turn grey if didn't actually do anything
                     self.cur_unit.wait()
+                game.ai.finalize()
                 game.ai.reset()
                 self.cur_unit = None
         else:

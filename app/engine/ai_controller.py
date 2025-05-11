@@ -46,6 +46,10 @@ class AIController():
         self.attack_ai_complete = False
         self.canto_ai_complete = False
 
+    def finalize(self):
+        # Anything that needs to be done when the AI is finished with the unit
+        action.do(action.MarkActionGroupEnd('ai'))
+
     def load_unit(self, unit):
         self.reset()
         self.unit = unit
@@ -114,6 +118,7 @@ class AIController():
                 game.state.change('movement')
                 # If we pass in speed=0 to Move it'll use your unit_speed setting
                 speedup = 10 if self.do_skip else 0
+                action.do(action.MarkActionGroupStart(self.unit, 'ai'))
                 action.do(action.Move(self.unit, self.goal_position, path, speed=speedup))
             return True
         else:

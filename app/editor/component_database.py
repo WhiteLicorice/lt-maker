@@ -40,6 +40,7 @@ from app.editor.auto_resizing_text_edit import AutoResizingTextEdit
 from app.editor.settings import MainSettingsController
 
 from app.editor.event_editor.py_syntax import PythonHighlighter
+from app.utilities.typing import NID
 
 class ComponentList(WidgetList):
     def __init__(self, parent):
@@ -568,17 +569,24 @@ class EventItemComponent(BoolItemComponent):
         # Only use global events
         valid_events = [event for event in DB.events.values()
                         if not event.level_nid]
+        
         for event in valid_events:
-            self.editor.addItem(event.nid)
-        width = utils.clamp(self.editor.minimumSizeHint().width(
-        ) + DROP_DOWN_BUFFER, MIN_DROP_DOWN_WIDTH, MAX_DROP_DOWN_WIDTH)
+            self.editor.addItem(event.name, event.nid)
+                    
+        width = utils.clamp(self.editor.minimumSizeHint().width() + DROP_DOWN_BUFFER, 
+                          MIN_DROP_DOWN_WIDTH, MAX_DROP_DOWN_WIDTH)
         self.editor.setMaximumWidth(width)
+        
         if not self._data.value and valid_events:
             self._data.value = valid_events[0].nid
+        
         self.editor.setValue(self._data.value)
-        self.editor.currentTextChanged.connect(self.on_value_changed)
+        
+        self.editor.currentIndexChanged.connect(self.on_value_changed)
         hbox.addWidget(self.editor)
-
+    
+    def on_value_changed(self, index):
+        self._data.value = self.editor.itemData(index)
 
 class ListItemComponent(BoolItemComponent):
     delegate = None

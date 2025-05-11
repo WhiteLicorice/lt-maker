@@ -1,6 +1,6 @@
 import functools
 import re
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 
 RAW_NEWLINE = '\u2029'
@@ -179,6 +179,32 @@ def matched_block_expr(s: str, opener: str, closer: str):
             curr += character
     return all_strs
 
+def split_expr_on_comma(s: str) -> Tuple[str, str | None]:
+    """Splits well formed python expr string on comma
+       If string is poorly formed then garbage in garbage out
+    """
+    escape = False
+    in_quote = False
+    brackets_stack = []
+    for i, char in enumerate(s):
+        if in_quote and escape:
+            escape = False
+        elif in_quote and char == '\\':
+            escape = True
+        elif char == '"' or char == "'":
+            if in_quote == char:
+                in_quote = False
+            elif not in_quote:
+                in_quote = char
+        elif not in_quote and char in _OPENING_BRACKETS:
+            brackets_stack.append(char)
+        elif not in_quote and char in _CLOSING_BRACKETS:
+            if brackets_stack:
+                brackets_stack.pop()
+        elif char == ',' and not in_quote and not brackets_stack:
+            return s[:i], s[i+1:]
+    return s, None  # No comma found outside
+
 def remove_prefix(text: str, prefix: str):
     if text.startswith(prefix):
         return text[len(prefix):]
@@ -198,6 +224,8 @@ def remove_all_matched(s: str, opener: str, closer: str):
         s, n = re.subn(rstr, '', s)  # remove non-nested/flat balanced parts
     return s
 
+_OPENING_BRACKETS: List[str] = ['[', '{', '(']
+_CLOSING_BRACKETS: List[str] = [']', '}', ')']
 
 _MIRRORED_BRACKETS: Dict[str, str] = {
     '[': ']',

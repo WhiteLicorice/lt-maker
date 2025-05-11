@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Any, Generic, List, Optional, Tuple, Type, TypeVar
+from typing import Any, Callable, Generic, List, Optional, Tuple, Type, TypeVar
 
 from dataclasses import dataclass
 
@@ -118,11 +118,17 @@ class QVLine(QFrame):
         self.setLineWidth(1)
 
 class ComboBox(QComboBox):
-    def setValue(self, text):
-        i = self.findText(text)
+    def setValue(self, value: Any) -> None:
+        for i in range(self.count()):
+            if self.itemData(i) == value:
+                self.setCurrentIndex(i)
+                return
+
+        # fallback for backward compatibility
+        i = self.findText(value)
         if i >= 0:
             self.setCurrentIndex(i)
-
+        
 class LineSearch(QWidget):
     def __init__(self, parent):
         super().__init__(parent)
