@@ -1,4 +1,7 @@
+import math
+
 from app.utilities import utils
+from app.utilities.enums import HAlignment
 
 from app.constants import COLORKEY
 from app.data.resources.resources import RESOURCES
@@ -201,12 +204,14 @@ def draw_stat(surf, stat_nid, unit, topright, compact=False):
     subtle_bonus = unit.subtle_stat_bonus(stat_nid)
     max_stat = unit.get_stat_cap(stat_nid)
     if compact:
+        if value >= max_stat:
+            draw_glow(surf, FONT['text-green'], str(value + bonus), topright, HAlignment.RIGHT)
+            return
+
         if bonus > 0:
             typeface = FONT['text-green']
         elif bonus < 0:
             typeface = FONT['text-red']
-        elif value >= max_stat:
-            typeface = FONT['text-yellow']
         else:
             typeface = FONT['text-blue']
         typeface.blit_right(str(value + bonus), surf, topright)
@@ -215,13 +220,13 @@ def draw_stat(surf, stat_nid, unit, topright, compact=False):
         value = value + subtle_bonus
         bonus = bonus - subtle_bonus
         if value >= max_stat:
-            FONT['text-yellow'].blit_right(str(value), surf, topright)
+            draw_glow(surf, FONT['text-green'], str(value), topright, HAlignment.RIGHT)
         else:
             FONT['text-blue'].blit_right(str(value), surf, topright)
         if bonus > 0:
-            FONT['small-green'].blit("+%d" % bonus, surf, topright)
+            draw_glow(surf, FONT['small-green'], "+%d" % bonus, topright)
         elif bonus < 0:
-            FONT['small-red'].blit(str(bonus), surf, topright)
+            draw_glow(surf, FONT['small-red'], str(bonus), topright)
 
 def draw_growth(surf, stat_nid, unit, topright, compact=False):
     if stat_nid not in DB.stats:
@@ -238,3 +243,32 @@ def draw_growth(surf, stat_nid, unit, topright, compact=False):
             FONT['small-green'].blit("+%d" % bonus, surf, topright)
         elif bonus < 0:
             FONT['small-red'].blit(str(bonus), surf, topright)
+
+def draw_glow(surf, font, text, topright, align: HAlignment = HAlignment.LEFT):
+    interval = 800   # ms
+    progress = engine.get_time() % (interval*2)  # Between 0 and 1600
+    white = math.sin(progress / interval * math.pi)  # Returns between -1 and 1
+    # Rescale to be between 0 and 1
+    white = (white + 1) / 2
+    
+    stat_surf = engine.create_surface(surf.get_size(), True)
+
+    if align == HAlignment.RIGHT:
+        font.blit_right(text, stat_surf, topright)
+    elif align == HAlignment.CENTER:
+        font.blit_center(text, stat_surf, topright)
+    else:
+        font.blit(text, stat_surf, topright)
+
+    palette = font.font_info.palettes[font.default_color]
+    conv_dict = {}
+    for idx, color in enumerate(palette):
+        if idx == 1:
+            continue
+        new_color = [min(max(255 * white + rgb, 0), 255) for rgb in color[:3]] + [255]
+        conv_dict[tuple(color)] = tuple(new_color)
+
+    image_mods.color_convert_alpha(stat_surf, conv_dict)
+    surf.blit(stat_surf, (0, 0))
+
+    return surf

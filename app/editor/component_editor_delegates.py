@@ -19,7 +19,7 @@ class BaseComponentDelegate(QItemDelegate):
             for obj in self.data:
                 name = obj.nid
                 if hasattr(obj, 'name'):
-                    name = "%s (%s)" % (obj.name, obj.nid)
+                    name = f"{obj.nid} ({obj.name})"
                 editor.addItem(name, obj.nid)
             return editor
         elif index.column() == 1:  # Integer value column

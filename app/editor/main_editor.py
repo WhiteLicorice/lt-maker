@@ -46,7 +46,7 @@ from app.editor.unit_editor.new_unit_tab import NewUnitDatabase
 from app.editor.team_editor.team_tab import TeamDatabase
 from app.editor.faction_editor.faction_tab import FactionDatabase
 from app.editor.party_editor.party_tab import PartyDatabase
-from app.editor.class_editor.class_tab import ClassDatabase
+from app.editor.class_editor.new_class_tab import NewClassDatabase
 from app.editor.weapon_editor.weapon_tab import WeaponDatabase
 from app.editor.item_editor.new_item_tab import NewItemDatabase
 from app.editor.skill_editor.new_skill_tab import NewSkillDatabase
@@ -235,7 +235,7 @@ class MainEditor(QMainWindow):
                             _("Teams"): TeamDatabase.edit,
                             _("Factions"): FactionDatabase.edit,
                             _("Parties"): PartyDatabase.edit,
-                            _("Classes"): ClassDatabase.edit,
+                            _("Classes"): NewClassDatabase.edit,
                             _("Tags"): self.edit_tags,
                             _("Game Vars"): self.edit_game_vars,
                             _("Weapon Types"): WeaponDatabase.edit,

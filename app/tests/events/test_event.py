@@ -38,9 +38,15 @@ class EventUnitTests(unittest.TestCase):
 
     def create_event(self, test_commands: List[EventCommand]):
         from app.events.event import Event
-        return self.create_event_from_script([str(cmd) for cmd in test_commands])
+        # Ignore the from_python tag if it was added...
+        # This is a bad solution but I don't see a better one without passing
+        # in the source, which the original `test_python_event_command_wrapper`
+        # test purposefully doesn't do.
+        script = [str(cmd).replace('from_python', '') for cmd in test_commands]
+        return self.create_event_from_script(script)
 
     def create_event_from_script(self, test_script: List[str]):
+        # Returns Event
         from app.events.event import Event
         prefab = EventPrefab('test_nid')
         prefab.source = '\n'.join(test_script)
@@ -64,7 +70,6 @@ class EventUnitTests(unittest.TestCase):
         for mocked_command in mocked_commands:
             mocked_command.assert_called_once()
         reset_catalog()
-
 
     def MACRO_test_event_script(self, test_script):
         parsed_test_commands = [parse_text_to_command(command)[0] for command in test_script]

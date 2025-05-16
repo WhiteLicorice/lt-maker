@@ -2836,6 +2836,35 @@ class RemoveTalk(Action):
             game.talk_options.append((self.unit1, self.unit2))
 
 
+class HideTalk(Action):
+    def __init__(self, unit1_nid, unit2_nid):
+        self.unit1 = unit1_nid
+        self.unit2 = unit2_nid
+
+    def do(self):
+        game.talk_hidden.add((self.unit1, self.unit2))
+
+    def reverse(self):
+        if (self.unit1, self.unit2) in game.talk_hidden:
+            game.talk_hidden.remove((self.unit1, self.unit2))
+
+
+class UnhideTalk(Action):
+    def __init__(self, unit1_nid, unit2_nid):
+        self.unit1 = unit1_nid
+        self.unit2 = unit2_nid
+        self.did_remove = False
+
+    def do(self):
+        if (self.unit1, self.unit2) in game.talk_hidden:
+            game.talk_hidden.remove((self.unit1, self.unit2))
+            self.did_remove = True
+
+    def reverse(self):
+        if self.did_remove:
+            game.talk_hidden.add((self.unit1, self.unit2))
+
+
 class AddLore(Action):
     def __init__(self, lore_nid):
         self.lore_nid = lore_nid

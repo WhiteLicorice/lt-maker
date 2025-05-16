@@ -1,7 +1,8 @@
 import copy
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, List
 
+from app.data.category import CategorizedCatalog
 from app.utilities.data import Data, Prefab
 from app.data.database.weapons import WexpGain
 from app.utilities import str_utils
@@ -18,25 +19,25 @@ class Klass(Prefab):
     movement_group: str = None
 
     promotes_from: str = None
-    turns_into: list = None
-    tags: list = None
+    turns_into: list = field(default_factory=list)
+    tags: list = field(default_factory=list)
     max_level: int = 20
 
-    bases: dict = None
-    growths: dict = None
-    growth_bonus: dict = None
-    promotion: dict = None
-    max_stats: dict = None
+    bases: dict = field(default_factory=dict)
+    growths: dict = field(default_factory=dict)
+    growth_bonus: dict = field(default_factory=dict)
+    promotion: dict = field(default_factory=dict)
+    max_stats: dict = field(default_factory=dict)
 
-    learned_skills: list = None
-    wexp_gain: Dict[NID, WexpGain] = None
+    learned_skills: list = field(default_factory=list)
+    wexp_gain: Dict[NID, WexpGain] = field(default_factory=dict)
 
     icon_nid: str = None
     icon_index: tuple = (0, 0)
     map_sprite_nid: str = None
     combat_anim_nid: str = None
 
-    fields: list = None # arbitrary field, allow players to fill out anything they want for XTRA POWERFUL SCRIPTING
+    fields: list = field(default_factory=list) # arbitrary field, allow players to fill out anything they want for XTRA POWERFUL SCRIPTING
 
     def get_stat_titles(self):
         return ['Generic Bases', 'Generic Growths', 'Promotion Gains', 'Growth Bonuses', 'Stat Maximums']
@@ -83,7 +84,7 @@ class Klass(Prefab):
             value = super().restore_attr(name, value)
         return value
 
-class ClassCatalog(Data[Klass]):
+class ClassCatalog(CategorizedCatalog[Klass]):
     datatype = Klass
 
     def create_new(self, db):

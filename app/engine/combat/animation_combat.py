@@ -976,7 +976,7 @@ class AnimationCombat(BaseCombat, MockCombat):
             if damage <= 0:
                 return
             str_damage = str(damage)
-            left = brush.defender == self.left
+            left = brush.defender == self.left or (self.left.strike_partner and brush.defender == self.left.strike_partner)
             for idx, num in enumerate(str_damage):
                 d = gui.DamageNumber(int(num), idx, len(str_damage), left, 'red')
                 self.damage_numbers.append(d)
@@ -985,7 +985,7 @@ class AnimationCombat(BaseCombat, MockCombat):
             if damage <= 0:
                 return
             str_damage = str(damage)
-            left = brush.defender == self.left
+            left = brush.defender == self.left or (self.left.strike_partner and brush.defender == self.left.strike_partner)
             for idx, num in enumerate(str_damage):
                 d = gui.DamageNumber(int(num), idx, len(str_damage), left, 'yellow')
                 self.damage_numbers.append(d)

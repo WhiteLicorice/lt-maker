@@ -270,6 +270,15 @@ class LTNestedList(QWidget):
             index_of_item_before = min(index.row(), parent.childCount() - 1)
             self.select_item(parent.child(index_of_item_before))
 
+    def is_editor_open(self) -> bool:
+        if not self.tree_widget.selectedItems():
+            return False
+        selected_item = self.tree_widget.selectedItems()[0]
+        if self.tree_widget.isPersistentEditorOpen(selected_item):
+            return True
+        else:
+            return False
+
     def get_selected_nid(self) -> Optional[NID]:
         if not self.tree_widget.selectedItems():
             return None
@@ -342,6 +351,8 @@ class LTNestedList(QWidget):
         """sets the icons for every entry. repeated calls will update category icons.
         initial call will also update the item-level icons.
         """
+        if self.is_editor_open():
+            return
         if not root:
             root = self.tree_widget.invisibleRootItem()
         while root.parent():

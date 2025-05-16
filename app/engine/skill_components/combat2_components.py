@@ -715,3 +715,36 @@ class AllBrave(SkillComponent):
 
     def dynamic_multiattacks(self, unit, item, target, item2, mode, attack_info, base_value):
         return 1
+
+class DevilAxeGBA(SkillComponent):
+    nid = 'devil_axe_gba'
+    desc = "Make attacks backfire: Deal 0 damage to the defender and deal full damage to the attacker instead."
+    tag = SkillTags.COMBAT2
+
+    expose = (ComponentType.MultipleChoice, ["Affect attacks done by %s" % i for i in ('unit', 'enemy')])
+    value = "Affect attacks done by %s" % 'unit'
+
+    def _make_attacks_backfire(self, actions, playback, unit, attacker, defender, item):
+        for act in reversed(actions):
+            if isinstance(act, action.ChangeHP) and act.num < 0 and act.unit == defender:
+                actions.remove(act)
+
+        total_damage_dealt = 0
+        playbacks = [p for p in playback if p.nid in (
+            'damage_hit', 'damage_crit') and p.defender == defender]
+        for p in playbacks:
+            total_damage_dealt += p.damage
+            p.defender = attacker
+
+        damage = -utils.clamp(total_damage_dealt, 0, attacker.get_hp())
+
+        actions.append(action.ChangeHP(attacker, damage))
+        actions.append(action.TriggerCharge(unit, self.skill))
+
+    def after_strike(self, actions, playback, unit, item, target, item2, mode, attack_info, strike):
+        if self.value == "Affect attacks done by %s" % 'unit':
+            self._make_attacks_backfire(actions, playback, unit, unit, target, item)
+
+    def after_take_strike(self, actions, playback, unit, item, target, item2, mode, attack_info, strike):
+        if self.value == "Affect attacks done by %s" % 'enemy':
+            self._make_attacks_backfire(actions, playback, unit, target, unit, item2)

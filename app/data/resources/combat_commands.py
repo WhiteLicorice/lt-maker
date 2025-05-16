@@ -196,7 +196,8 @@ anim_commands = Data([
     CombatAnimationCommand('clear_all_effects', 'Clear All Effects', None, None, 'effect'),
 
     CombatAnimationCommand('pan', 'Pan Screen', None, None, 'aesthetic3'),
-    CombatAnimationCommand('blend', 'Set Frame Blending', (bool,), (True,), 'aesthetic3'),
+    CombatAnimationCommand('blend', 'Set Additive Frame Blending', (bool,), (True,), 'aesthetic3'),
+    CombatAnimationCommand('blend2', 'Set Subtractive Frame Blending', (bool,), (True,), 'aesthetic3'),
     CombatAnimationCommand('static', 'Set Has Static Position', (bool,), (True,), 'aesthetic3'),
     CombatAnimationCommand('ignore_pan', 'Set Ignore Pan', (bool,), (True,), 'aesthetic3'),
     CombatAnimationCommand('partial_blend', 'Set Partial Blend', (int,), (0,), 'aesthetic3'),

@@ -98,6 +98,24 @@ As always, create a new item with a name, description, and icon. Click the gear 
 
 And... that's it! If you really want to go full Three Houses, replace the uses component in the tomes you added with the chapter uses component. The add_item_to_multiitem event command can be a useful way to add spells to an individual unit's multi item, allowing you to make completely unique spellcasters! For more information, check out the documentation on the command in the event editor.
 
+## Item 6 - Devil Axe
+
+In vanilla Fire Emblem GBA games, the Devil Axe is a high-risk weapon that can backfire, damaging its wielder instead of the enemy. We'll recreate this mechanic in Lex Talionis using equations, skills, and item components. The first step is to create an equation that determines the backfire chance. Open the Equation Editor and create a new equation called DEVIL_CHANCE. Set its expression to 31 - SKL
+
+Next we need to create the actual backfire effect as a skill. Open the Skill Editor and make a new skill called Devil_Effect_child. Click the battle axe icon to add the "Devil Axe GBA" component, making sure it's set to Affect attacks done by unit (so the damage is dealt to the wielder).
+
+![devil_effect_child_img](./images/Creating-Items/Item6_DevilEffectchild.png)
+
+Now we need to create the skill that will randomly trigger this effect. Make another new skill called Devil_Effect. From the cogwheel icon section, add two components: First add the "Proc Rate" component and set it to use our DEVIL_CHANCE equation. Then add the "Attack Proc" component and set it to trigger the Devil_Effect_child skill we just made.
+
+![devil_effect_img](./images/Creating-Items/Item6_DevilEffect.png)
+
+Finally we'll create the actual Devil Axe item. Open the Item Editor and make a new weapon. Give it an appropriate nid, display name, description and icon. In the template icon section, apply the "Weapon Template" to set up basic weapon properties. The crucial step is adding the "Status on Equip" component from the star icon section and selecting our Devil_Effect skill. This means any unit equipping the axe will gain the chance to hurt themselves when attacking.
+
+![devil_axe_img](./images/Creating-Items/Item6_DevilAxe.png)
+
+When implemented correctly, units wielding this axe will have a percentage chance equal to (31 minus their Skill stat) to damage themselves instead of their target.
+
 ## Conclusion
 
 Hopefully this has given you a basic overview of what you can do with Lex Talionis' item components. A following post will detail each component in detail, and the discord server as well as other LT projects are great resources to turn to for more information.

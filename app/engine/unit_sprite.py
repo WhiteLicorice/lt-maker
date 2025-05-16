@@ -664,9 +664,9 @@ class UnitSprite():
         offset = [0, 0, 0, 1, 2, 2, 2, 1][frame]
         markers = []
         if game.is_roam() and game.state.current() == 'free_roam' and game.state.state[-1].get_closest_unit(must_have_talk=True) and \
-                (self.unit.nid, cur_unit.nid) in game.talk_options:
+                (self.unit.nid, cur_unit.nid) in game.talk_options and (self.unit.nid, cur_unit.nid) not in game.talk_hidden:
             markers.append('talk')
-        elif (cur_unit.nid, self.unit.nid) in game.talk_options:
+        elif (cur_unit.nid, self.unit.nid) in game.talk_options and (cur_unit.nid, self.unit.nid) not in game.talk_hidden:
             markers.append('talk')
         if (game.is_roam() and game.state.current() == 'free_roam' and
                 game.state.state[-1].get_visit_region() and
