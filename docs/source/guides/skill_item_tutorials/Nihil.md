@@ -10,16 +10,16 @@ In short, this component will be put on the skill **to be cancelled by Nihil**. 
 ```python
 class NihiledBy(SkillComponent):
     nid = 'nihiled_by'
-    desc = "Skill does not work against a holder of this other skill"
+    desc = "Takes a list of skills as its value. If a skill from this list is present on `target`, then *this* skill does not work."
     tag = SkillTags.CUSTOM
 
-    expose = (Type.List, Type.Skill)
+    expose = (ComponentType.List, ComponentType.Skill)
     value = []
 
     ignore_conditional = True
     _condition = True
 
-    def pre_combat(self, playback, unit, item, target, mode):
+    def pre_combat(self, playback, unit, item, target, item2, mode):
         all_target_nihils = set(self.value)
         for skill in target.skills:
             if skill.nid in all_target_nihils:
@@ -27,15 +27,18 @@ class NihiledBy(SkillComponent):
                 return
         self._condition = True
 
-    def post_combat_unconditional(self, playback, unit, item, target, mode):
+    def post_combat_unconditional(self, playback, unit, item, target, item2, mode):
+        game.on_alter_game_state()
         self._condition = True
 
     def condition(self, unit, item):
         return self._condition
 
-    def test_on(self, playback, unit, item, target, mode):
-        self.pre_combat(playback, unit, item, target, mode)
+    def test_on(self, playback, unit, item, target, item2, mode):
+        game.on_alter_game_state()
+        self.pre_combat(playback, unit, item, target, item2, mode)
 
-    def test_off(self, playback, unit, item, target, mode):
+    def test_off(self, playback, unit, item, target, item2, mode):
+        game.on_alter_game_state()
         self._condition = True
 ```
