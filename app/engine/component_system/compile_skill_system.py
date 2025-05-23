@@ -118,6 +118,7 @@ SKILL_HOOKS: Dict[str, HookInfo] = {
     'battle_music':                         HookInfo(['playback', 'unit', 'item', 'target', 'item2', 'mode'], ResolvePolicy.UNIQUE),
     # events (runs all components, does not return anything)
     'on_death':                             HookInfo(['unit'], ResolvePolicy.NO_RETURN),
+    'on_wait':                              HookInfo(['unit', 'actively_chosen'], ResolvePolicy.NO_RETURN),
     # item events
     'on_add_item':                          HookInfo(['unit', 'item'], ResolvePolicy.NO_RETURN),
     'on_remove_item':                       HookInfo(['unit', 'item'], ResolvePolicy.NO_RETURN),
