@@ -53,7 +53,7 @@ class LTProjectBuilder():
                                 "before attempting to build.")
             return False
         # since it's not default, force a save. if save fails, we can't build.
-        if not self.proj_file_manager.save():
+        if not self.proj_file_manager.save(new=False, as_chunks=False):
             QMessageBox.warning(None, "Cannot build project",
                                 "Cannot build project without saving! Please save the project "
                                 "before attempting to build.")
@@ -147,6 +147,11 @@ class LTProjectBuilder():
         self._preload_config(curr_proj_path, Path(output_dir))
         shutil.rmtree(output_dir + "/build")
         self.progress_dialog.setValue(100)
+        
+        # just save again to restore state
+        # and leave project data seemingly untouched after auto-unchunking
+        # for git users who can see diffs after building
+        self.proj_file_manager.save()
 
         # finally, for ease of use, open the folder for the user
         file_utils.startfile(f"{output_dir}/dist")

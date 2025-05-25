@@ -8,7 +8,7 @@ from pathlib import Path
 import shutil
 from datetime import datetime
 import traceback
-from typing import Dict, List, Optional, TYPE_CHECKING
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 from PyQt5.QtCore import QDir, Qt
 from PyQt5.QtWidgets import QFileDialog, QMessageBox, QProgressDialog, QVBoxLayout, QLabel, QDialogButtonBox, QCheckBox
@@ -142,7 +142,7 @@ class ProjectFileBackend():
                 self.is_saving = True
 
                 # ... Then, actually save.
-                result = func(self, *args, *kwargs)
+                result = func(self, *args, **kwargs)
                 self.is_saving = False
 
                 # ... Then start it again! Problem solved! (except this resets the timer, but close enough)
@@ -151,7 +151,7 @@ class ProjectFileBackend():
         return wrapper
 
     @save_mutex
-    def save(self, new=False) -> bool:
+    def save(self, new:bool=False, as_chunks:Optional[bool]=None) -> bool:
         # make sure no errors in DB exist
         # if we make a mistake in validation,
         # we should allow the save so
@@ -160,10 +160,10 @@ class ProjectFileBackend():
             checker = DBChecker(DB, RESOURCES)
             checker.repair()
             any_errors = checker.validate_for_errors()
-            self.metadata.has_fatal_errors = bool(any_errors)
+            has_fatal_errors = bool(any_errors)
         except Exception as e:
             QMessageBox.warning(self.parent, "Validation warning", "Validation failed with error. Please send this message to the devs.\nYour save will continue as normal.\nException:\n" + traceback.format_exc())
-            self.metadata.has_fatal_errors = False
+            has_fatal_errors = False
 
         # Returns whether we successfully saved
         # check if we're editing default, if so, prompt to save as
@@ -229,15 +229,18 @@ class ProjectFileBackend():
             display_error("resources")
             return False
         self.save_progress.setValue(75)
+        
+        if as_chunks is None:
+            as_chunks = self.settings.get_should_save_as_chunks()
 
-        success = DB.serialize(self.current_proj)
+        success = DB.serialize(self.current_proj, as_chunks=as_chunks)
         if not success:
             display_error("database")
             return False
         self.save_progress.setValue(85)
 
         # Save metadata
-        self.save_metadata(self.current_proj)
+        self.save_metadata(self.current_proj, has_fatal_errors, as_chunks)
         self.save_progress.setValue(87)
         if not new and self.settings.get_should_make_backup_save():
             # we have fully saved the current project.
@@ -269,7 +272,7 @@ class ProjectFileBackend():
 
         self.settings.append_or_bump_project(DB.constants.value('title') or os.path.basename(self.current_proj), self.current_proj)
 
-        if self.metadata.has_fatal_errors:
+        if has_fatal_errors:
             self.display_fatal_errors()
 
         return True
@@ -368,11 +371,11 @@ class ProjectFileBackend():
         RESOURCES.autosave(self.current_proj, autosave_dir,
                            self.autosave_progress)
         self.autosave_progress.setValue(75)
-        DB.serialize(autosave_dir)
+        DB.serialize(autosave_dir, as_chunks=self.settings.get_should_save_as_chunks())
         self.autosave_progress.setValue(99)
 
         # Save metadata
-        self.save_metadata(autosave_dir)
+        self.save_metadata(autosave_dir, self.metadata.has_fatal_errors, self.settings.get_should_save_as_chunks())
 
         try:
             self.parent.status_bar.showMessage(
@@ -381,16 +384,23 @@ class ProjectFileBackend():
             pass
         self.autosave_progress.setValue(100)
 
-    def save_metadata(self, save_dir):
-        self.metadata.date = str(datetime.now())
-        self.metadata.engine_version = VERSION
-        # always uses the current version to save. this is only required to select the deserializer on the load side
-        self.metadata.serialization_version = CURRENT_SERIALIZATION_VERSION
-        self.metadata.project = DB.constants.get('game_nid').value
-        self.metadata.as_chunks = self.settings.get_should_save_as_chunks()
+    def save_metadata(self, save_dir: Path, has_fatal_errors: bool, as_chunks: bool) -> None:
+        updated_metadata: dict[str, Any] = {
+            'date': str(datetime.now()),
+            'engine_version': VERSION,
+            # always uses the current version to save. this is only required to select the deserializer on the load side
+            'serialization_version': CURRENT_SERIALIZATION_VERSION, 
+            'project': DB.constants.get('game_nid').value,
+            'has_fatal_errors': has_fatal_errors,
+            'as_chunks': as_chunks
+        }
+        
+        # static to serialized
+        serialized_metadata = self.metadata.update(updated_metadata)
+        
         metadata_loc = os.path.join(save_dir, 'metadata.json')
         with open(metadata_loc, 'w') as serialize_file:
-            json.dump(self.metadata.save(), serialize_file, indent=4)
+            json.dump(serialized_metadata, serialize_file, indent=4)
 
     def get_unused_files(self) -> Dict[str, List[str]]:
         return RESOURCES.get_unused_files(self.current_proj)
