@@ -1073,6 +1073,8 @@ By default, the prompt for a battle save will not occur until the end of this ev
 The optional flag *immediately* will cause the prompt to appear immediately.
         """
 
+    optional_keywords = ['SaveName']
+    keyword_types = ['String']
     _flags = ["immediately"]
 
 class DeleteSave(EventCommand):

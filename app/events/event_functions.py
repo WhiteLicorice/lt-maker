@@ -685,8 +685,10 @@ def skip_save(self: Event, true_or_false: bool, flags=None):
 def activate_turnwheel(self: Event, force: bool = True, flags=None):
     self.turnwheel_flag = 2 if force else 1
 
-def battle_save(self: Event, flags=None):
+def battle_save(self: Event, save_name: Optional[str] = None, flags=None):
     flags = flags or set()
+    if save_name:
+        self.game.memory['save_name'] = save_name
     if 'immediately' in flags:
         self.state = 'paused'
         self.game.memory['save_kind'] = 'battle'
