@@ -17,7 +17,14 @@ class Loader0(LoaderBase):
         as_dict = {}
         for key in resources.Resources.save_data_types:
             if not (resource_dir / key).exists():
-                raise FileNotFoundError(f"Resource directory {resource_dir / key} does not exist!\nPlease recover or copy from default.ltproj the missing directory.")
+                raise FileNotFoundError(
+                    f"Resource directory {resource_dir / key} does not exist!\n"
+                    f"Please do the following steps:\n\n"
+                    f"1. Navigate to the `lt-maker/default.ltproj/resources` folder.\n"
+                    f"2. Copy the missing folder: `{key}`.\n"
+                    f"3. Navigate to `your_project.ltproj/resources folder`.\n"
+                    f"4. Paste the missing folder."
+                )
             if key == 'combat_palettes': # special case
                 as_dict[key] = _json_load(resource_dir / key, 'palette_data')
             elif key == 'tilemaps': # special case
@@ -39,7 +46,14 @@ def _load_as_dict(data_dir: Path) -> NestedPrimitiveDict:
     for key in database.Database.save_data_types:
         as_dict[key] = _json_load(data_dir, key)
         if as_dict[key] is None:
-            raise FileNotFoundError(f"Data directory {data_dir / key} does not exist!\nPlease recover or copy from default.ltproj the missing directory.")
+            raise FileNotFoundError(
+                f"Data directory {data_dir / key} does not exist!\n"
+                f"Please do the following steps:\n\n"
+                f"1. Navigate to the `lt-maker/default.ltproj/game_data` folder.\n"
+                f"2. Copy the missing file: `{key}.json`.\n"
+                f"3. Navigate to `your_project.ltproj/game_data` folder.\n"
+                f"4. Paste the missing file."
+            )
         # Load any of the categories we need
         if Path(data_dir, key + category_suffix + '.json').exists():
             as_dict[key + category_suffix] = _json_load(data_dir, key + category_suffix)
