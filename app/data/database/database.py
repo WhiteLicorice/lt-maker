@@ -106,10 +106,8 @@ class Database(object):
             # logging.info("Time taken: %s ms" % time2)
         return to_save
 
-    def serialize(self, proj_dir) -> bool:
+    def serialize(self, proj_dir, as_chunks:bool=False) -> bool:
         # Returns whether we were successful
-        from app.editor.settings import MainSettingsController
-        main_settings = MainSettingsController()
 
         data_dir = os.path.join(proj_dir, 'game_data')
         if not os.path.exists(data_dir):
@@ -124,7 +122,7 @@ class Database(object):
         try:
             for key, value in to_save.items():
                 # divide save data into chunks based on key value
-                if key in self.save_as_chunks and main_settings.get_should_save_as_chunks():
+                if key in self.save_as_chunks and as_chunks:
                     save_dir = os.path.join(data_dir, key)
                     if os.path.exists(save_dir):
                         shutil.rmtree(save_dir)
