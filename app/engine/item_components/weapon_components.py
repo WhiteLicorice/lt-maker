@@ -232,7 +232,10 @@ class CannotDS(ItemComponent):
 
     author = 'KD'
 
-    def cannot_dual_strike(self, unit, item):
+    def cannot_be_dual_strike_partner(self, unit, item):
+        return True
+
+    def cannot_have_dual_strike_partner(self, unit, item):
         return True
 
 class NoEquip(ItemComponent):

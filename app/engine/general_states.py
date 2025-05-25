@@ -2225,7 +2225,7 @@ class CombatTargetingState(MapState):
 
         elif event == 'AUX':
             adj_allies = game.target_system.get_adj_allies(self.cur_unit)
-            adj_allies = [u for u in adj_allies if u.get_weapon() and not item_system.cannot_dual_strike(u, u.get_weapon())]
+            adj_allies = [u for u in adj_allies if u.get_weapon() and not item_system.cannot_be_dual_strike_partner(u, u.get_weapon())]
             if not DB.constants.value('pairup'):
                 new_position = self.selection.get_next(game.cursor.position)
                 game.cursor.set_pos(new_position)
