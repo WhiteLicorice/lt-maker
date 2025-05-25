@@ -3088,6 +3088,23 @@ Displays the game's guide screen.
 
     _flags = ["immediate"]
 
+class OpenCredits(EventCommand):
+    nid = 'open_credits'
+    tag = Tags.MISCELLANEOUS
+
+    desc = \
+        """
+Displays the game's credits module.
+If given, uses the (*Panorama*) as the background image.
+The (*Scroll*) flag determines whether the background image will move.
+1. *immediate* flag skips the transition between screens
+2. *show_map* determines whether or not the background will simply be the map of the mission.
+        """
+
+    optional_keywords = ['Panorama']
+    keyword_types = ['Panorama']
+    _flags = ["immediate", "scroll", "show_map"]
+
 class OpenUnitManagement(EventCommand):
     nid = 'open_unit_management'
     tag = Tags.MISCELLANEOUS

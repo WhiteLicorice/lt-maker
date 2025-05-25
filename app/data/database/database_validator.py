@@ -99,6 +99,7 @@ class DatabaseValidatorEngine():
             DType.TRANSLATIONS: _nid_in_data(db.translations),
             DType.LORE: _nid_in_data(db.lore),
             DType.RAW_DATA: _nid_in_data(db.raw_data),
+            DType.CREDIT: _nid_in_data(db.credit),
         }
 
         # native types, don't really need to check these

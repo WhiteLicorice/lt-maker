@@ -11,7 +11,7 @@ from typing import Any, Dict, List
 from app.data.category import Categories, CategorizedCatalog
 from app.data.database import (ai, constants, difficulty_modes, equations,
                                factions, items, klass, levels, lore, mcost,
-                               minimap, overworld, parties,
+                               minimap, overworld, parties, credit,
                                raw_data, skills, stats, supports, tags, teams,
                                terrain, translations, units, varslot, weapons)
 from app.data.serialization import disk_loader
@@ -26,9 +26,9 @@ class Database(object):
     save_data_types = ("constants", "stats", "equations", "mcost", "terrain", "weapon_ranks",
                        "weapons", "teams", "factions", "items", "skills", "tags", "game_var_slots",
                        "classes", "support_constants", "support_ranks", "affinities", "units",
-                       "support_pairs", "ai", "parties", "difficulty_modes",
+                       "support_pairs", "ai", "parties", "difficulty_modes", "credit",
                        "translations", "lore", "levels", "events", "overworlds", "raw_data")
-    save_as_chunks = ("events", 'items', 'skills', 'units', 'classes', 'levels')
+    save_as_chunks = ("events", 'items', 'skills', 'units', 'classes', 'levels', "credit")
 
     def __init__(self):
         self.current_proj_dir = None
@@ -71,6 +71,8 @@ class Database(object):
 
         self.raw_data = raw_data.RawDataCatalog()
 
+        self.credit = credit.CreditCatalog()
+
     @property
     def music_keys(self) -> List[str]:
         keys = []
@@ -84,9 +86,12 @@ class Database(object):
     # === Saving and loading important data functions ===
     def restore(self, save_obj):
         for data_type in self.save_data_types:
-            logging.info("Database: Restoring %s..." % (data_type))
             data = getattr(self, data_type)
-            data.restore(save_obj[data_type])
+            if save_obj[data_type] is None:
+                logging.warning("Database: Skipping %s..." % (data_type))
+            else:
+                logging.info("Database: Restoring %s..." % (data_type))
+                data.restore(save_obj[data_type])
             # Also restore the categories if it has any
             if isinstance(data, CategorizedCatalog):
                 data.categories = Categories.load(save_obj.get(data_type + CATEGORY_SUFFIX, {}))

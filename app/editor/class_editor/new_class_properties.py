@@ -22,7 +22,7 @@ from app.editor.tag_widget import TagDialog
 from app.editor.stat_widget import StatListWidget, StatAverageDialog, ClassStatAveragesModel
 from app.editor.weapon_editor.weapon_rank import WexpGainDelegate, WexpGainMultiAttrModel
 from app.editor.learned_skill_delegate import LearnedSkillDelegate
-from app.editor.icons import ItemIcon80
+from app.editor.icons import ItemIcon80, MapSpriteBox
 from app.editor.lib.components.validated_line_edit import NidLineEdit
 from app.editor.component_editor_properties import T
 
@@ -148,16 +148,8 @@ class NewClassProperties(QWidget):
         self.field_widget = AppendMultiListWidget([], "Class Fields", attrs, UnitFieldDelegate, self, model=KeyValueDoubleListModel)
         field_section.addWidget(self.field_widget)
 
-        self.map_sprite_label = QLabel()
-        self.map_sprite_label.setMaximumWidth(32)
-        self.map_sprite_box = QPushButton(_("Choose Map Sprite..."))
-        self.map_sprite_box.clicked.connect(self.select_map_sprite)
-
-        self.map_sprite_auto_box = QPushButton()
-        self.map_sprite_auto_box.setIcon(QIcon(f"{icon_folder}/autoassign.png"))
-        self.map_sprite_auto_box.setMaximumWidth(32)
-        self.map_sprite_auto_box.setToolTip(_("Auto-assign map sprite with the same unique ID"))
-        self.map_sprite_auto_box.clicked.connect(self.autoselect_map_sprite)
+        self.map_sprite_box = MapSpriteBox()
+        self.map_sprite_box.sourceChanged.connect(self.select_map_sprite)
 
         self.combat_anim_label = QLabel()
         self.combat_anim_label.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
@@ -186,11 +178,8 @@ class NewClassProperties(QWidget):
         right_section.addWidget(QHLine())
         right_section.addLayout(skill_section)
         right_section.addLayout(field_section)
-        map_sprite_section = QHBoxLayout()
-        map_sprite_section.addWidget(self.map_sprite_label)
-        map_sprite_section.addWidget(self.map_sprite_box)
-        map_sprite_section.addWidget(self.map_sprite_auto_box)
-        right_section.addLayout(map_sprite_section)
+        right_section.addWidget(self.map_sprite_box)
+
         combat_anim_section = QHBoxLayout()
         combat_anim_section.addWidget(self.combat_anim_label)
         combat_anim_section.addWidget(self.combat_anim_box)
@@ -312,24 +301,9 @@ class NewClassProperties(QWidget):
         if self.averages_dialog:
             self.averages_dialog.update()
 
-    def select_map_sprite(self):
-        res, ok = map_sprite_tab.get()
-        if ok:
-            nid = res.nid
-            self.current.map_sprite_nid = nid
-            pix = class_model.get_map_sprite_icon(self.current, num=0)
-            self.map_sprite_label.setPixmap(pix)
-            self.on_icon_change()
-
-    def autoselect_map_sprite(self):
-        nid = self.current.nid
-        res = RESOURCES.map_sprites.get(nid)
-        if res:
-            nid = res.nid
-            self.current.map_sprite_nid = nid
-            pix = class_model.get_map_sprite_icon(self.current, num=0)
-            self.map_sprite_label.setPixmap(pix)
-            self.on_icon_change()
+    def select_map_sprite(self, nid):
+        self.current.map_sprite_nid = nid
+        self.on_icon_change()
 
     def select_combat_anim(self):
         res, ok = combat_animation_tab.get_animations()
@@ -397,11 +371,7 @@ class NewClassProperties(QWidget):
             self.field_widget.set_current(current.fields)
 
             self.icon_edit.set_current(current.icon_nid, current.icon_index)
-            pix = class_model.get_map_sprite_icon(self.current, num=0)
-            if pix:
-                self.map_sprite_label.setPixmap(pix)
-            else:
-                self.map_sprite_label.clear()
+            self.map_sprite_box.set_current(current, current.map_sprite_nid)
             pix = class_model.get_combat_anim_icon(self.current)
             if pix:
                 self.combat_anim_label.setPixmap(pix)

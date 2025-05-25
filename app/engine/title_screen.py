@@ -789,7 +789,8 @@ class TitleExtrasState(TitleLoadState):
                     game.memory['next_state'] = 'event'
                     game.state.change('transition_to')
                 else:
-                    get_sound_thread().play_sfx('Error')
+                    game.memory['next_state'] = 'credit'
+                    game.state.change('transition_to')
             elif selection == 'Options':
                 game.memory['next_state'] = 'settings_menu'
                 game.state.change('transition_to')

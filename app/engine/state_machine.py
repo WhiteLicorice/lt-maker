@@ -41,7 +41,7 @@ class StateMachine():
                                 player_choice, prep, promotion,
                                 settings, status_upkeep, text_entry,
                                 title_screen, trade, transitions, turnwheel,
-                                victory_screen, party_transfer)
+                                victory_screen, party_transfer, credit_state)
         from app.engine.game_menus.menu_states import unit_menu_state
         from app.engine.info_menu import info_menu_state
         from app.engine.overworld import overworld_states
@@ -162,7 +162,8 @@ class StateMachine():
              'overworld_next_level': overworld_states.OverworldLevelTransition,
              'dialog_log': dialog_log.DialogLogState,
              'party_transfer': party_transfer.PartyTransferState,
-             'party_transfer_confirm': party_transfer.PartyTransferConfirmState
+             'party_transfer_confirm': party_transfer.PartyTransferConfirmState,
+             'credit': credit_state.CreditState
              }
 
         if starting_states:
