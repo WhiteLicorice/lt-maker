@@ -3290,6 +3290,30 @@ def open_guide(self: Event, flags=None):
     else:
         self.logger.warning("open_guide: Skipping opening guide because there is no unlocked lore in the guide category")
 
+def open_credits(self: Event, panorama=None, flags=None):
+    flags = flags or set()
+    self.state = "paused"
+    if panorama:
+        if 'scroll' in flags:
+            bg = background.create_background(panorama, True)
+        else:
+            bg = background.create_background(panorama, False)
+    else:
+        bg = self.game.memory.get('base_bg')
+    if bg:
+        self.game.memory['credit_bg'] = bg
+
+    if 'show_map' in flags:
+        action.do(action.SetGameVar('_base_transparent', True))
+    else:
+        action.do(action.SetGameVar('_base_transparent', False))
+
+    if 'immediate' in flags:
+        self.game.state.change('credit')
+    else:
+        self.game.memory['next_state'] = 'credit'
+        self.game.state.change('transition_to')
+
 def open_unit_management(self: Event, panorama=None, flags=None):
     flags = flags or set()
     if 'scroll' in flags:

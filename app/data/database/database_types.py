@@ -30,3 +30,4 @@ class DatabaseType(Enum):
   TRANSLATIONS = 27
   LORE = 28
   RAW_DATA = 29
+  CREDIT = 30
