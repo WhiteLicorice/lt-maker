@@ -26,7 +26,7 @@ class UnitAnim(SkillComponent):
 
 class UnitTint(SkillComponent):
     nid = 'unit_tint'
-    desc = "Displays a tint on the unit"
+    desc = "Displays a tint on the unit sprite on map"
     tag = SkillTags.AESTHETIC
 
     expose = ComponentType.Color3
@@ -37,12 +37,34 @@ class UnitTint(SkillComponent):
 
 class UnitFlickeringTint(SkillComponent):
     nid = 'unit_flickering_tint'
-    desc = "Displays a flickering tint on the unit"
+    desc = "Displays a flickering tint on the unit sprite on map"
     tag = SkillTags.AESTHETIC
 
     expose = ComponentType.Color3
 
     def unit_sprite_flicker_tint(self, unit, skill) -> tuple:
+        # Color, Period, Width, Add Tint or Subtract Tint
+        return (self.value, 900, 300, True)
+
+class CombatTint(SkillComponent):
+    nid = 'combat_tint'
+    desc = "Displays a tint on the unit during combat animation"
+    tag = SkillTags.AESTHETIC
+
+    expose = ComponentType.Color3
+
+    def combat_sprite_flicker_tint(self, unit) -> tuple:
+        # Color, Period, Width, Add Tint or Subtract Tint
+        return (self.value, 0, 0, True)
+
+class CombatFlickeringTint(SkillComponent):
+    nid = 'combat_flickering_tint'
+    desc = "Displays a flickering tint on the unit during combat animation"
+    tag = SkillTags.AESTHETIC
+
+    expose = ComponentType.Color3
+
+    def combat_sprite_flicker_tint(self, unit) -> tuple:
         # Color, Period, Width, Add Tint or Subtract Tint
         return (self.value, 900, 300, True)
 
