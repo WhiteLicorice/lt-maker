@@ -12,6 +12,7 @@
             "speak;O'Neill;What was that? Do you think you can take me, wretched lordling?|Come! It's time you high-and-mighty knights learned to respect a true warrior!",
             "remove_portrait;O'Neill",
             "change_ai;O'Neill;Defend"
-        ]
+        ],
+        "nid": "0 EnemyTurn2"
     }
 ]

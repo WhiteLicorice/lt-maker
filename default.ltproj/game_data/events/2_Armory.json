@@ -11,6 +11,7 @@
             "transition;Close",
             "shop;{unit};Iron Sword,Slim Sword,Iron Lance,Slim Lance,Iron Axe",
             "transition;Open"
-        ]
+        ],
+        "nid": "2 Armory"
     }
 ]

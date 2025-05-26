@@ -11,6 +11,7 @@
             "add_portrait;Bone;Left",
             "speak;Bone;Urgh... Blast...",
             "remove_portrait;Bone"
-        ]
+        ],
+        "nid": "2 DeathBone"
     }
 ]

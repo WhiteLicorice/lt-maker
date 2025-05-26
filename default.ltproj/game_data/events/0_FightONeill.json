@@ -12,6 +12,7 @@
             "speak;O'Neill;You will be the first to die!",
             "remove_portrait;O'Neill",
             "change_music;player_phase;Grasp at Victory"
-        ]
+        ],
+        "nid": "0 FightONeill"
     }
 ]

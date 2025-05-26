@@ -579,6 +579,7 @@ def wait(unit: UnitObject, actively_chosen: bool = False):
         # To prevent double-waiting
         game.events.trigger(triggers.UnitWait(unit, unit.position, game.get_region_under_pos(unit.position), actively_chosen))
         action.do(action.Wait(unit))
+        skill_system.on_wait(unit, actively_chosen)
 
 def usable_wtypes(unit: UnitObject) -> Set[NID]:
     """

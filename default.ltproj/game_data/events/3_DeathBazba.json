@@ -11,6 +11,7 @@
             "add_portrait;Bazba;Left",
             "speak;Bazba;I'm the...mighty...Bazba...{br}This...ain't--",
             "remove_portrait;Bazba"
-        ]
+        ],
+        "nid": "3 DeathBazba"
     }
 ]

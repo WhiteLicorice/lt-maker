@@ -18,6 +18,7 @@
             "remove_portrait;Ross;no_block",
             "remove_portrait;Garcia",
             "change_team;Garcia;player"
-        ]
+        ],
+        "nid": "2 RossGarciaTalk"
     }
 ]

@@ -13,6 +13,7 @@
             "change_ai;105;Pursue",
             "change_ai;BoneBuddy;PursueVillage",
             "change_ai;TopBandit;PursueVillage"
-        ]
+        ],
+        "nid": "2 Turn2"
     }
 ]

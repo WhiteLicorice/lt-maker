@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import Callable, List, Literal, Optional, Tuple
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from enum import Enum
 
 from app.constants import TILEWIDTH, TILEHEIGHT, WINWIDTH, WINHEIGHT, TILEX
@@ -21,7 +21,7 @@ from app.engine import engine, action, menus, image_mods, \
     banner, save, phase, skill_system, item_system, \
     item_funcs, ui_view, base_surf, gui, background, dialog, \
     text_funcs, equations, evaluate, supports
-from app.engine.combat import interaction
+from app.engine.combat import base_combat, interaction
 from app.engine.selection_helper import SelectionHelper
 from app.engine.abilities import ABILITIES, PRIMARY_ABILITIES, OTHER_ABILITIES, TradeAbility, SupplyAbility
 from app.engine.input_manager import get_input_manager
@@ -959,35 +959,48 @@ class MenuState(MapState):
         info_descs.append("Wait_desc")
 
         # Handle extra ability options
-        self.extra_abilities = skill_system.get_extra_abilities(self.cur_unit)
         if 'Spells' in options:
             start_index = options.index('Spells') + 1
         elif 'Attack' in options:
             start_index = options.index('Attack') + 1
         else:
             start_index = len(self.valid_regions)
-        for ability_name, ability in self.extra_abilities.items():
-            if game.target_system.get_valid_targets_recursive_with_availability_check(self.cur_unit, ability):
-                options.insert(start_index, ability_name)
-                info_descs.insert(start_index, ability)
+        self.extra_abilities = skill_system.get_extra_abilities(self.cur_unit, categorized=True)
+        triggered_abilities = defaultdict(dict)
+        for ability_category, abilities in self.extra_abilities.items():
+            for ability_name, ability in abilities.items():
+                if game.target_system.get_valid_targets_recursive_with_availability_check(self.cur_unit, ability):
+                    triggered_abilities[ability_category][ability_name] = ability
+        for ability_name, ability in triggered_abilities['_uncategorized'].items():
+            options.insert(start_index, ability_name)
+            info_descs.insert(start_index, ability)
+        for ability_category, abilities in triggered_abilities.items():
+            if ability_category != '_uncategorized':
+                options.insert(start_index, ability_category)
+                info_descs.insert(start_index, ability_category + '_desc')
 
         # Handle combat art options (only available if you haven't attacked)
+        combat_art_category = DB.constants.value('combat_art_category')
         if not self.cur_unit.has_attacked:
-            self.combat_arts = skill_system.get_combat_arts(self.cur_unit)
+            self.combat_arts = skill_system.get_combat_arts(self.cur_unit, categorized=(not combat_art_category))
         else:
-            self.combat_arts = []
+            self.combat_arts = {}
         if 'Attack' in options:
             start_index = options.index('Attack') + 1
         else:
             start_index = len(self.valid_regions)
         if self.combat_arts:
-            if DB.constants.value('combat_art_category'):
+            if combat_art_category:
                 options.insert(start_index, 'Combat Arts')
                 info_descs.insert(start_index, 'Combat Arts_desc')
             else:
-                for ability_name in self.combat_arts:
+                for ability_name, ability in self.combat_arts['_uncategorized'].items():
                     options.insert(start_index, ability_name)
-                    info_descs.insert(start_index, self.combat_arts[ability_name][0].desc)
+                    info_descs.insert(start_index, ability[0].desc)
+                for category_name in self.combat_arts:
+                    if category_name != '_uncategorized':
+                        options.insert(start_index, category_name)
+                        info_descs.insert(start_index, category_name + '_desc')
 
         # Draw highlights
         for ability in ABILITIES:
@@ -1087,6 +1100,7 @@ class MenuState(MapState):
                 game.state.clear()
                 game.state.change('free')
                 self.cur_unit.wait(actively_chosen=True)
+
             # A region event
             elif selection in [region.sub_nid for region in self.valid_regions]:
                 for region in self.valid_regions:
@@ -1100,54 +1114,109 @@ class MenuState(MapState):
                             action.do(action.RemoveRegion(region))
                         # if did_trigger:
                             # action.do(action.HasTraded(self.cur_unit))
+
             # An extra ability
-            elif selection in self.extra_abilities:
-                item = self.extra_abilities[selection]
-                targets = game.target_system.get_valid_targets(self.cur_unit, item)
-                game.memory['targets'] = targets
-                game.memory['ability'] = selection
-                game.memory['item'] = item
-                # Handle abilities that are multi-items, you sick fuck
-                if item.multi_item:
-                    all_weapons = [subitem for subitem in item.subitems if item_funcs.is_weapon_recursive(self.cur_unit, subitem) and
-                                   game.target_system.get_valid_targets_recursive_with_availability_check(self.cur_unit, subitem)]
-                    if all_weapons:
-                        if item.multi_item_hides_unavailable:
-                            game.memory['valid_weapons'] = [subitem for subitem in all_weapons if item_funcs.available(self.cur_unit, subitem)]
-                        else:
-                            game.memory['valid_weapons'] = all_weapons
-                        game.state.change('weapon_choice')
-                    else:  # multi item of spells?
-                        all_spells = [subitem for subitem in item.subitems if item_funcs.is_spell_recursive(self.cur_unit, subitem) and
-                                      game.target_system.get_valid_targets_recursive_with_availability_check(self.cur_unit, subitem)]
-                        if item.multi_item_hides_unavailable:
-                            game.memory['valid_spells'] = [subitem for subitem in all_spells if item_funcs.available(self.cur_unit, subitem)]
-                        else:
-                            game.memory['valid_spells'] = all_spells
-                        game.state.change('spell_choice')
-                elif item_funcs.can_use(self.cur_unit, item):
-                    game.state.change('combat_targeting')
-                else:
-                    # equip if possible
-                    if self.cur_unit.can_equip(item):
-                        action.do(action.EquipItem(self.cur_unit, item))
-                    game.state.change('combat_targeting')
+            elif selection in self.extra_abilities.get('_uncategorized', {}) or selection in self.extra_abilities:
+                self._handle_extra_ability_selection(selection)
 
             # A combat art
-            elif selection in self.combat_arts:
-                skill = self.combat_arts[selection][0]
-                game.memory['ability'] = 'Combat Art'
-                game.memory['valid_weapons'] = self.combat_arts[selection][1]
-                skill_system.activate_combat_art(self.cur_unit, skill)
-                game.state.change('weapon_choice')
-            elif selection == 'Combat Arts':
-                game.memory['combat_arts'] = self.combat_arts
-                game.state.change('combat_art_choice')
-            else:  # Selection is one of the other abilities
+            elif selection == 'Combat Arts' or selection in self.combat_arts.get('_uncategorized', {}) or selection in self.combat_arts:
+                self._handle_combat_art_selection(selection)
+
+            # Selection is one of the other abilities
+            else:
                 game.memory['ability'] = self.target_dict[selection]
                 game.state.change('targeting')
                 if selection in ('Talk', 'Support'):
                     self.menu = None  # So it's not shown during the event
+
+    def _handle_extra_ability_selection(self, selection):
+        # setup for callbacks for extra abilities in AbilitySubmenuChoiceState if it ends up being used
+        def on_extra_ability_begin(cur_unit: UnitObject):
+            pass
+        def on_extra_ability_select(cur_unit: UnitObject, ability):
+            item = ability
+            targets = game.target_system.get_valid_targets(cur_unit, item)
+            game.memory['targets'] = targets
+            game.memory['ability'] = selection
+            game.memory['item'] = item
+            # Handle abilities that are multi-items, you sick fuck (rain's words not mine)
+            if item.multi_item:
+                all_weapons = [subitem for subitem in item.subitems if item_funcs.is_weapon_recursive(cur_unit, subitem) and
+                                game.target_system.get_valid_targets_recursive_with_availability_check(cur_unit, subitem)]
+                if all_weapons:
+                    if item.multi_item_hides_unavailable:
+                        game.memory['valid_weapons'] = [subitem for subitem in all_weapons if item_funcs.available(cur_unit, subitem)]
+                    else:
+                        game.memory['valid_weapons'] = all_weapons
+                    game.state.change('weapon_choice')
+                else:  # multi item of spells?
+                    all_spells = [subitem for subitem in item.subitems if item_funcs.is_spell_recursive(cur_unit, subitem) and
+                                    game.target_system.get_valid_targets_recursive_with_availability_check(cur_unit, subitem)]
+                    if item.multi_item_hides_unavailable:
+                        game.memory['valid_spells'] = [subitem for subitem in all_spells if item_funcs.available(cur_unit, subitem)]
+                    else:
+                        game.memory['valid_spells'] = all_spells
+                    game.state.change('spell_choice')
+            elif item_funcs.can_use(cur_unit, item):
+                game.state.change('combat_targeting')
+            else:
+                # equip if possible
+                if cur_unit.can_equip(item):
+                    action.do(action.EquipItem(cur_unit, item))
+                game.state.change('combat_targeting')
+
+        # handle selection
+        if selection in self.extra_abilities.get('_uncategorized', {}):
+            # handle directly
+            on_extra_ability_select(self.cur_unit, self.extra_abilities['_uncategorized'][selection])
+        elif selection in self.extra_abilities:
+            # need submenu; construct args to dispatch to AbilitySubmenuChoiceState
+            abilities = self.extra_abilities[selection]
+            options = [ability_name for ability_name in abilities]
+            info_desc = [abilities[ability_name].desc for ability_name in abilities]
+            game.memory['ability_submenu_choice'] = (abilities,
+                                                     options, info_desc,
+                                                     on_extra_ability_begin,
+                                                     on_extra_ability_select)
+            game.state.change('ability_submenu_choice')
+
+    def _handle_combat_art_selection(self, selection):
+        # setup for callbacks for combat arts in AbilitySubmenuChoiceState if it ends up being used
+        def on_combat_art_begin(cur_unit: UnitObject):
+            skill_system.deactivate_all_combat_arts(cur_unit)
+        def on_combat_art_select(cur_unit: UnitObject, ability):
+            skill = ability[0]
+            game.memory['ability'] = 'Combat Art'
+            game.memory['valid_weapons'] = ability[1]
+            skill_system.activate_combat_art(cur_unit, skill)
+            game.state.change('weapon_choice')
+
+        # handle selection
+        if selection == 'Combat Arts':
+            # need submenu; construct args to dispatch to AbilitySubmenuChoiceState
+            # since combat arts category is checked, self.combat_arts is uncategorized
+            options = [ability_name for ability_name in self.combat_arts]
+            info_desc = [self.combat_arts[ability_name][0].desc for ability_name in self.combat_arts]
+            game.memory['ability_submenu_choice'] = (self.combat_arts,
+                                                     options, info_desc,
+                                                     on_combat_art_begin,
+                                                     on_combat_art_select)
+            game.state.change('ability_submenu_choice')
+        elif selection in self.combat_arts.get('_uncategorized', {}):
+            # handle directly
+            on_combat_art_select(self.cur_unit, self.combat_arts['_uncategorized'][selection])
+        elif selection in self.combat_arts:
+            # need submenu; construct args to dispatch to AbilitySubmenuChoiceState
+            # since combat arts category is unchecked, self.combat_arts is categorized
+            combat_arts = self.combat_arts[selection] # get combat arts in category
+            options = [ability_name for ability_name in combat_arts]
+            info_desc = [combat_arts[ability_name][0].desc for ability_name in combat_arts]
+            game.memory['ability_submenu_choice'] = (combat_arts,
+                                                     options, info_desc,
+                                                     on_combat_art_begin,
+                                                     on_combat_art_select)
+            game.state.change('ability_submenu_choice')
 
     def update(self):
         super().update()
@@ -1807,15 +1876,18 @@ class SpellChoiceState(WeaponChoiceState):
                 get_sound_thread().play_sfx('Info In')
             self.menu.toggle_info()
 
-class CombatArtChoiceState(MapState):
-    name = 'combat_art_choice'
+
+class AbilitySubmenuChoiceState(MapState):
+    name = 'ability_submenu_choice'
 
     def start(self):
-        if game.memory.get('combat_arts'):
-            self.combat_arts = game.memory['combat_arts']
-            game.memory['combat_arts'] = None
+        # taking a page out of mag's book
+        if 'ability_submenu_choice' in game.memory:
+            self.abilities, self.options, self.info_desc, self.begin_callback, self.select_callback = \
+                game.memory['ability_submenu_choice']
+            game.memory['ability_submenu_choice'] = None
         else:
-            logging.error('No available combat arts!')
+            logging.error('No available AbilitySubmenuChoice args!')
             game.state.back()
             return
 
@@ -1824,11 +1896,9 @@ class CombatArtChoiceState(MapState):
         game.cursor.hide()
         self.cur_unit = game.cursor.cur_unit
         self.cur_unit.sprite.change_state('chosen')
-        skill_system.deactivate_all_combat_arts(self.cur_unit)
+        self.begin_callback(self.cur_unit)
 
-        options = [ability_name for ability_name in self.combat_arts]
-        info_desc = [self.combat_arts[ability_name][0].desc for ability_name in self.combat_arts]
-        self.menu = menus.Choice(self.cur_unit, options, info=info_desc)
+        self.menu = menus.Choice(self.cur_unit, self.options, info=self.info_desc)
         self.menu.set_limit(8)
 
     def take_input(self, event):
@@ -1852,12 +1922,7 @@ class CombatArtChoiceState(MapState):
         elif event == 'SELECT':
             selection = self.menu.get_current()
             get_sound_thread().play_sfx('Select 1')
-
-            skill = self.combat_arts[selection][0]
-            game.memory['ability'] = 'Combat Art'
-            game.memory['valid_weapons'] = self.combat_arts[selection][1]
-            skill_system.activate_combat_art(self.cur_unit, skill)
-            game.state.change('weapon_choice')
+            self.select_callback(self.cur_unit, self.abilities[selection])
 
         elif event == 'INFO':
             if self.menu.info_flag:
@@ -2225,7 +2290,7 @@ class CombatTargetingState(MapState):
 
         elif event == 'AUX':
             adj_allies = game.target_system.get_adj_allies(self.cur_unit)
-            adj_allies = [u for u in adj_allies if u.get_weapon() and not item_system.cannot_dual_strike(u, u.get_weapon())]
+            adj_allies = [u for u in adj_allies if u.get_weapon() and not item_system.cannot_be_dual_strike_partner(u, u.get_weapon())]
             if not DB.constants.value('pairup'):
                 new_position = self.selection.get_next(game.cursor.position)
                 game.cursor.set_pos(new_position)
@@ -2438,6 +2503,18 @@ class CombatState(MapState):
                 surf = super().draw(surf)
         else:
             surf = super().draw(surf)
+
+        # handle drawing the base in a BaseCombat
+        # This must be done to prevent a single frame
+        # of the MapState from poking through
+        # during the frame this combat takes place in
+        if self.combat and type(self.combat) == base_combat.BaseCombat:
+            state_index = game.state.state.index(self)
+            prev_state_index = state_index - 1
+            if prev_state_index >= 0:
+                prev_state = game.state.state[prev_state_index]
+                surf = prev_state.draw(surf)
+
         if self.combat:
             self.combat.draw(surf)
         return surf

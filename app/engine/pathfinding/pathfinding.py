@@ -153,7 +153,16 @@ class AStar:
         return path
 
     def process(self, can_move_through: Callable[[Pos], bool],
-                adj_good_enough: bool = False, limit: float = None) -> List[Pos]:
+                adj_good_enough: bool = False, limit: float = None,
+                max_movement_limit: int = 999) -> List[Pos]:
+        """
+        Args:
+            can_move_through (Callable): Expects a callback function that takes in a position 
+                and returns whether an enemy unit is standing in that position, which means we can't move through it.
+            adj_good_enough (bool, optional): If set, moving adjacent to the goal position also counts as meeting its goal.
+            limit (float, optional): If set, return the best answer once we've evaluated all paths that cost <= this cost limit
+            max_movement_limit (int, optional): Defaults to 999. Treat as impassable all nodes with cost > this limit.
+        """
         # Add starting node to open queue
         heapq.heappush(self.open, (self.start_node.f, self.start_node))
         while self.open:
@@ -172,7 +181,7 @@ class AStar:
             adj_nodes = self._get_adj_nodes(node)
             for adj in adj_nodes:
                 if adj.reachable and adj not in self.closed:
-                    if can_move_through((adj.x, adj.y)):
+                    if can_move_through((adj.x, adj.y)) and adj.cost <= max_movement_limit:
                         if (adj.f, adj) in self.open:
                             # if adj node in open list, check if current path
                             # is better than the one previously found for this adj node

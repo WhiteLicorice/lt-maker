@@ -10,6 +10,7 @@
         "_source": [
             "unlock;{unit}",
             "show_layer;Door2"
-        ]
+        ],
+        "nid": "3 Door2"
     }
 ]

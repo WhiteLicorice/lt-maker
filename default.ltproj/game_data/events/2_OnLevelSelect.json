@@ -20,6 +20,7 @@
             "wait;1500",
             "transition;close;1500",
             "wait;500"
-        ]
+        ],
+        "nid": "2 OnLevelSelect"
     }
 ]

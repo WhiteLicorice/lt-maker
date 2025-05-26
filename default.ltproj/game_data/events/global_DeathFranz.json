@@ -12,6 +12,7 @@
             "speak;Franz;I'm sorry, General Seth...",
             "expression;Franz;CloseEyes",
             "remove_portrait;Franz"
-        ]
+        ],
+        "nid": "Global DeathFranz"
     }
 ]

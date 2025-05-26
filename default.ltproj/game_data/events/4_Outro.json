@@ -92,6 +92,7 @@
             "remove_portrait;Rennac",
             "# (They leave)",
             "speak;Eirika;...What was that about?"
-        ]
+        ],
+        "nid": "4 Outro"
     }
 ]

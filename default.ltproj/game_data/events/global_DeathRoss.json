@@ -12,6 +12,7 @@
             "speak;Ross;I... am a warrior to the very end.",
             "expression;Ross;CloseEyes",
             "remove_portrait;Ross"
-        ]
+        ],
+        "nid": "Global DeathRoss"
     }
 ]

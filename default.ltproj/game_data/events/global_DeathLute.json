@@ -12,6 +12,7 @@
             "speak;Lute;I...{br}I don't want to die...",
             "expression;Lute;CloseEyes",
             "remove_portrait;Lute"
-        ]
+        ],
+        "nid": "Global DeathLute"
     }
 ]

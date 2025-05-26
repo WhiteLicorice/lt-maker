@@ -127,6 +127,7 @@
             "remove_portrait;Eirika;no_block",
             "remove_portrait;Seth",
             "transition;Close;250;0,0,0"
-        ]
+        ],
+        "nid": "2 Outro"
     }
 ]

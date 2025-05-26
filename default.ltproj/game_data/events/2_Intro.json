@@ -138,6 +138,7 @@
             "add_unit;Bone;;immediate",
             "add_unit;BoneBuddy;;immediate",
             "set_current_hp;Ross;5"
-        ]
+        ],
+        "nid": "2 Intro"
     }
 ]

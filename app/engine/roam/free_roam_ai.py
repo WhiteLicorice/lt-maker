@@ -63,6 +63,7 @@ class FreeRoamAIHandler:
                 continue
             if not roam_ai.state:
                 roam_ai.think()
+            self.components[roam_ai.unit.nid].set_speed(roam_ai.speed_mult)
             roam_ai.act()
             # Every frame, make sure our movement component has the right path
             # if roam_ai.path:

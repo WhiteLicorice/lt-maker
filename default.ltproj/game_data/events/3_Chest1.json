@@ -11,6 +11,7 @@
             "unlock;{unit}",
             "show_layer;Chest1",
             "give_item;{unit};Javelin"
-        ]
+        ],
+        "nid": "3 Chest1"
     }
 ]

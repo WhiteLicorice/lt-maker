@@ -10,6 +10,7 @@
         "_source": [
             "map_anim;Snag;{position}",
             "show_layer;Breakable1"
-        ]
+        ],
+        "nid": "3 Breakable1"
     }
 ]

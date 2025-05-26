@@ -11,6 +11,7 @@
             "unlock;{unit}",
             "show_layer;Chest4",
             "give_item;{unit};Iron Sword"
-        ]
+        ],
+        "nid": "3 Chest4"
     }
 ]

@@ -123,6 +123,7 @@
             "speak;Eirika;Of course, Seth. Come on! Let's go!",
             "remove_portrait;Seth;no_block",
             "remove_portrait;Eirika"
-        ]
+        ],
+        "nid": "1 Intro"
     }
 ]

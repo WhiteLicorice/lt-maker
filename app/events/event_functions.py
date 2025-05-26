@@ -685,8 +685,10 @@ def skip_save(self: Event, true_or_false: bool, flags=None):
 def activate_turnwheel(self: Event, force: bool = True, flags=None):
     self.turnwheel_flag = 2 if force else 1
 
-def battle_save(self: Event, flags=None):
+def battle_save(self: Event, save_name: Optional[str] = None, flags=None):
     flags = flags or set()
+    if save_name:
+        self.game.memory['save_name'] = save_name
     if 'immediately' in flags:
         self.state = 'paused'
         self.game.memory['save_kind'] = 'battle'
@@ -2561,7 +2563,7 @@ def remove_market_item(self: Event, item, stock: int=0, flags=None):
 def clear_market_items(self: Event, flags=None):
     self.game.market_items.clear()
 
-def add_region(self: Event, region, position, size: Tuple, region_type, string=None, time_left=None, flags=None):
+def add_region(self: Event, region, position, size: Tuple, region_type, string=None, time_left=None, hide_time=False, flags=None):
     flags = flags or set()
 
     if region in self.game.level.regions:
@@ -2578,6 +2580,7 @@ def add_region(self: Event, region, position, size: Tuple, region_type, string=N
     new_region.size = size
     new_region.sub_nid = sub_region_type
     new_region.time_left = time_left
+    new_region.hide_time = hide_time
 
     if 'only_once' in flags:
         new_region.only_once = True
@@ -3288,6 +3291,30 @@ def open_guide(self: Event, flags=None):
             self.game.state.change('transition_to')
     else:
         self.logger.warning("open_guide: Skipping opening guide because there is no unlocked lore in the guide category")
+
+def open_credits(self: Event, panorama=None, flags=None):
+    flags = flags or set()
+    self.state = "paused"
+    if panorama:
+        if 'scroll' in flags:
+            bg = background.create_background(panorama, True)
+        else:
+            bg = background.create_background(panorama, False)
+    else:
+        bg = self.game.memory.get('base_bg')
+    if bg:
+        self.game.memory['credit_bg'] = bg
+
+    if 'show_map' in flags:
+        action.do(action.SetGameVar('_base_transparent', True))
+    else:
+        action.do(action.SetGameVar('_base_transparent', False))
+
+    if 'immediate' in flags:
+        self.game.state.change('credit')
+    else:
+        self.game.memory['next_state'] = 'credit'
+        self.game.state.change('transition_to')
 
 def open_unit_management(self: Event, panorama=None, flags=None):
     flags = flags or set()

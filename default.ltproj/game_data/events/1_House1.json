@@ -18,6 +18,7 @@
             "change_background",
             "transition;Open",
             "has_traded;{unit}"
-        ]
+        ],
+        "nid": "1 House1"
     }
 ]

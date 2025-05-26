@@ -34,6 +34,7 @@ class SaveSlot():
         self.kind = None  # Prep, Base, Suspend, Battle, Start
         self.mode = None
         self.idx = idx
+        self.display_name = None
 
         self.meta_loc = metadata_fn
         self.save_loc = metadata_fn[:-4]
@@ -49,9 +50,12 @@ class SaveSlot():
             self.realtime = save_metadata['realtime']
             self.kind = save_metadata['kind']
             self.mode = save_metadata.get('mode')
+            self.display_name = save_metadata.get('disp')
 
     def get_name(self):
-        if self.kind == 'turn_change':
+        if self.display_name:
+            return self.display_name
+        elif self.kind == 'turn_change':
             turn = int(re.findall(r'\d+', self.meta_loc)[-1])
             return self.name + (' - Turn %d' % turn)
         elif self.kind and cf.SETTINGS['debug']:
@@ -133,7 +137,7 @@ def save_io(s_dict, meta_dict, old_slot, slot, force_loc=None, name=None):
         shutil.copy(save_loc, preload_save)
         shutil.copy(meta_loc, preload_save_meta)
 
-def suspend_game(game_state, kind, slot: int = None, name=None):
+def suspend_game(game_state, kind, slot: int = None, name=None, display_name=None):
     """
     Saves game state to file
     """
@@ -143,6 +147,7 @@ def suspend_game(game_state, kind, slot: int = None, name=None):
     logging.debug("Suspend temp state: %s", game_state.state.temp_state)
     meta_dict['kind'] = kind
     meta_dict['time'] = datetime.now()
+    meta_dict['disp'] = display_name
     old_save_slot = game_state.current_save_slot
     if slot is not None:
         game_state.current_save_slot = slot  # Where we are saving it to, so we can get it back later

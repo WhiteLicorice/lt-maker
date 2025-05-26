@@ -75,7 +75,6 @@ class Ability(SkillComponent):
         if item and item.nid == self.value:
             action.do(action.TriggerCharge(unit, self.skill))
 
-
 class CombatArt(SkillComponent):
     nid = 'combat_art'
     desc = "Unit has the ability to apply an extra effect to next attack"
@@ -114,6 +113,16 @@ class CombatArt(SkillComponent):
             action.do(action.TriggerCharge(unit, self.skill))
         self.skill.data['active'] = False
 
+
+class MenuCategory(SkillComponent):
+    nid = 'menu_category'
+    desc = "Categorize an ability or combat art in the menu"
+    tag = SkillTags.ADVANCED
+
+    expose = ComponentType.String
+
+    def menu_category(self):
+        return self.value
 
 class AutomaticCombatArt(SkillComponent):
     nid = 'automatic_combat_art'

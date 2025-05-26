@@ -12,6 +12,7 @@
             "speak;Colm;To think of it... Me... In this place...|Neimi...",
             "expression;Colm;CloseEyes",
             "remove_portrait;Colm"
-        ]
+        ],
+        "nid": "Global DeathColm"
     }
 ]

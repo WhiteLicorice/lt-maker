@@ -26,6 +26,7 @@
             "speak;Gilliam;I've stronger armor than you do. I'll take the lead. Watch my back.",
             "remove_portrait;Franz;no_block",
             "remove_portrait;Gilliam"
-        ]
+        ],
+        "nid": "1 GilliamFranzArrive"
     }
 ]

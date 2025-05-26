@@ -197,6 +197,7 @@
             "remove_portrait;Natasha",
             "# Now actually start!",
             "add_talk;Natasha;Joshua"
-        ]
+        ],
+        "nid": "5 Intro"
     }
 ]

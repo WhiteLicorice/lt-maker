@@ -23,6 +23,7 @@
             "remove_portrait;Neimi;no_block",
             "remove_portrait;Colm",
             "change_team;Colm;player"
-        ]
+        ],
+        "nid": "3 NeimiColmTalk"
     }
 ]

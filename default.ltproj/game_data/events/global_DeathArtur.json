@@ -12,6 +12,7 @@
             "speak;Artur;The rest... is up to you.",
             "expression;Artur;CloseEyes",
             "remove_portrait;Artur"
-        ]
+        ],
+        "nid": "Global DeathArtur"
     }
 ]

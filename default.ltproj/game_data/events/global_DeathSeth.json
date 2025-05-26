@@ -12,6 +12,7 @@
             "speak;Seth;Urgh...|My apologies. I must withdraw.",
             "expression;Seth;CloseEyes",
             "remove_portrait;Seth"
-        ]
+        ],
+        "nid": "Global DeathSeth"
     }
 ]

@@ -10,6 +10,7 @@
         "_source": [
             "unlock;{unit}",
             "give_item;{unit};Iron Sword"
-        ]
+        ],
+        "nid": "DEBUG Door1"
     }
 ]

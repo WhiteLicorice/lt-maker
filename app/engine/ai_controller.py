@@ -795,7 +795,8 @@ class SecondaryAI():
             can_move_through = lambda adj: True
         else:
             can_move_through = functools.partial(game.board.can_move_through, self.unit.team)
-        path = self.pathfinder.process(can_move_through, adj_good_enough=adj_good_enough, limit=limit)
+        max_movement_limit = equations.parser.movement(self.unit)
+        path = self.pathfinder.process(can_move_through, adj_good_enough=adj_good_enough, limit=limit, max_movement_limit=max_movement_limit)
         self.pathfinder.reset()
         return path
 

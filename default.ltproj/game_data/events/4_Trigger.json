@@ -11,6 +11,7 @@
             "move_cursor;0,0",
             "add_group;RevenantRein;0,0;immediate;stack",
             "move_group;RevenantRein;RevenantRein"
-        ]
+        ],
+        "nid": "4 Trigger"
     }
 ]

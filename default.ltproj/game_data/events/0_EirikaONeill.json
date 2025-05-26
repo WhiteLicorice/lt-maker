@@ -19,6 +19,7 @@
             "remove_portrait;Eirika",
             "change_music;player_phase;Grasp at Victory",
             "show_combat_ui"
-        ]
+        ],
+        "nid": "0 Eirika/ONeill"
     }
 ]

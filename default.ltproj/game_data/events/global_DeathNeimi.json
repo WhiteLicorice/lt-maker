@@ -12,6 +12,7 @@
             "speak;Neimi;You were right, Colm...|I am a klutz. Sorry...",
             "expression;Neimi;CloseEyes",
             "remove_portrait;Neimi"
-        ]
+        ],
+        "nid": "Global DeathNeimi"
     }
 ]

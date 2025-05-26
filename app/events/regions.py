@@ -27,6 +27,7 @@ class Region(Prefab):
         time_left (Optional[int]): The number of turns left for the region object. Defaults to None, which means it is permanent.
         only_once (bool): Flag indicating if the region object triggers only once. Defaults to False.
         interrupt_move (bool): Flag indicating if the region object interrupts movement. Defaults to False. Set to True for things like an FE `Mine` or for Free Roam events
+        hide_time (bool): Flag whether to hide the region's duration indicator.
     """
     def __init__(self, nid: NID):
         self.nid: NID = nid
@@ -39,6 +40,8 @@ class Region(Prefab):
         self.time_left: Optional[int] = None
         self.only_once: bool = False
         self.interrupt_move: bool = False
+        
+        self.hide_time: bool = False
 
     @classmethod
     def restore(cls, s_dict):

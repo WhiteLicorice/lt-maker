@@ -60,6 +60,10 @@
         "expression": "3"
     },
     {
+        "nid": "THRACIA_CRIT",
+        "expression": "0"
+    },
+    {
         "nid": "SPEED_TO_DOUBLE",
         "expression": "4"
     },

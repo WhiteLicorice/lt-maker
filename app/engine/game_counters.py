@@ -13,7 +13,7 @@ class Counters():
         self.active_sprite_counter = GenericAnimCounter.from_frames_back_and_forth([20, 4, 20], get_time=engine.get_time)
         self.move_sprite_counter = GenericAnimCounter.from_frames([13, 6, 13, 6], get_time=engine.get_time)
         self.fast_move_sprite_counter = GenericAnimCounter.from_frames([6, 3, 6, 3], get_time=engine.get_time)
-        self.arrow_counter = GenericAnimCounter.from_frames([16, 16, 16], get_time=engine.get_time)
+        self.arrow_counter = GenericAnimCounter.from_frames([8, 8, 8], get_time=engine.get_time)
         self.x2_counter = GenericAnimCounter.from_frames([3] * 18, get_time=engine.get_time)
         self.flag_counter = GenericAnimCounter.from_frames([15] * 4, get_time=engine.get_time)
         self.fps6_360counter = GenericAnimCounter.from_frames([6] * 360, get_time=engine.get_time)

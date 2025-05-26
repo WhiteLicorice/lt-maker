@@ -20,6 +20,7 @@
             "remove_portrait;Eirika;no_block",
             "remove_portrait;Ross",
             "change_team;Ross;player"
-        ]
+        ],
+        "nid": "2 EirikaRossTalk"
     }
 ]

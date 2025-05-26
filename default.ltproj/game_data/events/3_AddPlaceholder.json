@@ -9,6 +9,7 @@
         "priority": 20,
         "_source": [
             "add_unit;Placeholder;16,15;immediate"
-        ]
+        ],
+        "nid": "3 AddPlaceholder"
     }
 ]

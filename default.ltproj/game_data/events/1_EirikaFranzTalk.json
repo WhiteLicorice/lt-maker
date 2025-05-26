@@ -18,6 +18,7 @@
             "remove_portrait;Eirika;no_block",
             "remove_portrait;Franz",
             "remove_talk;Eirika;Franz"
-        ]
+        ],
+        "nid": "1 EirikaFranzTalk"
     }
 ]

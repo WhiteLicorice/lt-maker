@@ -11,6 +11,7 @@
             "add_portrait;Seth;Left",
             "speak;Seth;All that's left is their leader...",
             "remove_portrait;Seth"
-        ]
+        ],
+        "nid": "0 OnlyBoss"
     }
 ]

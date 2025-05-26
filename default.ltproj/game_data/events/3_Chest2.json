@@ -11,6 +11,7 @@
             "unlock;{unit}",
             "show_layer;Chest2",
             "give_item;{unit};Iron Lance"
-        ]
+        ],
+        "nid": "3 Chest2"
     }
 ]

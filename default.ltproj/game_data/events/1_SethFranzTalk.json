@@ -17,6 +17,7 @@
             "remove_portrait;Franz;no_block",
             "remove_portrait;Seth",
             "remove_talk;Seth;Franz"
-        ]
+        ],
+        "nid": "1 SethFranzTalk"
     }
 ]

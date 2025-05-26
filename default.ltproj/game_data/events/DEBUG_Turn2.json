@@ -10,6 +10,7 @@
         "_source": [
             "change_team;Bone;player",
             "game_var;EirikaSupport;True"
-        ]
+        ],
+        "nid": "DEBUG Turn2"
     }
 ]

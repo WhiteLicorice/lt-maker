@@ -15,6 +15,7 @@
             "speak;Bazba;You'll regret taking that tone with me.|I'm the mighty Bazba, after all!|The likes of you can hardly even scratch me.",
             "remove_portrait;Bazba;no_block",
             "remove_portrait;Eirika"
-        ]
+        ],
+        "nid": "3 Eirika/Bazba"
     }
 ]

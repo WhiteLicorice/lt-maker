@@ -24,6 +24,7 @@
         "roam_unit": "Eirika",
         "go_to_overworld": false,
         "should_record": true,
+        "tags": [],
         "units": [
             {
                 "nid": "Eirika",

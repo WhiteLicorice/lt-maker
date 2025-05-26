@@ -64,6 +64,7 @@
             "speak;Eirika;It's all right, Seth.|My brother has taught me something of swordplay.|I will stand with you.",
             "remove_portrait;Eirika;no_block",
             "remove_portrait;Seth"
-        ]
+        ],
+        "nid": "0 Intro"
     }
 ]

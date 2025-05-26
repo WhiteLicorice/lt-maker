@@ -11,6 +11,7 @@
             "add_portrait;Saar;Left",
             "speak;Saar;Enemy of the empire!{br}Death's too good for you!",
             "remove_portrait;Saar"
-        ]
+        ],
+        "nid": "5 FightSaar"
     }
 ]

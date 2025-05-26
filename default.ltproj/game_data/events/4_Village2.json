@@ -44,6 +44,7 @@
             "add_unit;Lute;1,12;immediate;closest",
             "transition;Open",
             "has_traded;{unit}"
-        ]
+        ],
+        "nid": "4 Village2"
     }
 ]

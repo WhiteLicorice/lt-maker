@@ -1,6 +1,10 @@
 from app.constants import COLORKEY
 from app.utilities import utils
+from app.utilities.typing import Color3
 from app.engine import engine
+
+from dataclasses import dataclass
+from typing import List
 
 def color_convert(image, conversion_dict):
     image = image.convert()
@@ -197,3 +201,35 @@ def resize(image, scale):
     x_scale, y_scale = scale
     new_scale = int(image.get_width() * x_scale), int(image.get_height() * y_scale)
     return engine.transform_scale(image, new_scale)
+
+@dataclass
+class FlickerTint():
+    """
+    Class representing a flickering tint
+
+    color is applied gradually with a rise time of width/2,
+    followed by a fall time of width/2,
+    followed by an off time of period - width (in which no tint is applied)
+    """
+    color: Color3   # tint color
+    period: int     # milliseconds, total time taken for one flickering loop
+    width: int      # milliseconds, actual time with tint applied
+    add: bool       # whether to use blend_add or blend_sub
+
+def draw_flicker_tint(image: engine.Surface, time: int, tints: List[FlickerTint]) -> engine.Surface:
+    for idx, tint in enumerate(tints):
+        color = tint.color
+
+        # Modify the color by the wave
+        if tint.period > 0 and tint.width > 0:
+            offset = idx * tint.period / len(tints)
+            diff = utils.model_wave(time + offset, tint.period, tint.width)
+            diff = utils.clamp(diff, 0, 1)
+            color = tuple([int(c * diff) for c in color])
+
+        if tint.add:
+            image = add_tint(image.convert_alpha(), color)
+        else:
+            image = sub_tint(image.convert_alpha(), color)
+
+    return image

@@ -131,6 +131,8 @@ class BaseCombat(SimpleCombat):
                 self._apply_actions()
                 self.state_machine.setup_next_state()
             self._counter += 1
+            return False
+        else:
             self.clean_up()
         return True
 

@@ -33,6 +33,7 @@
             "move_unit;Dozla;14,1;;closest;no_block",
             "remove_unit;L'arachel",
             "remove_unit;Dozla"
-        ]
+        ],
+        "nid": "4 Turn3"
     }
 ]

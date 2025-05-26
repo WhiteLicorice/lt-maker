@@ -1,5 +1,8 @@
 {
-    "date": "2024-03-05 18:48:35.222870",
-    "version": "2024.02.18a",
-    "project": "LT"
+    "date": "2025-05-21 21:16:05.693872",
+    "engine_version": "2024.12.09a",
+    "serialization_version": 0,
+    "project": "LT",
+    "has_fatal_errors": false,
+    "as_chunks": true
 }

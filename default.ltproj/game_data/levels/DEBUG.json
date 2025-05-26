@@ -24,6 +24,7 @@
         "roam_unit": null,
         "go_to_overworld": false,
         "should_record": true,
+        "tags": [],
         "units": [
             {
                 "nid": "Bone",
@@ -167,7 +168,8 @@
                 "condition": "True",
                 "time_left": null,
                 "only_once": false,
-                "interrupt_move": false
+                "interrupt_move": false,
+                "hide_time": false
             },
             {
                 "nid": "Door1",
@@ -184,7 +186,8 @@
                 "condition": "unit.can_unlock(region)",
                 "time_left": null,
                 "only_once": true,
-                "interrupt_move": false
+                "interrupt_move": false,
+                "hide_time": false
             }
         ],
         "unit_groups": [],

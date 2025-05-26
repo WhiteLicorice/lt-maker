@@ -12,6 +12,7 @@
             "speak;Joshua;I... I guess my luck finally ran out...|Heh.",
             "expression;Joshua;CloseEyes",
             "remove_portrait;Joshua"
-        ]
+        ],
+        "nid": "Global DeathJoshua"
     }
 ]

@@ -14,6 +14,7 @@
             "add_portrait;Bandit1;FarRight",
             "speak;Bandit1;Look at this. Now's our chance!|C'mon, lads!|Let's join the fights and steal our way through this pathetic town!",
             "remove_portrait;Bandit1"
-        ]
+        ],
+        "nid": "5 Turn2"
     }
 ]

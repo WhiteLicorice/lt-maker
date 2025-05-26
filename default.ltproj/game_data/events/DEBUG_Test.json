@@ -27,6 +27,7 @@
             "#wait;5000",
             "#music;Attack;2000",
             "#wait;5000"
-        ]
+        ],
+        "nid": "DEBUG Test"
     }
 ]

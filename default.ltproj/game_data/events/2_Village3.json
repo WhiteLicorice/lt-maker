@@ -20,6 +20,7 @@
             "transition;Open",
             "give_item;{unit};Pure Water",
             "has_traded;{unit}"
-        ]
+        ],
+        "nid": "2 Village3"
     }
 ]

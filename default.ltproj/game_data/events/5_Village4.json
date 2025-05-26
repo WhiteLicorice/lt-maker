@@ -22,6 +22,7 @@
             "give_item;{unit};Torch",
             "show_layer;Village4",
             "has_traded;{unit}"
-        ]
+        ],
+        "nid": "5 Village4"
     }
 ]

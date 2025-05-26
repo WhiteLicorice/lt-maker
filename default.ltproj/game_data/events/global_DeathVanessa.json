@@ -12,6 +12,7 @@
             "speak;Vanessa;Please...|Forgive me...",
             "expression;Vanessa;CloseEyes",
             "remove_portrait;Vanessa"
-        ]
+        ],
+        "nid": "Global DeathVanessa"
     }
 ]

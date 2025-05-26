@@ -11,6 +11,7 @@
             "flicker_cursor;{position}",
             "show_layer;Ruin2",
             "wait;500"
-        ]
+        ],
+        "nid": "5 DestroyVillage2"
     }
 ]

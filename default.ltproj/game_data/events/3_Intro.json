@@ -78,6 +78,7 @@
             "add_portrait;Bazba;Right",
             "speak;Bazba;Hm. Not sure who's out there, but it looks like we've got guests.|Let's give 'em a warm welcome, lads.{br}You see a stranger, stick an axe in him!",
             "remove_portrait;Bazba"
-        ]
+        ],
+        "nid": "3 Intro"
     }
 ]

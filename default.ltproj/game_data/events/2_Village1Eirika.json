@@ -37,6 +37,7 @@
             "transition;Open",
             "give_item;Eirika;Red Gem",
             "has_traded;{unit}"
-        ]
+        ],
+        "nid": "2 Village1Eirika"
     }
 ]

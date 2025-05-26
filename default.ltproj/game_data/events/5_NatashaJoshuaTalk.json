@@ -31,6 +31,7 @@
             "remove_portrait;Natasha;no_block",
             "remove_portrait;Joshua",
             "change_team;Joshua;player"
-        ]
+        ],
+        "nid": "5 NatashaJoshuaTalk"
     }
 ]

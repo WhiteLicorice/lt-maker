@@ -11,6 +11,7 @@
             "add_portrait;Bazba;Left",
             "speak;Bazba;I'm the head of this bandit pack, the mighty Bazba!{w}{clear}Hope you've enjoyed your life, 'cuz it's about to end!",
             "remove_portrait;Bazba"
-        ]
+        ],
+        "nid": "3 FightBazba"
     }
 ]

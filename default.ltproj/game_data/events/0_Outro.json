@@ -20,6 +20,7 @@
             "speak;Seth;Princess...",
             "speak;Eirika;...Don't worry, Seth. I won't give in to sorrow.|Let's get moving.|I'm not broken, and I won't stop until I see Renais restored.|I won't stop until I'm reunited with my father and brother.",
             "transition;Close"
-        ]
+        ],
+        "nid": "0 Outro"
     }
 ]

@@ -789,7 +789,8 @@ class TitleExtrasState(TitleLoadState):
                     game.memory['next_state'] = 'event'
                     game.state.change('transition_to')
                 else:
-                    get_sound_thread().play_sfx('Error')
+                    game.memory['next_state'] = 'credit'
+                    game.state.change('transition_to')
             elif selection == 'Options':
                 game.memory['next_state'] = 'settings_menu'
                 game.state.change('transition_to')
@@ -953,6 +954,7 @@ class TitleSaveState(State):
             # Proceed to next level anyway
             get_sound_thread().play_sfx('Select 4')
             if self.name == 'in_chapter_save':
+                game.memory.pop('save_name', None)
                 game.state.change('transition_pop')
             elif game.game_vars['_should_go_to_overworld']:
                 self.go_to_overworld(make_save=False)
@@ -964,7 +966,7 @@ class TitleSaveState(State):
             # Rename selection
             self.wait_time = engine.get_time()
             if self.name == 'in_chapter_save':
-                name = game.level.name
+                name = game.memory.get('save_name') or game.level.name
                 self.menu.set_text(self.menu.current_index, name)
             else:
                 next_level_nid = game.game_vars['_next_level_nid']
@@ -984,8 +986,9 @@ class TitleSaveState(State):
             if self.name == 'in_chapter_save':
                 saved_state = game.state.state[:]
                 game.state.state = game.state.state[:-1]  # All except this one
-                save.suspend_game(game, game.memory['save_kind'], slot=self.menu.current_index)
+                save.suspend_game(game, game.memory['save_kind'], slot=self.menu.current_index, display_name=game.memory.get('save_name'))
                 # Put states back
+                game.memory.pop('save_name', None)
                 game.state.state = saved_state
                 game.state.change('transition_pop')
             elif game.game_vars['_should_go_to_overworld']:

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import IntEnum
 
-class FogOfWarType(Enum):
+class FogOfWarType(IntEnum):
     GBA_DEPRECATED = 0
     GBA = 1
     THRACIA = 2

@@ -12,6 +12,7 @@
             "speak;Gilliam;I was prepared for...{br}anything...",
             "expression;Gilliam;CloseEyes",
             "remove_portrait;Gilliam"
-        ]
+        ],
+        "nid": "Global DeathGilliam"
     }
 ]

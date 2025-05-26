@@ -11,6 +11,7 @@
             "unlock;{unit}",
             "show_layer;Chest3",
             "give_item;{unit};Hand Axe"
-        ]
+        ],
+        "nid": "3 Chest3"
     }
 ]

@@ -16,6 +16,7 @@
             "add_portrait;SoldierRed;Left",
             "speak;SoldierRed;I've found them! Stragglers from Renais! Don't let them get away.",
             "remove_portrait;SoldierRed"
-        ]
+        ],
+        "nid": "1 EnemyRein"
     }
 ]

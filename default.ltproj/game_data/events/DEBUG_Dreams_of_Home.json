@@ -11,6 +11,7 @@
             "multi_add_portrait;Eirika;Left;Seth;Right",
             "speak;Eirika;I miss home",
             "multi_remove_portrait;Eirika;Seth"
-        ]
+        ],
+        "nid": "DEBUG Dreams of Home"
     }
 ]
