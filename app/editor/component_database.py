@@ -270,6 +270,7 @@ class BetterOptionsItemComponent(BoolItemComponent):
         for field_name, component_type in options.items():
             editor = get_editor_widget(
                 field_name, component_type, self._data.value)
+            editor.resized.connect(self.updateGeometry)
             vbox.addWidget(editor)
         self.editors_widget.resize(self.editors_widget.sizeHint())
         self.collapsible_frame_layout.addWidget(self.editors_widget)
