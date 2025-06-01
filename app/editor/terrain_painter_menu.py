@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QGridLayout, QPushButton, QSlider, QLabel, QListView, \
     QWidget
-from PyQt5.QtCore import Qt, QSize, pyqtSignal
+from PyQt5.QtCore import Qt, QSize, QModelIndex, pyqtSignal
 
 from app.data.database.database import DB
 
@@ -56,10 +56,16 @@ class TerrainPainterMenu(QWidget):
         self.map_editor.update_view()
 
     def set_current_nid(self, nid):
-        idx = self.model.index(DB.terrain.index(nid))
-        self.list_view.setCurrentIndex(idx)
+        if nid is None:
+            self.list_view.setCurrentIndex(QModelIndex())
+        else:
+            idx = self.model.index(DB.terrain.index(nid))
+            self.list_view.setCurrentIndex(idx)
 
     def get_current_nid(self):
         index = self.list_view.currentIndex()
-        terrain = DB.terrain[index.row()]
-        return terrain.nid
+        if index.isValid():
+            terrain = DB.terrain[index.row()]
+            return terrain.nid
+        else:
+            return None

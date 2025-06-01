@@ -81,6 +81,11 @@ class PaintTool(IntEnum):
 class MapEditorView(DraggableTileImageView):
     def __init__(self, parent=None):
         super().__init__(parent)
+
+        # subscribe to be notified when MapEditor switches modes
+        if self.window:
+            self.window.subscribe_terrain_mode(self.handle_terrain_mode)
+
         self.tilemap = None
 
         self.current_mouse_position = (0, 0)
@@ -88,12 +93,15 @@ class MapEditorView(DraggableTileImageView):
 
         self.left_selecting = False
         self.right_selecting = False
-        self.right_selection = {}  # Dictionary of tile_sprites
+        self.right_selection = {}  # Dictionary of selected tiles
 
         self.draw_autotiles = True
         self.draw_gridlines = True
 
         self.focus_layer = False
+
+    def handle_terrain_mode(self, old_terrain_mode: bool, terrain_mode: bool):
+        self.right_selection.clear()
 
     def set_current(self, current):
         self.tilemap = current
@@ -112,10 +120,10 @@ class MapEditorView(DraggableTileImageView):
             self.clear_scene()
             return
         if self.window.terrain_mode:
-            self.draw_terrain()
+            self.draw_terrain_on_working_image()
         self.show_map()
 
-    def get_map_image(self):
+    def get_map_image(self) -> QImage:
         if self.draw_autotiles:
             image = draw_tilemap(self.tilemap, current_layer_index=self.get_focus_layer(), autotile_fps=self.tilemap.autotile_fps)
         else:
@@ -146,7 +154,7 @@ class MapEditorView(DraggableTileImageView):
         painter.end()
         return image
 
-    def draw_terrain(self):
+    def draw_terrain_on_working_image(self):
         if self.working_image:
             painter = QPainter()
             painter.begin(self.working_image)
@@ -165,6 +173,17 @@ class MapEditorView(DraggableTileImageView):
                             write_color = QColor(color[0], color[1], color[2])
                             write_color.setAlpha(alpha)
                             painter.fillRect(coord[0] * TILEWIDTH, coord[1] * TILEHEIGHT, TILEWIDTH, TILEHEIGHT, write_color)
+
+            # Draw cursor...
+            if self.right_selecting:
+                # Currently holding down right click and selecting area
+                self.draw_selection_terrain(painter)
+            elif self.right_selection:
+                # Currently drawing with a right click held down area
+                self.draw_right_cursor_terrain(painter)
+            else:
+                self.draw_normal_cursor_terrain(painter)
+
             painter.end()
 
     def show_map(self):
@@ -187,6 +206,17 @@ class MapEditorView(DraggableTileImageView):
                 rect = QRect(true_pos[0] * TILEWIDTH, true_pos[1] * TILEHEIGHT, TILEWIDTH, TILEHEIGHT)
                 painter.fillRect(rect, QColor(0, 255, 255, 96))
 
+    def draw_normal_cursor_terrain(self, painter):
+        coord = self.current_mouse_position
+        alpha = self.window.terrain_painter_menu.get_alpha()
+        current_nid = self.window.terrain_painter_menu.get_current_nid()
+        terrain = DB.terrain.get(current_nid)
+        if terrain:
+            color = terrain.color
+            write_color = QColor(color[0], color[1], color[2])
+            write_color.setAlpha(alpha)
+            painter.fillRect(coord[0] * TILEWIDTH, coord[1] * TILEHEIGHT, TILEWIDTH, TILEHEIGHT, write_color)
+
     def draw_right_cursor(self, painter):
         mouse_pos = self.current_mouse_position
         for coord, (true_coord, tile_sprite) in self.right_selection.items():
@@ -203,11 +233,34 @@ class MapEditorView(DraggableTileImageView):
                 rect = QRect(true_coord[0] * TILEWIDTH, true_coord[1] * TILEHEIGHT, TILEWIDTH, TILEHEIGHT)
                 painter.fillRect(rect, QColor(0, 255, 255, 96))
 
+    def draw_right_cursor_terrain(self, painter):
+        mouse_pos = self.current_mouse_position
+        alpha = self.window.terrain_painter_menu.get_alpha()
+        for coord, (true_coord, terrain_nid) in self.right_selection.items():
+            if not terrain_nid:
+                continue
+            terrain = DB.terrain.get(terrain_nid)
+            if terrain:
+                true_coord = mouse_pos[0] + coord[0], mouse_pos[1] + coord[1]
+                color = terrain.color
+                write_color = QColor(color[0], color[1], color[2])
+                write_color.setAlpha(alpha)
+                painter.fillRect(true_coord[0] * TILEWIDTH, true_coord[1] * TILEHEIGHT, TILEWIDTH, TILEHEIGHT, write_color)
+
     def draw_selection(self, painter):
         starting_pos = self.right_selecting
         if not starting_pos:
             return
         for coord, (true_coord, tile_sprite) in self.right_selection.items():
+            color = QColor(0, 255, 255, 128)
+            rect = QRect(true_coord[0] * TILEWIDTH, true_coord[1] * TILEHEIGHT, TILEWIDTH, TILEHEIGHT)
+            painter.fillRect(rect, color)
+
+    def draw_selection_terrain(self, painter):
+        starting_pos = self.right_selecting
+        if not starting_pos:
+            return
+        for coord, (true_coord, terrain_nid) in self.right_selection.items():
             color = QColor(0, 255, 255, 128)
             rect = QRect(true_coord[0] * TILEWIDTH, true_coord[1] * TILEHEIGHT, TILEWIDTH, TILEHEIGHT)
             painter.fillRect(rect, color)
@@ -232,6 +285,14 @@ class MapEditorView(DraggableTileImageView):
                     return tile_sprite
         return None
 
+    def get_tile_terrain(self, pos):
+        for layer in reversed(self.tilemap.layers):
+            if layer.visible:
+                if pos in layer.terrain_grid:
+                    terrain_nid = layer.get_terrain(pos)
+                    return terrain_nid
+        return None
+
     def find_coords(self):
         self.right_selection.clear()
         left = min(self.right_selecting[0], self.current_mouse_position[0])
@@ -241,14 +302,24 @@ class MapEditorView(DraggableTileImageView):
         for x in range(width):
             for y in range(height):
                 i, j = x + left, y + top
-                self.right_selection[(x, y)] = ((i, j), self.get_tile_sprite((i, j)))
+                if self.window.terrain_mode:
+                    self.right_selection[(x, y)] = ((i, j), self.get_tile_terrain((i, j)))
+                else:
+                    self.right_selection[(x, y)] = ((i, j), self.get_tile_sprite((i, j)))
 
     def paint_terrain(self, tile_pos):
         current_layer = self.get_current_layer()
         if current_layer.visible:
-            if self.tilemap.check_bounds(tile_pos):
-                current_nid = self.window.terrain_painter_menu.get_current_nid()
-                current_layer.terrain_grid[tile_pos] = current_nid
+            if self.right_selection:
+                for coord, (true_coord, terrain_nid) in self.right_selection.items():
+                    true_pos = tile_pos[0] + coord[0], tile_pos[1] + coord[1]
+                    if self.tilemap.check_bounds(true_pos):
+                        if terrain_nid:
+                            current_layer.terrain_grid[true_pos] = terrain_nid
+            else:
+                if self.tilemap.check_bounds(tile_pos):
+                    current_nid = self.window.terrain_painter_menu.get_current_nid()
+                    current_layer.terrain_grid[tile_pos] = current_nid
 
     def paint_tile(self, tile_pos):
         current_layer = self.get_current_layer()
@@ -321,10 +392,17 @@ class MapEditorView(DraggableTileImageView):
             # Determine which coords should be flood-filled
             find_similar((tile_pos[0], tile_pos[1]), terrain_nid)
 
+            if self.right_selection:
+                # Only handles the topleft tile
+                coords = list(self.right_selection.keys())
+                topleft = min(coords)
+                true_coord, terrain_nid = self.right_selection[topleft]
+            else:
+                terrain_nid = self.window.terrain_painter_menu.get_current_nid()
+
             # Do the deed
             for coord in coords_to_replace:
-                current_nid = self.window.terrain_painter_menu.get_current_nid()
-                current_layer.terrain_grid[coord] = current_nid
+                current_layer.terrain_grid[coord] = terrain_nid
 
     def flood_fill_tile(self, tile_pos):
         tileset, coords = self.window.get_tileset_coords()
@@ -424,14 +502,17 @@ class MapEditorView(DraggableTileImageView):
                 else:
                     self.flood_fill_tile(tile_pos)
         elif event.button() == Qt.RightButton and self.tilemap.check_bounds(tile_pos):
-            if self.window.terrain_mode:
+            if self.window.current_tool == PaintTool.Brush:
+                self.right_selecting = tile_pos
+                self.right_selection.clear()
+                if self.window.terrain_mode:
+                    self.window.terrain_painter_menu.set_current_nid(None)
+                else:
+                    self.window.void_tileset_selection()
+            else:
                 current_nid = self.tilemap.get_terrain(tile_pos)
                 if current_nid:
                     self.window.terrain_painter_menu.set_current_nid(current_nid)
-            elif self.window.current_tool == PaintTool.Brush:
-                self.right_selecting = tile_pos
-                self.right_selection.clear()
-                self.window.void_tileset_selection()
         elif event.button() == Qt.MiddleButton:
             self.old_middle_pos = event.pos()
 
@@ -466,11 +547,9 @@ class MapEditorView(DraggableTileImageView):
         scene_pos = self.mapToScene(event.pos())
         tile_pos = int(scene_pos.x() // TILEWIDTH), \
             int(scene_pos.y() // TILEHEIGHT)
+        self.current_mouse_position = tile_pos
 
-        if self.window.terrain_mode:
-            if event.button() == Qt.LeftButton:
-                self.left_selecting = False
-        elif self.window.current_tool == PaintTool.Brush:
+        if self.window.current_tool == PaintTool.Brush:
             if event.button() == Qt.LeftButton:
                 self.left_selecting = False
             elif event.button() == Qt.RightButton:
@@ -499,6 +578,7 @@ class MapEditor(QDialog):
         self.save()
         self.current_tool = PaintTool.NoTool
         self.terrain_mode: bool = False
+        self.terrain_mode_subscribers: list[callable] = []
 
         self.tileset_menu = TileSetMenu(self, self.current)
         self.layer_menu = LayerMenu(self, self.current)
@@ -560,6 +640,9 @@ class MapEditor(QDialog):
             self.main_splitter.restoreState(state)
 
         self.view.update_view()
+
+    def subscribe_terrain_mode(self, callback: callable):
+        self.terrain_mode_subscribers.append(callback)
 
     def create_actions(self):
         theme = dark_theme.get_theme()
@@ -640,11 +723,14 @@ class MapEditor(QDialog):
         ResizeDialog.get_new_size(self.current, self)
 
     def terrain_mode_toggle(self, val):
+        old_val = self.terrain_mode
         self.terrain_mode = val
         if self.terrain_mode:
             self.terrain_painter_menu.show()
         else:
             self.terrain_painter_menu.hide()
+        for callback in self.terrain_mode_subscribers:
+            callback(old_val, val)
 
     def gridline_toggle(self, val):
         self.view.draw_gridlines = val
