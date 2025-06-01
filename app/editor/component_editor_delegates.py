@@ -1,8 +1,10 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (QDoubleSpinBox, QItemDelegate, QLineEdit,
-                             QSpinBox, QWidget)
-
+                             QSpinBox, QWidget, QStyle)
+from PyQt5.QtGui import QFont
 from app.data.database.database import DB
+from app.editor.code_line_edit import CodeLineEdit
+from app.editor.settings.main_settings_controller import MainSettingsController
 from app.extensions.custom_gui import ComboBox
 from app.utilities.data import Data
 
@@ -12,6 +14,8 @@ class BaseComponentDelegate(QItemDelegate):
     name: str
     is_float = False
     is_string = False
+    
+    settings = MainSettingsController()
 
     def createEditor(self, parent, option, index):
         if index.column() == 0:
@@ -24,7 +28,7 @@ class BaseComponentDelegate(QItemDelegate):
             return editor
         elif index.column() == 1:  # Integer value column
             if self.is_string:
-                editor = QLineEdit(parent)
+                editor = CodeLineEdit(parent)
             elif self.is_float:
                 editor = QDoubleSpinBox(parent)
                 editor.setRange(0, 10)
@@ -41,6 +45,25 @@ class BaseComponentDelegate(QItemDelegate):
         else:
             super().setModelData(editor, model, index)
 
+    def paint(self, painter, option, index):
+        if index.column() == 1 and self.is_string:
+            painter.save()
+            
+            font = painter.font()
+            if self.settings.get_code_font_in_boxes():
+                font = QFont(self.settings.get_code_font())
+            painter.setFont(font)
+            
+            # Handle selection highlight
+            if option.state & QStyle.State_Selected:
+                painter.fillRect(option.rect, option.palette.highlight())
+                painter.setPen(option.palette.highlightedText().color())
+            
+            painter.drawText(option.rect, Qt.AlignLeft | Qt.AlignVCenter, str(index.data()))
+            painter.restore()
+        else:
+            super().paint(painter, option, index)       
+    
 class UnitDelegate(BaseComponentDelegate):
     data = DB.units
     name = "Unit"
