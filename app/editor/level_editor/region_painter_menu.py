@@ -4,6 +4,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon, QColor, QPixmap
 
 from app.data.database.database import DB
+from app.editor.code_line_edit import CodeLineEdit
 from app.events.regions import Region, RegionType
 
 from app.utilities import utils, str_utils
@@ -207,9 +208,9 @@ class ModifyRegionWidget(QWidget):
         self.sub_nid_box.edit.textChanged.connect(self.sub_nid_changed)
         layout.addWidget(self.sub_nid_box)
 
-        self.condition_box = PropertyBox("Condition", QLineEdit, self)
+        self.condition_box = PropertyBox("Condition", CodeLineEdit, self)
         # self.condition_box.edit.setText(self.current.condition)
-        self.condition_box.edit.textChanged.connect(self.condition_changed)
+        self.condition_box.edit.textChanged.connect(lambda: self.condition_changed(self.condition_box.edit.toPlainText()))
         layout.addWidget(self.condition_box)
 
         self.time_left_box = PropertyBox("Num Turns", QLineEdit, self)
@@ -328,7 +329,7 @@ class ModifyRegionWidget(QWidget):
         self.current = current
         self.nid_box.edit.setText(current.nid)
         self.region_type_box.edit.setValue(current.region_type)
-        self.condition_box.edit.setText(current.condition)
+        self.condition_box.edit.setPlainText(current.condition)
         self.time_left_box.edit.setText(str(current.time_left) if current.time_left is not None else '')
         self.only_once_box.edit.setChecked(bool(current.only_once))
         self.interrupt_move_box.edit.setChecked(bool(current.interrupt_move))
