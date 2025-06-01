@@ -2,6 +2,8 @@ from app.utilities import utils
 from app.engine import equations
 from app.engine.game_state import game
 
+from app.utilities.typing import NID
+
 class InitiativeTracker():
     def __init__(self):
         self.unit_line = []
@@ -75,6 +77,16 @@ class InitiativeTracker():
             self.initiative_line.pop(idx)
             if self.current_idx >= idx:
                 self.current_idx -= 1
+
+    def replace_unit_nid(self, old_nid: NID, new_nid: NID):
+        def _replace(lst: list, old, new):
+            for i in range(len(lst)):
+                if lst[i] == old:
+                    lst[i] = new
+
+        if old_nid in self.unit_line:
+            _replace(self.unit_line, old_nid, new_nid)
+            _replace(self.initiative_line, old_nid, new_nid)
 
     def insert_at(self, unit, idx: int, initiative=None) -> int:
         """
