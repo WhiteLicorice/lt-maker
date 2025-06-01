@@ -464,6 +464,16 @@ Removes multiple portraits from the screen simultaneously.
     optional_keywords = ['Portrait3', 'Portrait4']
     keyword_types = ['Portrait', 'Portrait', 'Portrait', 'Portrait']
 
+class RemoveAllPortraits(EventCommand):
+    nid = "remove_all_portraits"
+    nickname = "rrr"
+    tag = Tags.PORTRAIT
+
+    desc = \
+        """
+Removes all portraits from the screen simultaneously.
+        """
+
 class MovePortrait(EventCommand):
     nid = "move_portrait"
     tag = Tags.PORTRAIT

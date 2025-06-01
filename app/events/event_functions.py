@@ -206,6 +206,18 @@ def multi_remove_portrait(self: Event, portrait1, portrait2, portrait3=None, por
         commands.append(event_commands.RemovePortrait({'Portrait': portrait4}, set()))
     self.command_queue += commands
 
+def remove_all_portraits(self: Event, flags=None):
+    commands = []
+    first = True
+    for portrait in self.portraits.keys():
+        if first:
+            commands.append(event_commands.RemovePortrait({'Portrait': portrait}, set()))
+            first = False
+        else:
+            commands.append(event_commands.RemovePortrait({'Portrait': portrait}, {'no_block'}))
+    commands.reverse()
+    self.command_queue += commands
+
 def move_portrait(self: Event, portrait, screen_position: Tuple, speed_mult: float=1.0, flags=None):
     flags = flags or set()
 
