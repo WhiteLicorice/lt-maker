@@ -99,3 +99,7 @@ class SkillDelegate(BaseComponentDelegate):
 class TerrainDelegate(BaseComponentDelegate):
     data = DB.terrain
     name = "Terrain"
+
+class LoreDelegate(BaseComponentDelegate):
+    data = DB.lore
+    name = "Lore"
