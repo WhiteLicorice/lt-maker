@@ -1367,6 +1367,21 @@ class MaybeSprite(Validator):
         valids += [(None, "None")]
         return valids
 
+class SpritePose(OptionValidator):
+    desc = """
+Specify the pose the unit's sprite will take.
+Available options are (`normal`, `active`, `moving`, `stand_dir`, `start_cast`, `end_cast`).
+"""
+    valid = ['normal', 'active', 'moving', 'stand_dir', 'start_cast', 'end_cast']
+
+class SpriteDirection(OptionValidator):
+    desc = """
+Specify the direction moving or stand pose will take.
+Available options are (`up`, `left`, `right`, `down`).
+This has no effect unless the sprite pose is `moving` or `stand_dir`.
+"""
+    valid = ['up', 'left', 'right', 'down']
+
 class DifficultyMode(Validator):
     desc = 'accepts the nid of a difficulty mode.'
 

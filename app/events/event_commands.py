@@ -1368,6 +1368,19 @@ The *immediate* flag will cause the combat to happen as quickly as possible, oft
     keyword_types = ["Unit", "Position", "CombatScript", "Ability", "PositiveInteger"]
     _flags = ["arena", "force_animation", "force_no_animation", "immediate"]
 
+class PoseUnit(EventCommand):
+    nid = 'pose_unit'
+    tag = Tags.ADD_REMOVE_INTERACT_WITH_UNITS
+
+    desc = \
+        """
+Changes current pose (state) of unit's map sprite.
+        """
+
+    keywords = ["Unit", "Pose"]
+    optional_keywords = ["Direction"]
+    keyword_types = ["Unit", "SpritePose", "SpriteDirection"]
+
 class SetName(EventCommand):
     nid = 'set_name'
     tag = Tags.MODIFY_UNIT_PROPERTIES

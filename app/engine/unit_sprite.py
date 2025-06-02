@@ -368,7 +368,7 @@ class UnitSprite():
             self.net_position = game.cursor.position[0] - self.unit.position[0], game.cursor.position[1] - self.unit.position[1]
             self.handle_net_position(self.net_position)
             self.reset()
-        elif self.state in ('combat_active'):
+        elif self.state in ('combat_active', 'active'):
             self.set_image_state('active')
         elif self.state == 'combat_defender':
             attacker = game.memory['current_combat'].attacker
