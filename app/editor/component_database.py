@@ -17,7 +17,8 @@ from app.editor.component_editor_delegates import (AffinityDelegate,
                                                    TagDelegate,
                                                    TerrainDelegate,
                                                    UnitDelegate,
-                                                   WeaponTypeDelegate)
+                                                   WeaponTypeDelegate,
+                                                   LoreDelegate)
 from app.editor.component_subcomponent_editors import get_editor_widget
 from app.editor.editor_constants import (DROP_DOWN_BUFFER, MAX_DROP_DOWN_WIDTH,
                                          MIN_DROP_DOWN_WIDTH)
@@ -436,6 +437,19 @@ class SkillItemComponent(BoolItemComponent):
         self.editor.currentTextChanged.connect(self.on_value_changed)
         hbox.addWidget(self.editor)
 
+class LoreItemComponent(BoolItemComponent):
+    def create_editor(self, hbox):
+        self.editor = ComboBox(self)
+        for lore in DB.lore.values():
+            self.editor.addItem(lore.nid)
+        width = utils.clamp(self.editor.minimumSizeHint().width(
+        ) + DROP_DOWN_BUFFER, MIN_DROP_DOWN_WIDTH, MAX_DROP_DOWN_WIDTH)
+        self.editor.setMaximumWidth(width)
+        if not self._data.value and DB.lore:
+            self._data.value = DB.lore[0].nid
+        self.editor.setValue(self._data.value)
+        self.editor.currentTextChanged.connect(self.on_value_changed)
+        hbox.addWidget(self.editor)
 
 class MusicItemComponent(BoolItemComponent):
     def create_editor(self, hbox):
@@ -691,7 +705,9 @@ def get_display_widget(component, parent):
         c = DeprecatedOptionsItemComponent(component, parent)
     elif component.expose == ComponentType.NewMultipleOptions:
         c = BetterOptionsItemComponent(component, parent)
-
+    elif component.expose == ComponentType.Lore:
+        c = LoreItemComponent(component, parent)
+        
     elif isinstance(component.expose, tuple):
         delegate = None
         if component.expose[1] == ComponentType.Unit:
@@ -712,6 +728,8 @@ def get_display_widget(component, parent):
             delegate = SkillDelegate
         elif component.expose[1] == ComponentType.Terrain:
             delegate = TerrainDelegate
+        elif component.expose[1] == ComponentType.Lore:
+            delegate = LoreDelegate
 
         if component.expose[0] == ComponentType.List:
             c = ListItemComponent(component, parent, delegate)

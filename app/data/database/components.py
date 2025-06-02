@@ -33,6 +33,7 @@ class ComponentType(Enum):
     EffectAnimation = 22  # Stored as Nid
     Affinity = 23  # Stored as Nid
     Terrain = 24  # stored as Nid
+    Lore = 25 # Lore entry stored as an NID
     Event = 80
     List = 100  # List containing Items
     Dict = 101  # List of Tuples of [Item, integer]
@@ -41,7 +42,6 @@ class ComponentType(Enum):
     MultipleOptions = 104  # Deprecated
     StringDict = 105  # List of Tuples of [Item, str]
     NewMultipleOptions = 106  # item is a dict of string options with types that can be individually configured
-
 
 def convert_type_from_string(tstr: str, ttype: ComponentType):
     if ttype == ComponentType.Int:
