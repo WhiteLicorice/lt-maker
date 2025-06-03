@@ -437,6 +437,22 @@ class SkillItemComponent(BoolItemComponent):
         self.editor.currentTextChanged.connect(self.on_value_changed)
         hbox.addWidget(self.editor)
 
+
+class UnitItemComponent(BoolItemComponent):
+    def create_editor(self, hbox):
+        self.editor = ComboBox(self)
+        for unit in DB.units.values():
+            self.editor.addItem(unit.nid)
+        width = utils.clamp(self.editor.minimumSizeHint().width(
+        ) + DROP_DOWN_BUFFER, MIN_DROP_DOWN_WIDTH, MAX_DROP_DOWN_WIDTH)
+        self.editor.setMaximumWidth(width)
+        if not self._data.value and DB.units:
+            self._data.value = DB.units[0].nid
+        self.editor.setValue(self._data.value)
+        self.editor.currentTextChanged.connect(self.on_value_changed)
+        hbox.addWidget(self.editor)
+        
+
 class LoreItemComponent(BoolItemComponent):
     def create_editor(self, hbox):
         self.editor = ComboBox(self)
@@ -450,6 +466,7 @@ class LoreItemComponent(BoolItemComponent):
         self.editor.setValue(self._data.value)
         self.editor.currentTextChanged.connect(self.on_value_changed)
         hbox.addWidget(self.editor)
+
 
 class MusicItemComponent(BoolItemComponent):
     def create_editor(self, hbox):
@@ -705,6 +722,8 @@ def get_display_widget(component, parent):
         c = DeprecatedOptionsItemComponent(component, parent)
     elif component.expose == ComponentType.NewMultipleOptions:
         c = BetterOptionsItemComponent(component, parent)
+    elif component.expose == ComponentType.Unit:
+        c = UnitItemComponent(component, parent)
     elif component.expose == ComponentType.Lore:
         c = LoreItemComponent(component, parent)
         
