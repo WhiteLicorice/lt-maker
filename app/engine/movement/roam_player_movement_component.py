@@ -71,7 +71,12 @@ class RoamPlayerMovementComponent(MovementComponent):
         self.active = True
 
     def finish(self, surprise=False):
-        self.unit.sprite.change_state('normal')
+        if not DB.constants.value('roam_dir_pose'):
+            self.unit.sprite.change_state('normal')
+        elif not DB.constants.value('roam_dir_anim'):
+            cur_state = self.unit.sprite.image_state
+            if cur_state in self.unit.sprite.cardinal:
+                self.unit.sprite.change_state('stand_dir', cur_state)
         self.unit.sound.stop()
         self.active = False
 
@@ -101,7 +106,12 @@ class RoamPlayerMovementComponent(MovementComponent):
             if not self.muted:
                 self.unit.sound.play()
         else:
-            self.unit.sprite.change_state('normal')
+            if not DB.constants.value('roam_dir_pose'):
+                self.unit.sprite.change_state('normal')
+            elif not DB.constants.value('roam_dir_anim'):
+                cur_state = self.unit.sprite.image_state
+                if cur_state in self.unit.sprite.cardinal:
+                    self.unit.sprite.change_state('stand_dir', cur_state)
             self.unit.sound.stop()
 
     def _kinematics(self, delta_time):

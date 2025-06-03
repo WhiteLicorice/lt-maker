@@ -53,6 +53,7 @@ class DatabaseValidatorEngine():
             CType.Affinity: _nid_in_data(db.affinities),
             CType.Terrain: _nid_in_data(db.terrain),
             CType.Event: _nid_in_data(db.events),
+            CType.Lore: _nid_in_data(db.lore),
 
             RType.ICONS16: _nid_in_data(resources.icons16),
             RType.ICONS32: _nid_in_data(resources.icons32),

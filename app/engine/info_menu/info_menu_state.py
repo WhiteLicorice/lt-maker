@@ -466,11 +466,20 @@ class InfoMenuState(State):
         render_text(surf, ['text'], [str(self.unit.exp)], ['blue'], (63, 120), HAlignment.RIGHT)
         desc = text_funcs.translate_and_text_evaluate('Exp_desc', unit=self.unit)
         self.info_graph.register((38, 120, 30, 16), desc, 'all')
-        render_text(surf, ['text'], [str(self.unit.get_hp())], ['blue'], (39, 136), HAlignment.RIGHT)
+        
+        # Draw HP
+        current_hp = str(self.unit.get_hp())
+        max_hp = str(self.unit.get_max_hp())
+        # 14 pixels is width of space available to draw current_hp or max_hp
+        if text_width('text', current_hp) > 14 or text_width('text', max_hp) > 14:
+            hp_font = 'narrow'
+        else:
+            hp_font = 'text'
+        render_text(surf, [hp_font], [current_hp], ['blue'], (39, 136), HAlignment.RIGHT)
         desc = text_funcs.translate_and_text_evaluate('HP_desc', unit=self.unit)
         self.info_graph.register((8, 136, 72, 16), desc, 'all')
-        max_hp = equations.parser.hitpoints(self.unit)
-        render_text(surf, ['text'], [str(max_hp)], ['blue'], (63, 136), HAlignment.RIGHT)
+        render_text(surf, [hp_font], [str(max_hp)], ['blue'], (63, 136), HAlignment.RIGHT)
+
         # Blit the white status platform
         surf.blit(SPRITES.get('status_platform'), (66, 131))
         # Blit affinity

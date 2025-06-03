@@ -74,14 +74,19 @@ class MapSprite():
         else:
             gray_frames = [engine.subsurface(stand, (num*64, 48, 64, 48)) for num in range(3)]
             self.gray = SingleMapSprite.create_looping_sprite(gray_frames, ANIMATION_COUNTERS.passive_sprite_counter)
+
         down_frames = [engine.subsurface(move, (num*48, 0, 48, 40)) for num in range(4)]
         self.down = SingleMapSprite.create_looping_sprite(down_frames, ANIMATION_COUNTERS.move_sprite_counter)
+        self.down_stand = SingleMapSprite.create_anim_sprite([self.down.get_stationary_frame()], [22])
         left_frames = [engine.subsurface(move, (num*48, 40, 48, 40)) for num in range(4)]
         self.left = SingleMapSprite.create_looping_sprite(left_frames, ANIMATION_COUNTERS.move_sprite_counter)
+        self.left_stand = SingleMapSprite.create_anim_sprite([self.left.get_stationary_frame()], [22])
         right_frames = [engine.subsurface(move, (num*48, 80, 48, 40)) for num in range(4)]
         self.right = SingleMapSprite.create_looping_sprite(right_frames, ANIMATION_COUNTERS.move_sprite_counter)
+        self.right_stand =SingleMapSprite.create_anim_sprite([self.right.get_stationary_frame()], [22])
         up_frames = [engine.subsurface(move, (num*48, 120, 48, 40)) for num in range(4)]
         self.up = SingleMapSprite.create_looping_sprite(up_frames, ANIMATION_COUNTERS.move_sprite_counter)
+        self.up_stand = SingleMapSprite.create_anim_sprite([self.up.get_stationary_frame()], [22])
 
         active_frames = [engine.subsurface(stand, (num*64, 96, 64, 48)) for num in range(3)]
         self.active = SingleMapSprite.create_looping_sprite(active_frames, ANIMATION_COUNTERS.active_sprite_counter)
@@ -173,6 +178,7 @@ def load_klass_sprite(klass_nid: NID, team: NID = 'player') -> Optional[MapSprit
 
 class UnitSprite():
     default_transition_time = 450
+    cardinal = ['down', 'left', 'right', 'up']
 
     def __init__(self, unit):
         self.unit = unit
@@ -356,13 +362,13 @@ class UnitSprite():
             self._fake_position = self.unit.position
             self.add_swoosh_anim(reverse=True)
 
-    def change_state(self, new_state):
+    def change_state(self, new_state, dir = None):
         self.state = new_state
         if self.state in ('combat_attacker', 'combat_anim'):
             self.net_position = game.cursor.position[0] - self.unit.position[0], game.cursor.position[1] - self.unit.position[1]
             self.handle_net_position(self.net_position)
             self.reset()
-        elif self.state in ('combat_active'):
+        elif self.state in ('combat_active', 'active'):
             self.set_image_state('active')
         elif self.state == 'combat_defender':
             attacker = game.memory['current_combat'].attacker
@@ -396,6 +402,10 @@ class UnitSprite():
             self.set_image_state('end_cast')
         elif self.state == 'normal':
             self.set_transition('normal')
+        elif self.state == 'moving' and dir in self.cardinal:
+            self.set_image_state(dir)
+        elif self.state == 'stand_dir' and dir in self.cardinal:
+            self.set_image_state(dir + '_stand')
 
     def handle_net_position(self, pos):
         self.net_position = pos

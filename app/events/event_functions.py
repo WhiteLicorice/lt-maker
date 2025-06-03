@@ -206,6 +206,18 @@ def multi_remove_portrait(self: Event, portrait1, portrait2, portrait3=None, por
         commands.append(event_commands.RemovePortrait({'Portrait': portrait4}, set()))
     self.command_queue += commands
 
+def remove_all_portraits(self: Event, flags=None):
+    commands = []
+    first = True
+    for portrait in self.portraits.keys():
+        if first:
+            commands.append(event_commands.RemovePortrait({'Portrait': portrait}, set()))
+            first = False
+        else:
+            commands.append(event_commands.RemovePortrait({'Portrait': portrait}, {'no_block'}))
+    commands.reverse()
+    self.command_queue += commands
+
 def move_portrait(self: Event, portrait, screen_position: Tuple, speed_mult: float=1.0, flags=None):
     flags = flags or set()
 
@@ -1151,6 +1163,30 @@ def interact_unit(self: Event, unit, position, combat_script: Optional[List[str]
         actor, target, item, skip='immediate' in flags, event_combat=True, script=script, total_rounds=total_rounds,
         arena='arena' in flags, force_animation='force_animation' in flags, force_no_animation='force_no_animation' in flags)
     self.state = "paused"
+
+def pose_unit(self: Event, unit, pose, direction=None, flags=None):
+    from app.events.event_validators import SpritePose, SpriteDirection
+    flags = flags or set()
+
+    actor = self._get_unit(unit)
+    if not actor or not actor.sprite:
+        self.logger.error("pose_unit: Couldn't find %s" % unit)
+        return
+
+    if pose not in SpritePose.valid:
+        self.logger.error("pose_unit: %s is not a valid sprite pose!" % pose)
+        return
+
+    if pose in ['stand_dir', 'moving']:
+        if not direction:
+            self.logger.error("pose_unit: Direction is required when using %s pose!" % pose)
+            return
+
+        if direction not in SpriteDirection.valid:
+            self.logger.error("pose_unit: %s is not a valid sprite direction!" % pose)
+            return
+
+    actor.sprite.change_state(pose, direction)
 
 def recruit_generic(self: Event, unit, nid, name=None, flags=None):
     new_unit = self._get_unit(unit)

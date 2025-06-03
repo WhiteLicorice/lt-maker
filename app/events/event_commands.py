@@ -464,6 +464,16 @@ Removes multiple portraits from the screen simultaneously.
     optional_keywords = ['Portrait3', 'Portrait4']
     keyword_types = ['Portrait', 'Portrait', 'Portrait', 'Portrait']
 
+class RemoveAllPortraits(EventCommand):
+    nid = "remove_all_portraits"
+    nickname = "rrr"
+    tag = Tags.PORTRAIT
+
+    desc = \
+        """
+Removes all portraits from the screen simultaneously.
+        """
+
 class MovePortrait(EventCommand):
     nid = "move_portrait"
     tag = Tags.PORTRAIT
@@ -1357,6 +1367,19 @@ The *immediate* flag will cause the combat to happen as quickly as possible, oft
     optional_keywords = ["CombatScript", "Ability", "Rounds"]
     keyword_types = ["Unit", "Position", "CombatScript", "Ability", "PositiveInteger"]
     _flags = ["arena", "force_animation", "force_no_animation", "immediate"]
+
+class PoseUnit(EventCommand):
+    nid = 'pose_unit'
+    tag = Tags.ADD_REMOVE_INTERACT_WITH_UNITS
+
+    desc = \
+        """
+Changes current pose (state) of unit's map sprite.
+        """
+
+    keywords = ["Unit", "Pose"]
+    optional_keywords = ["Direction"]
+    keyword_types = ["Unit", "SpritePose", "SpriteDirection"]
 
 class SetName(EventCommand):
     nid = 'set_name'
