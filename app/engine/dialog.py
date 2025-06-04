@@ -964,12 +964,13 @@ class Ending:
     wait_time = 5000
     background = SPRITES.get("endings_display")
 
-    def __init__(self, portrait, title, text, unit):
+    def __init__(self, portrait, title, text, unit, wait_for_input: bool = False):
         self.portrait = portrait
         self.title = title
         self.plain_text = text
         self.speaker = None  # Unused attribute to match Dialog
         self.unit = unit
+        self.wait_for_input = wait_for_input
         self.font = FONT["text"]
         self.font_name = "text"
 
@@ -981,7 +982,7 @@ class Ending:
         self.wait_update = 0
 
     def build_dialog(self):
-        self.dialog = Dialog(self.plain_text, num_lines=5, draw_cursor=False)
+        self.dialog = Dialog(self.plain_text, num_lines=5, draw_cursor=self.wait_for_input)
         self.dialog.position = (8, 40)
         self.dialog.text_width = WINWIDTH - 32
         self.dialog.width = self.dialog.text_width + 16
@@ -1052,7 +1053,9 @@ class Ending:
         if self.wait_update:
             if current_time - self.wait_update > self.wait_time:
                 self.dialog.state = DialogState.DONE
-        elif self.is_done_or_wait():
+        elif self.wait_for_input and self.is_done():
+            self.wait_update = current_time
+        elif not self.wait_for_input and self.is_done_or_wait():
             self.wait_update = current_time
 
         return False
@@ -1071,7 +1074,7 @@ class PairedEnding(Ending):
     background = SPRITES.get("paired_endings_display")
 
     def __init__(self, left_portrait, right_portrait, left_title, right_title, text,
-                 left_unit, right_unit):
+                 left_unit, right_unit, wait_for_input: bool = False):
         self.left_portrait = left_portrait
         self.right_portrait = right_portrait
         self.left_title = left_title
@@ -1080,6 +1083,7 @@ class PairedEnding(Ending):
         self.speaker = None  # Unused attribute to match Dialog
         self.left_unit = left_unit  # Used in stats
         self.right_unit = right_unit
+        self.wait_for_input = wait_for_input
         self.font_name = "text"
 
         self.build_dialog()

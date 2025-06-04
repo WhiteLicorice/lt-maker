@@ -3229,11 +3229,18 @@ class Ending(EventCommand):
 
     desc = \
         """
-Displays the epilogue text for a character. *Portrait* is the portrait to be displayed, *Title* is the name displayed (ex: "Marcus, Badass Paladin"), the *Text* is the block of text describing what happened to the character.
+Displays the epilogue text for a character. 
+*Portrait* is the portrait to be displayed, 
+*Title* is the name displayed (ex: "Marcus, Badass Paladin"), 
+the *Text* is the block of text describing what happened to the character.
+If *wait_for_input* flag is set, the dialog will wait for the player to press SELECT
+before preceding. Use this if you plan to have {w} or | commands in your text.
+Without the *wait_for_input* flag, the Ending will just wait 5 seconds after the first {w}.
         """
 
     keywords = ["Portrait", "Title", "Text"]
     keyword_types = ["Portrait", "String", "String"]
+    _flags = ['wait_for_input']
 
 class PairedEnding(EventCommand):
     nid = 'paired_ending'
@@ -3241,11 +3248,18 @@ class PairedEnding(EventCommand):
 
     desc = \
         """
-Displays paired epilogue text for two characters. *LeftPortrait* and *RightPortrait* are the portraits to be displayed, *LeftTitle* and *RightTitle* are the names displayed (ex: "Marcus, Badass Paladin"), the *Text* is the block of text describing what happened to the characters.
+Displays paired epilogue text for two characters. 
+*LeftPortrait* and *RightPortrait* are the portraits to be displayed, 
+*LeftTitle* and *RightTitle* are the names displayed (ex: "Marcus, Badass Paladin"), 
+the *Text* is the block of text describing what happened to the characters.
+If *wait_for_input* flag is set, the dialog will wait for the player to press SELECT
+before preceding. Use this if you plan to have {w} or | commands in your text.
+Without the *wait_for_input* flag, the Ending will just wait 5 seconds after the first {w}.
         """
 
     keywords = ["LeftPortrait", "RightPortrait", "LeftTitle", "RightTitle", "Text"]
     keyword_types = ["Portrait", "Portrait", "String", "String", "String"]
+    _flags = ['wait_for_input']
 
 class PopDialog(EventCommand):
     nid = 'pop_dialog'

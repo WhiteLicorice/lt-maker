@@ -3447,6 +3447,8 @@ def credits(self: Event, role, credits, flags=None):
     self.state = 'waiting'
 
 def ending(self: Event, portrait, title, text, flags=None):
+    flags = flags or set()
+
     unit = self._get_unit(portrait)
     if unit and unit.portrait_nid:
         portrait, _ = icons.get_portrait(unit)
@@ -3460,11 +3462,13 @@ def ending(self: Event, portrait, title, text, flags=None):
         self.logger.error("ending: Couldn't find unit or portrait %s" % portrait)
         return False
 
-    new_ending = dialog.Ending(portrait, title, text, unit)
+    new_ending = dialog.Ending(portrait, title, text, unit, wait_for_input='wait_for_input' in flags)
     self.text_boxes.append(new_ending)
     self.state = 'dialog'
 
 def paired_ending(self: Event, left_portrait, right_portrait, left_title, right_title, text, flags=None):
+    flags = flags or set()
+
     left_unit = self._get_unit(left_portrait)
     if left_unit and left_unit.portrait_nid:
         left_portrait, _ = icons.get_portrait(left_unit)
@@ -3492,7 +3496,10 @@ def paired_ending(self: Event, left_portrait, right_portrait, left_title, right_
         self.logger.error("ending: Couldn't find unit or portrait %s" % right_portrait)
         return False
 
-    new_ending = dialog.PairedEnding(left_portrait, right_portrait, left_title, right_title, text, left_unit, right_unit)
+    new_ending = \
+        dialog.PairedEnding(left_portrait, right_portrait, left_title, right_title, 
+                            text, left_unit, right_unit, 
+                            wait_for_input='wait_for_input' in flags)
     self.text_boxes.append(new_ending)
     self.state = 'dialog'
 
