@@ -1426,6 +1426,8 @@ class ItemChildState(MapState):
                 options.append("Expand")
             if item_funcs.can_use(self.cur_unit, item) and not self.cur_unit.has_attacked:
                 options.append("Use")
+            if item_system.extra_command(self.cur_unit, item) and game.target_system.get_valid_targets(self.cur_unit, item_system.extra_command(self.cur_unit, item)) and not self.cur_unit.has_attacked:
+                options.append(item_system.extra_command(self.cur_unit, item).name)
             if TradeAbility.targets(self.cur_unit) and item_system.tradeable(self.cur_unit, item):
                 options.append('Trade')
             if item in self.cur_unit.items:
@@ -1518,6 +1520,21 @@ class ItemChildState(MapState):
             elif selection == 'Trade':
                 game.memory['ability'] = TradeAbility
                 game.state.change('targeting')
+                
+            elif item_system.extra_command(self.cur_unit, item) and selection == item_system.extra_command(self.cur_unit, item).name:
+                cur_item = item_system.extra_command(self.cur_unit, item)
+                if item_system.targets_items(self.cur_unit, cur_item):
+                    # if it targets items, must use combat targeting routine to handle
+                    game.memory['item'] = cur_item
+                    game.state.change('combat_targeting')
+                else:
+                    targets: set = game.target_system.get_valid_targets(self.cur_unit, cur_item)
+                    # No need to select when only target is yourself
+                    if len(targets) == 1 and next(iter(targets)) == self.cur_unit.position:
+                        interaction.start_combat(self.cur_unit, self.cur_unit.position, cur_item)
+                    else:
+                        game.memory['item'] = cur_item
+                        game.state.change('combat_targeting')
 
     def update(self):
         super().update()

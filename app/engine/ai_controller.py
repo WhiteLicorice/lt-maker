@@ -359,12 +359,16 @@ class PrimaryAI():
         if self.behaviour.action == "Attack":
             self.items = [item for item in item_funcs.get_all_items(self.unit) if
                           item_funcs.available(self.unit, item)]
+            self.items = self.items + [item_system.extra_command(self.unit, item) for item in item_funcs.get_all_items(self.unit) if
+                                       item_system.extra_command(self.unit, item) and item_funcs.available(self.unit, item_system.extra_command(self.unit, item))]
             self.extra_abilities = skill_system.get_extra_abilities(self.unit)
             for ability in self.extra_abilities.values():
                 self.items.append(ability)
         elif self.behaviour.action == 'Support':
             self.items = [item for item in item_funcs.get_all_items(self.unit) if
                           item_funcs.available(self.unit, item)]
+            self.items = self.items + [item_system.extra_command(self.unit, item) for item in item_funcs.get_all_items(self.unit) if
+                                       item_system.extra_command(self.unit, item) and item_funcs.available(self.unit, item_system.extra_command(self.unit, item))]
             self.extra_abilities = skill_system.get_extra_abilities(self.unit)
             for ability in self.extra_abilities.values():
                 self.items.append(ability)

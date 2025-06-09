@@ -480,6 +480,11 @@ class GameState():
                 for component in subitem.components:
                     component.item = item
                 subitem.parent_item = item
+            if item.command_item_uid:
+                command_item = self.item_registry.get(item.command_item_uid)
+                for component in command_item.components:
+                    component.item = item
+                item.command_item = command_item
         # Handle subskill
         for skill in self.skill_registry.values():
             if skill.subskill_uid is not None:
@@ -856,6 +861,8 @@ class GameState():
         # For multi-items
         for subitem in item.subitems:
             self.register_item(subitem)
+        if item.command_item:
+            self.register_item(item.command_item)
 
     def unregister_item(self, item):
         logging.debug("Unregistering item %s as %s", item, item.uid)
@@ -863,6 +870,8 @@ class GameState():
         # For multi-items
         for subitem in item.subitems:
             self.unregister_item(subitem)
+        if item.command_item:
+            self.unregister_item(item.command_item)
 
     def register_skill(self, skill):
         logging.debug("Registering skill %s as %s", skill, skill.uid)
