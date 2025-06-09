@@ -69,6 +69,12 @@ class FreeRoamAIHandler:
             # if roam_ai.path:
             self.components[roam_ai.unit.nid].set_path(roam_ai.path)
 
+    def stop(self, unit: UnitObject):
+        mc = self.components.get(unit.nid)
+        if not mc:
+            return
+        mc.finish()
+
     def stop_all_units(self):
         self.active = False
         for mc in self.components.values():

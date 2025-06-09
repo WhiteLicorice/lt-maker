@@ -44,6 +44,8 @@ class FreeRoamState(MapState):
         if game.is_roam() and game.get_roam_unit():
             roam_unit = game.get_roam_unit()
             if self.roam_unit and self.roam_unit != roam_unit:
+                # Remove the existing AI from the previous unit, if necessary
+                self.ai_handler.stop(self.roam_unit)
                 # Now get the new unit
                 self._assign_unit(roam_unit)
             elif self.roam_unit:
