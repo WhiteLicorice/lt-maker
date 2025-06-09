@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 from app.data.database.database import DB
 from app.data.database.supports import SupportRankRequirementList, SupportRank
@@ -7,8 +7,9 @@ from app.data.database.supports import SupportPair as SupportPrefab
 
 from app.utilities import utils
 
-from app.engine import action
+from app.engine import action, skill_system
 from app.engine.game_state import game
+from app.engine.objects.unit import UnitObject
 
 import logging
 
@@ -323,12 +324,65 @@ def increment_end_chapter_supports():
     for pair in game.supports.support_pairs.values():
         pair.reset()
 
-def increment_unit_end_turn_supports(unit):
+def _increment_end_turn_supports(support_prefab: SupportPrefab, dist: int, inc: int, pairs: List[Tuple[UnitObject, UnitObject]]):
+    """
+    Checks whether a support pair should gain support points at the end of a turn,
+    and increments their support level if the criteria are met.
+
+    There are two possible criteria:
+    - If `dist` is 0, the function checks whether the two units can target the same enemy.
+    - Otherwise, the function checks if the units are within `dist` tiles of each other.
+
+    If either condition is met, support points are incremented and the pair is added to `pairs`.
+
+    Args:
+        support_prefab (SupportPrefab): The support relationship definition between two units.
+        dist (int): The distance requirement for gaining support. If 0, checks for shared enemy targets.
+        inc (int): The number of support points to increment.
+        pairs (List[Tuple[UnitObject, UnitObject]]): A list to which updated support pairs will be appended.
+    """
+    unit1 = game.get_unit(support_prefab.unit1)
+    unit2 = game.get_unit(support_prefab.unit2)
+
+    if dist == 0:  # Units are able to fight the same enemy unit
+        target1 = game.target_system.get_attackable_positions(unit1, force=True)
+        target2 = game.target_system.get_attackable_positions(unit2, force=True)
+        shared_positions = target1 & target2
+        if not shared_positions:
+            return
+        if any(enemy.position in shared_positions for enemy 
+               in game.get_all_units() 
+               if skill_system.check_enemy(unit1, enemy) 
+               and skill_system.check_enemy(unit2, enemy)):
+            action.do(action.IncrementSupportPoints(support_prefab.nid, inc))
+            pairs.append((unit1, unit2))
+
+    elif dist == 99 or utils.calculate_distance(unit1.position, unit2.position) <= dist:
+        action.do(action.IncrementSupportPoints(support_prefab.nid, inc))
+        pairs.append((unit1, unit2))
+
+def increment_unit_end_turn_supports(unit: UnitObject) -> List[Tuple[UnitObject, UnitObject]]:
+    """
+    Increments support points for a single unit and its eligible support partners at the end of a turn.
+
+    The function checks all defined support pairs that include the given unit and 
+    verifies if they are within range or satisfy the target-sharing condition. 
+    If so, it increments their support points.
+
+    Used only in initiative mode.
+
+    Args:
+        unit (UnitObject): The unit ending its turn.
+
+    Returns:
+        List[Tuple[UnitObject, UnitObject]]: A list of unit pairs that gained support points.
+    """
     if not game.game_vars.get('_supports'):
         return
     if not unit.position:
         return
     inc = DB.support_constants.value('end_turn_points')
+    pairs = []
     if inc:
         dist = DB.support_constants.value('growth_range')
         units = [u for u in game.units if u.position and not u.generic and u.team == unit.team and u is not unit]
@@ -336,27 +390,39 @@ def increment_unit_end_turn_supports(unit):
         for support_prefab in DB.support_pairs:
             if (support_prefab.unit1 in unit_nids and support_prefab.unit2 == unit.nid) or \
                (support_prefab.unit2 in unit_nids and support_prefab.unit1 == unit.nid):
-                unit1 = game.get_unit(support_prefab.unit1)
-                unit2 = game.get_unit(support_prefab.unit2)
-                if dist == 99 or utils.calculate_distance(unit1.position, unit2.position) <= dist:
-                    action.do(action.IncrementSupportPoints(support_prefab.nid, inc))
+                _increment_end_turn_supports(support_prefab, dist, inc, pairs)
+                
+    return pairs
 
-def increment_team_end_turn_supports(team='player'):
+def increment_team_end_turn_supports(team: NID = 'player') -> List[Tuple[UnitObject, UnitObject]]:
+    """
+    Increments support points for all valid support pairs on a given team at the end of the team's turn.
+
+    This function looks for all units on the given team that are on the map and not generic,
+    then increments support points for any valid pair within range or with shared targets.
+
+    Used when initiative constant is false (ie, most games, most of the time).
+
+    Args:
+        team (NID, optional): The team whose units are being checked. Defaults to 'player'.
+
+    Returns:
+        List[Tuple[UnitObject, UnitObject]]: A list of unit pairs that gained support points.
+    """
     if not game.game_vars.get('_supports'):
         return
     inc = DB.support_constants.value('end_turn_points')
+    pairs = []
     if inc:
         dist = DB.support_constants.value('growth_range')
         units = [unit for unit in game.units if unit.position and not unit.generic and unit.team == team]
         unit_nids = {unit.nid for unit in units}
         for support_prefab in DB.support_pairs:
             if support_prefab.unit1 in unit_nids and support_prefab.unit2 in unit_nids:
-                unit1 = game.get_unit(support_prefab.unit1)
-                unit2 = game.get_unit(support_prefab.unit2)
-                if dist == 99 or utils.calculate_distance(unit1.position, unit2.position) <= dist:
-                    action.do(action.IncrementSupportPoints(support_prefab.nid, inc))
+                _increment_end_turn_supports(support_prefab, dist, inc, pairs)
+    return pairs
 
-def increment_end_combat_supports(combatant, target=None) -> list:
+def increment_end_combat_supports(combatant, target=None) -> List[Tuple[UnitObject, UnitObject]]:
     """
     Returns a list of tuples, containing the units that gained support points together
     """
@@ -379,10 +445,12 @@ def increment_end_combat_supports(combatant, target=None) -> list:
             if not other_unit:
                 continue
             assert other_unit.position is not None
+
             if dist == 0 and target:
                 if target.position in game.target_system.get_attackable_positions(other_unit, force=True):
                     action.do(action.IncrementSupportPoints(support_prefab.nid, inc))
                     pairs.append((combatant, other_unit))
+
             elif dist == 99 or utils.calculate_distance(combatant.position, other_unit.position) <= dist:
                 action.do(action.IncrementSupportPoints(support_prefab.nid, inc))
                 pairs.append((combatant, other_unit))
