@@ -96,7 +96,8 @@ class EventScriptCompleter(QCompleter):
         # If completer is up, Tab/Enter can auto-complete
         if event.key() == self.settings.get_autocomplete_button(Qt.Key_Tab):
             if self.popup().isVisible() and len(self.popup().selectedIndexes()) > 0:
-                self.do_complete(self.popup().selectedIndexes()[0])
+                choice = self.popup().selectedIndexes()[0]
+                self.do_complete(choice)
                 return True  # should not enter a tab
         elif event.key() == Qt.Key_Backspace:
             self.popup().hide()
@@ -315,10 +316,10 @@ def get_arg_name(command_t: Type[event_commands.EventCommand], arg_text: str, ar
     return command_t.get_keyword_from_index(arg_idx)
 
 def trim_arg_match(arg_text: str) -> str:
-    return re.split('[^a-zA-Z0-9_]', arg_text)[-1]
+    return re.split('[^a-zA-Z0-9_ ]', arg_text)[-1]
 
 def trim_arg_text(arg_text: str) -> str:
-    return re.split('[^a-zA-Z0-9_"\'\{]', arg_text)[-1]
+    return re.split('[^a-zA-Z0-9_ "\'\{]', arg_text)[-1]
 
 def trim_arg_text_python(arg_text: str) -> str:
-    return re.split('[^a-zA-Z0-9_"\']', arg_text)[-1]
+    return re.split('[^a-zA-Z0-9_ "\']', arg_text)[-1]
