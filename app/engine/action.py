@@ -2786,12 +2786,15 @@ class AddTag(Action):
     def __init__(self, unit, tag):
         self.unit = unit
         self.tag = tag
+        self.did_add = False
 
     def do(self):
-        self.unit._tags.append(self.tag)
+        if self.tag not in self.unit._tags:
+            self.unit._tags.add(self.tag)
+            self.did_add = True
 
     def reverse(self):
-        if self.tag in self.unit._tags:
+        if self.did_add:
             self.unit._tags.remove(self.tag)
 
 
@@ -2808,7 +2811,7 @@ class RemoveTag(Action):
 
     def reverse(self):
         if self.did_remove:
-            self.unit._tags.append(self.tag)
+            self.unit._tags.add(self.tag)
 
 
 class AddTalk(Action):
