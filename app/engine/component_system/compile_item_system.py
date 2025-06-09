@@ -56,6 +56,7 @@ ITEM_HOOKS: Dict[str, HookInfo] = {
     'crit_avoid_formula_override':                     HookInfo(['unit', 'item'], ResolvePolicy.UNIQUE),
     'attack_speed_formula_override':                   HookInfo(['unit', 'item'], ResolvePolicy.UNIQUE),
     'defense_speed_formula_override':                  HookInfo(['unit', 'item'], ResolvePolicy.UNIQUE),
+    'extra_command':                                   HookInfo(['unit', 'item'], ResolvePolicy.UNIQUE),
     'full_price':                                      HookInfo(['unit', 'item'], ResolvePolicy.UNIQUE, has_default_value=True),
     'buy_price':                                       HookInfo(['unit', 'item'], ResolvePolicy.UNIQUE, has_default_value=True),
     'sell_price':                                      HookInfo(['unit', 'item'], ResolvePolicy.UNIQUE, has_default_value=True),
