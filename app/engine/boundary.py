@@ -5,7 +5,7 @@ from app.constants import TILEWIDTH, TILEHEIGHT
 
 from app.data.database.database import DB
 from app.engine.sprites import SPRITES
-from app.engine import engine, equations, image_mods, aura_funcs
+from app.engine import engine, equations, image_mods, aura_funcs, line_of_sight
 from app.engine.game_state import game
 
 from app.utilities import utils
@@ -231,6 +231,8 @@ class BoundaryInterface():
             # draw permanent auras
             for aura_origin, aura_radius, aura_color in self.registered_auras.values():
                 tiles_to_color = game.target_system.find_manhattan_spheres(set(range(1, aura_radius + 1)), *aura_origin)
+                if DB.constants.value('aura_los'):
+                    tiles_to_color = set(line_of_sight.line_of_sight({aura_origin}, tiles_to_color, aura_radius))
                 tiles_to_color.add(aura_origin)
                 for x, y in tiles_to_color:
                     image = self.get_color_square(aura_color)
