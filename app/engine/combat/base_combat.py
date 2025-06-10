@@ -89,11 +89,9 @@ class BaseCombat(SimpleCombat):
         if self.attacker.strike_partner:
             skill_system.end_combat(self.full_playback, self.attacker.strike_partner, self.main_item, self.defender, resolve_weapon(self.defender), 'attack')
             item_system.end_combat(self.full_playback, self.attacker.strike_partner, self.main_item, self.defender, resolve_weapon(self.defender), 'attack')
-            self.attacker.strike_partner = None
         if self.defender.strike_partner:
             skill_system.end_combat(self.full_playback, self.defender.strike_partner, self.main_item, self.defender, resolve_weapon(self.defender), 'attack')
             item_system.end_combat(self.full_playback, self.defender.strike_partner, self.main_item, self.defender, resolve_weapon(self.defender), 'attack')
-            self.attacker.strike_partner = None
         if self.attacker is not self.defender:
             skill_system.end_combat(self.full_playback, self.defender, self.def_item, self.attacker, self.main_item, 'defense')
             if self.def_item:
@@ -109,7 +107,9 @@ class BaseCombat(SimpleCombat):
             skill_system.post_combat(self.full_playback, self.defender, self.def_item, self.attacker, self.main_item, 'defense')
             if self.defender.strike_partner:
                 skill_system.post_combat(self.full_playback, self.defender.strike_partner, self.defender.strike_partner.get_weapon(), \
-                                            self.attacker, self.main_item, 'defense')
+                                         self.attacker, self.main_item, 'defense')
+        self.attacker.strike_partner = None
+        self.defender.strike_partner = None
 
         self.final_random_state = static_random.get_combat_random_state()
         action.do(action.RecordRandomState(self.initial_random_state, self.final_random_state))
