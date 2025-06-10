@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import FrozenSet, TYPE_CHECKING, List, Optional, Set, Tuple
+from typing import FrozenSet, TYPE_CHECKING, List, Literal, Optional, Set, Tuple
 from functools import lru_cache
 
 from app.data.database.database import DB
@@ -535,13 +535,14 @@ class TargetSystem():
             return None, None
         return attacker_partner, defender_partner
 
-    def strike_partner_formula(self, allies: list, attacker, defender, mode, attack_info):
-        """This is the formula for the best choice to make when autoselecting strike partners"""
+    def strike_partner_formula(self, allies: list[UnitObject], attacker: UnitObject, defender: UnitObject,
+                               mode: Literal['attack', 'defense', 'splash'], attack_info: list[int]) -> Optional[UnitObject]:
+        """This is the formula for the best choice to make when autoselecting strike partners."""
         if not allies:
             return None
-        damage = [combat_calcs.compute_assist_damage(ally, defender, ally.get_weapon(), resolve_weapon(defender), mode, attack_info) for ally in allies]
-        accuracy = [utils.clamp(combat_calcs.compute_hit(ally, defender, ally.get_weapon(), resolve_weapon(defender), mode, attack_info)/100., 0, 1) for ally in allies]
-        score = [dam * acc for dam, acc in zip(damage, accuracy)]
-        max_score = max(score)
-        max_index = score.index(max_score)
+        damage: list[int] = [(combat_calcs.compute_assist_damage(ally, defender, ally.get_weapon(), resolve_weapon(defender), mode, attack_info) or 0) for ally in allies]
+        accuracy: list[int] = [utils.clamp((combat_calcs.compute_hit(ally, defender, ally.get_weapon(), resolve_weapon(defender), mode, attack_info) or 0)/100., 0, 1) for ally in allies]
+        scores: list[int] = [dam * acc for dam, acc in zip(damage, accuracy)] 
+        max_score = max(scores)
+        max_index = scores.index(max_score)
         return allies[max_index]
