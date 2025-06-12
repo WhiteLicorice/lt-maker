@@ -315,12 +315,12 @@ class ItemHelpDialog(HelpDialog):
         help_surf = engine.copy_surface(self.help_surf)
         weapon_type = item_system.weapon_type(self.unit, self.item)
         if weapon_type:
-            icons.draw_weapon(help_surf, weapon_type, (8, 6))
-        render_text(help_surf, [self.text_font], [str(self.vals[0])], ['blue'], (50, 6), HAlignment.RIGHT)
+            icons.draw_weapon(help_surf, weapon_type, (8, 8))
+        render_text(help_surf, [self.text_font], [str(self.vals[0])], ['blue'], (50, 8), HAlignment.RIGHT)
 
-        name_positions = [(56, 6), (106, 6), (8, 22), (56, 22), (106, 22)]
+        name_positions = [(56, 8), (106, 8), (8, 24), (56, 24), (106, 24)]
         name_positions.reverse()
-        val_positions = [(100, 6), (144, 6), (50, 22), (100, 22), (144, 22)]
+        val_positions = [(100, 8), (144, 8), (50, 24), (100, 24), (144, 24)]
         val_positions.reverse()
         names = ['Rng', 'Wt', 'Mt', 'Hit', 'Crit']
         for v, n in zip(self.vals[1:], names):
