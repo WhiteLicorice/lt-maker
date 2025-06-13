@@ -23,7 +23,7 @@ from app.engine.state import State
 from app.engine.text_evaluator import TextEvaluator
 from app.utilities import utils
 from app.utilities.enums import HAlignment
-
+from app.engine.fonts import FONT
 
 class InfoMenuState(State):
     name = 'info_menu'
@@ -780,7 +780,10 @@ class InfoMenuState(State):
                 build_groove(surf, (offset + 18, 10 + y), width - 24, perc)
                 # Add text
                 pos = (offset + 7 + width//2, 4 + y)
-                render_text(surf, ['text'], [weapon_rank.nid], ['blue'], pos, HAlignment.CENTER)
+                if FONT.get('rank'):
+                    render_text(surf, ['rank'], [weapon_rank.nid], ['blue'], pos, HAlignment.CENTER)
+                else:
+                    render_text(surf, ['text'], [weapon_rank.nid], ['blue'], pos, HAlignment.CENTER)
                 self.info_graph.register((96 + pos[0] - width//2 - 8, 24 + pos[1], width, 16), "%s mastery level: %d" % (DB.weapons.get(weapon).name, value), 'support_skills', first=(counter==0))
                 counter += 1
                 if counter >= len(wexp_to_draw):
