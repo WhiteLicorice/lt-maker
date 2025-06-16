@@ -18,7 +18,7 @@
             "show_layer;Village3",
             "change_background",
             "transition;Open",
-            "give_item;{unit};Pure Water",
+            "give_item;{unit};Pure_Water",
             "has_traded;{unit}"
         ],
         "nid": "2 Village3"

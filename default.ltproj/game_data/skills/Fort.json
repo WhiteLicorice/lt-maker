@@ -18,10 +18,6 @@
                 20
             ],
             [
-                "hidden",
-                null
-            ],
-            [
                 "stat_change",
                 [
                     [
@@ -29,6 +25,10 @@
                         3
                     ]
                 ]
+            ],
+            [
+                "hidden",
+                null
             ]
         ]
     }

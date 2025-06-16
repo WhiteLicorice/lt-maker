@@ -2,8 +2,8 @@
     {
         "nid": "Eirika",
         "name": "Eirika",
-        "desc": "The princess of the Kingdom of\nRenais. She's elegant and kind.",
-        "variant": null,
+        "desc": "The princess of the Kingdom of Renais. She's elegant and kind.",
+        "variant": "",
         "level": 1,
         "klass": "Eirika_Lord",
         "tags": [

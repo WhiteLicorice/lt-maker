@@ -71,6 +71,10 @@
             [
                 "max_range",
                 2
+            ],
+            [
+                "battle_cast_anim",
+                "Nosferatu"
             ]
         ]
     }

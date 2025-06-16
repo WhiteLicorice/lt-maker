@@ -1,0 +1,22 @@
+[
+    {
+        "nid": "Lethality_Proc",
+        "name": "Lethality",
+        "desc": "Proc rate: SKL/4%\nInstantly kills foe.",
+        "icon_nid": "Skills",
+        "icon_index": [
+            7,
+            0
+        ],
+        "components": [
+            [
+                "damage",
+                999
+            ],
+            [
+                "alternate_battle_anim",
+                "Critical"
+            ]
+        ]
+    }
+]

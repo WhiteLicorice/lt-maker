@@ -33,9 +33,12 @@
     "Monk",
     "Cleric",
     "Bishop",
+    "Pupil",
     "Mage",
     "Sage",
     "Shaman",
+    "Druid",
+    "Summoner",
     "Mage_Knight",
     "Troubadour",
     "Valkyrie",
@@ -51,7 +54,8 @@
     "Bow_Wight",
     "Mogall",
     "Arch_Mogall",
+    "Manakete",
     "Wall25",
     "Snag20",
-    "Manakete"
+    "Phantom"
 ]

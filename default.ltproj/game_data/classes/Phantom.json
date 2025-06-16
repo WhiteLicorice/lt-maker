@@ -1,0 +1,104 @@
+[
+    {
+        "nid": "Phantom",
+        "name": "Phantom",
+        "desc": "",
+        "tier": 1,
+        "movement_group": "Regular",
+        "promotes_from": null,
+        "turns_into": [],
+        "tags": [],
+        "max_level": 20,
+        "bases": {
+            "HP": 1,
+            "STR": 5,
+            "MAG": 0,
+            "SKL": 2,
+            "SPD": 4,
+            "LCK": 0,
+            "DEF": 0,
+            "RES": 0,
+            "CON": 11,
+            "MOV": 5
+        },
+        "growths": {
+            "STR": 55,
+            "MAG": 0,
+            "SKL": 35,
+            "SPD": 45,
+            "LCK": 50,
+            "DEF": 15,
+            "RES": 15
+        },
+        "growth_bonus": {},
+        "promotion": {},
+        "max_stats": {
+            "HP": 60,
+            "STR": 20,
+            "MAG": 0,
+            "SKL": 20,
+            "SPD": 20,
+            "LCK": 30,
+            "DEF": 0,
+            "RES": 0,
+            "CON": 20,
+            "MOV": 15
+        },
+        "learned_skills": [],
+        "wexp_gain": {
+            "Sword": [
+                false,
+                0,
+                null
+            ],
+            "Lance": [
+                false,
+                0,
+                null
+            ],
+            "Axe": [
+                true,
+                71,
+                null
+            ],
+            "Bow": [
+                false,
+                0,
+                null
+            ],
+            "Staff": [
+                false,
+                0,
+                null
+            ],
+            "Light": [
+                false,
+                0,
+                null
+            ],
+            "Anima": [
+                false,
+                0,
+                null
+            ],
+            "Dark": [
+                false,
+                0,
+                null
+            ],
+            "Default": [
+                false,
+                0,
+                null
+            ]
+        },
+        "icon_nid": "Phantom (U) Axe {IS}",
+        "icon_index": [
+            0,
+            0
+        ],
+        "map_sprite_nid": "Phantom",
+        "combat_anim_nid": null,
+        "fields": []
+    }
+]

@@ -2,7 +2,7 @@
     {
         "nid": "Arch_Mogall",
         "name": "Arch Mogall",
-        "desc": "A summoned phantom.",
+        "desc": "Mogall whose dread power exceeds that of their lesser cousins.",
         "tier": 2,
         "movement_group": "Fliers",
         "promotes_from": "Mogall",

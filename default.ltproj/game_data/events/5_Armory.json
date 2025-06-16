@@ -9,7 +9,7 @@
         "priority": 20,
         "_source": [
             "transition;Close",
-            "shop;{unit};Iron Sword,Slim Sword,Steel Sword,Iron Lance,Slim Lance,Steel Lance,Iron Axe,Steel Axe,Iron Bow,Steel Bow",
+            "shop;{unit};Iron_Sword,Slim_Sword,Steel_Sword,Iron_Lance,Slim_Lance,Steel_Lance,Iron_Axe,Steel_Axe,Iron_Bow,Steel_Bow",
             "transition;Open"
         ],
         "nid": "5 Armory"

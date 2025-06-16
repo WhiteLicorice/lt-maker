@@ -75,6 +75,10 @@
                     "show_effectiveness_flash": true,
                     "weapon_effectiveness_multiplied": true
                 }
+            ],
+            [
+                "battle_cast_anim",
+                "Gustblade"
             ]
         ]
     }

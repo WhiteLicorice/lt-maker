@@ -1,0 +1,116 @@
+[
+    {
+        "nid": "Druid",
+        "name": "Druid",
+        "desc": "Wielders of deep and ancient magic.",
+        "tier": 2,
+        "movement_group": "Mages",
+        "promotes_from": "Shaman",
+        "turns_into": [],
+        "tags": [],
+        "max_level": 20,
+        "bases": {
+            "HP": 19,
+            "STR": 0,
+            "MAG": 6,
+            "SKL": 3,
+            "SPD": 4,
+            "LCK": 0,
+            "DEF": 4,
+            "RES": 6,
+            "CON": 8,
+            "MOV": 6
+        },
+        "growths": {
+            "HP": 45,
+            "STR": 0,
+            "MAG": 55,
+            "SKL": 30,
+            "SPD": 25,
+            "LCK": 20,
+            "DEF": 10,
+            "RES": 35
+        },
+        "growth_bonus": {},
+        "promotion": {
+            "HP": 4,
+            "STR": 0,
+            "MAG": 0,
+            "SKL": 0,
+            "SPD": 3,
+            "LCK": 0,
+            "DEF": 2,
+            "RES": 2,
+            "CON": 1,
+            "MOV": 1
+        },
+        "max_stats": {
+            "HP": 60,
+            "STR": 20,
+            "MAG": 29,
+            "SKL": 26,
+            "SPD": 26,
+            "LCK": 30,
+            "DEF": 21,
+            "RES": 28,
+            "CON": 20,
+            "MOV": 15
+        },
+        "learned_skills": [],
+        "wexp_gain": {
+            "Sword": [
+                false,
+                0,
+                null
+            ],
+            "Lance": [
+                false,
+                0,
+                null
+            ],
+            "Axe": [
+                false,
+                0,
+                null
+            ],
+            "Bow": [
+                false,
+                0,
+                null
+            ],
+            "Staff": [
+                true,
+                1,
+                null
+            ],
+            "Light": [
+                false,
+                0,
+                null
+            ],
+            "Anima": [
+                true,
+                31,
+                null
+            ],
+            "Dark": [
+                true,
+                71,
+                null
+            ],
+            "Default": [
+                false,
+                0,
+                null
+            ]
+        },
+        "icon_nid": "Druid (M) Magic {IS}",
+        "icon_index": [
+            0,
+            0
+        ],
+        "map_sprite_nid": "Druid",
+        "combat_anim_nid": "Druid",
+        "fields": []
+    }
+]

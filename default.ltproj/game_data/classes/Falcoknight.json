@@ -78,16 +78,7 @@
             "LEAD": 60,
             "New Stat": 30
         },
-        "learned_skills": [
-            [
-                1,
-                "Flying"
-            ],
-            [
-                1,
-                "Canto"
-            ]
-        ],
+        "learned_skills": [],
         "wexp_gain": {
             "Sword": [
                 true,
@@ -141,7 +132,7 @@
             0
         ],
         "map_sprite_nid": "Falcoknight",
-        "combat_anim_nid": null,
+        "combat_anim_nid": "Falcoknight",
         "fields": []
     }
 ]

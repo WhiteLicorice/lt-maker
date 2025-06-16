@@ -1,0 +1,24 @@
+[
+    {
+        "nid": "NegateFlyEff",
+        "name": "NegateFlyEff",
+        "desc": "Negates effective damage against flying units.",
+        "icon_nid": "Skills",
+        "icon_index": [
+            10,
+            3
+        ],
+        "components": [
+            [
+                "hidden",
+                null
+            ],
+            [
+                "negate_tags",
+                [
+                    "Flying"
+                ]
+            ]
+        ]
+    }
+]

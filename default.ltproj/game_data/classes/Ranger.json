@@ -2,7 +2,7 @@
     {
         "nid": "Ranger",
         "name": "Ranger",
-        "desc": "Devotees of the bow. Possess incredible range.",
+        "desc": "Fighters skilled in both sword and bow.",
         "tier": 2,
         "movement_group": "Light Cav",
         "promotes_from": "Archer",
@@ -137,7 +137,7 @@
             0
         ],
         "map_sprite_nid": "Ranger",
-        "combat_anim_nid": null,
+        "combat_anim_nid": "Ranger",
         "fields": []
     }
 ]

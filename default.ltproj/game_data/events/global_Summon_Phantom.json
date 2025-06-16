@@ -13,9 +13,9 @@
             "    remove_unit;Phantom;warp",
             "    autolevel_to;Phantom;{e:unit.level}",
             "else",
-            "    make_generic;Phantom;Fighter;{e:unit.level};player;;Monster;;Iron Axe",
+            "    make_generic;Phantom;Phantom;{e:unit.level};player;;Monster;;Iron_Axe",
             "end",
-            "add_unit;phantom;{eval:target_pos};warp",
+            "add_unit;Phantom;{eval:target_pos};warp",
             "wait;200",
             ""
         ],

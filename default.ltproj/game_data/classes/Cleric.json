@@ -7,7 +7,9 @@
         "movement_group": "Mages",
         "promotes_from": null,
         "turns_into": [
-            "Bishop"
+            "Bishop",
+            "Sage",
+            "Valkyrie"
         ],
         "tags": [],
         "max_level": 20,

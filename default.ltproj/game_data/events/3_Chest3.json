@@ -10,7 +10,7 @@
         "_source": [
             "unlock;{unit}",
             "show_layer;Chest3",
-            "give_item;{unit};Hand Axe"
+            "give_item;{unit};Hand_Axe"
         ],
         "nid": "3 Chest3"
     }

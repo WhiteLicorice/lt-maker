@@ -1,0 +1,22 @@
+[
+    {
+        "nid": "Summon",
+        "name": "Summon",
+        "desc": "Summon a phantom.",
+        "icon_nid": "Skills",
+        "icon_index": [
+            9,
+            0
+        ],
+        "components": [
+            [
+                "class_skill",
+                null
+            ],
+            [
+                "ability",
+                "Summon"
+            ]
+        ]
+    }
+]

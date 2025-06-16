@@ -3,7 +3,7 @@
         "nid": "Artur",
         "name": "Artur",
         "desc": "A young monk from Renais. He is a very forthright and pious man.",
-        "variant": null,
+        "variant": "",
         "level": 2,
         "klass": "Monk",
         "tags": [],

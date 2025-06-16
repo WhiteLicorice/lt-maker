@@ -89,7 +89,7 @@
     },
     {
         "nid": "HEAL",
-        "expression": "MAG"
+        "expression": "MAG + 10"
     },
     {
         "nid": "CONSTITUTION",
@@ -106,5 +106,17 @@
     {
         "nid": "ZERO",
         "expression": "0"
+    },
+    {
+        "nid": "SKILL_PROC",
+        "expression": "SKL//4"
+    },
+    {
+        "nid": "DEVIL_AXE",
+        "expression": "29 -  LCK"
+    },
+    {
+        "nid": "MEND",
+        "expression": "MAG + 20"
     }
 ]

@@ -10,12 +10,12 @@
         ],
         "components": [
             [
-                "hidden",
-                null
-            ],
-            [
                 "avoid",
                 5
+            ],
+            [
+                "is_terrain",
+                null
             ]
         ]
     }

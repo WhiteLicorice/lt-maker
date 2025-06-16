@@ -17,7 +17,8 @@
             "speak;Garcia;Ross...|All right, listen to me. We'll cut our way out of here together!",
             "remove_portrait;Ross;no_block",
             "remove_portrait;Garcia",
-            "change_team;Garcia;player"
+            "change_team;Garcia;player",
+            "remove_talk;Ross;Garcia"
         ],
         "nid": "2 RossGarciaTalk"
     }
