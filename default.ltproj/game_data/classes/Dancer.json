@@ -2,7 +2,7 @@
     {
         "nid": "Dancer",
         "name": "Dancer",
-        "desc": "??",
+        "desc": "Dancers whose dances revitalize their allies.",
         "tier": 1,
         "movement_group": "Light Foot",
         "promotes_from": null,
@@ -78,7 +78,7 @@
         "learned_skills": [
             [
                 1,
-                "Canto"
+                "Refresh"
             ]
         ],
         "wexp_gain": {
@@ -134,7 +134,7 @@
             0
         ],
         "map_sprite_nid": "Dancer",
-        "combat_anim_nid": null,
+        "combat_anim_nid": "Dancer",
         "fields": []
     }
 ]

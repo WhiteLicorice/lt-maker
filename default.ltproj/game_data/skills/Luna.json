@@ -1,0 +1,26 @@
+[
+    {
+        "nid": "Luna",
+        "name": "Luna",
+        "desc": "Proc Rate: SKL/4%\nIgnores enemy defense and resistance.",
+        "icon_nid": "Skills",
+        "icon_index": [
+            4,
+            3
+        ],
+        "components": [
+            [
+                "class_skill",
+                null
+            ],
+            [
+                "attack_proc",
+                "Luna_Proc"
+            ],
+            [
+                "proc_rate",
+                "SKILL_PROC"
+            ]
+        ]
+    }
+]

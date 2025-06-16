@@ -2,10 +2,10 @@
     {
         "nid": "Valter",
         "name": "Valter",
-        "desc": "",
+        "desc": "A general in Grado's army. This cruel man is also known as Moonstone.",
         "variant": null,
         "level": 131,
-        "klass": "Wyvern Knight",
+        "klass": "Wyvern_Knight",
         "tags": [],
         "bases": {
             "HP": 48,

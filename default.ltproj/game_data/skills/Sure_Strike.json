@@ -1,0 +1,26 @@
+[
+    {
+        "nid": "Sure_Strike",
+        "name": "Sure Strike",
+        "desc": "Proc rate: SKL/4%\nEnsures the user's attack will hit the foe.",
+        "icon_nid": "Skills",
+        "icon_index": [
+            2,
+            5
+        ],
+        "components": [
+            [
+                "class_skill",
+                null
+            ],
+            [
+                "attack_proc",
+                "Sure_Strike_Proc"
+            ],
+            [
+                "proc_rate",
+                "SKILL_PROC"
+            ]
+        ]
+    }
+]

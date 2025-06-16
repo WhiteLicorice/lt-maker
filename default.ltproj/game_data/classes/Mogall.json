@@ -80,12 +80,7 @@
             "LEAD": 60,
             "New Stat": 30
         },
-        "learned_skills": [
-            [
-                1,
-                "Flying"
-            ]
-        ],
+        "learned_skills": [],
         "wexp_gain": {
             "Sword": [
                 false,

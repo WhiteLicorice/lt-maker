@@ -43,6 +43,18 @@
             [
                 "status_on_hit",
                 "ResistPlus"
+            ],
+            [
+                "no_map_hp_display",
+                null
+            ],
+            [
+                "map_cast_anim",
+                "MapSpiritbane"
+            ],
+            [
+                "map_cast_pose",
+                null
             ]
         ]
     }

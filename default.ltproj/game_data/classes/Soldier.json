@@ -2,7 +2,7 @@
     {
         "nid": "Soldier",
         "name": "Soldier",
-        "desc": "Average soldiers possessing\nno special abilities.",
+        "desc": "Average soldiers possessing no special abilities.",
         "tier": 1,
         "movement_group": "Light Foot",
         "promotes_from": null,

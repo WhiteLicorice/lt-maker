@@ -30,7 +30,8 @@
             "speak;Joshua;I got nothing against heaven, but I'm right here if you want someone to thank...|No? Well, get behind me then. I've got to take care of these fools.",
             "remove_portrait;Natasha;no_block",
             "remove_portrait;Joshua",
-            "change_team;Joshua;player"
+            "change_team;Joshua;player",
+            "remove_talk;Natasha;Joshua"
         ],
         "nid": "5 NatashaJoshuaTalk"
     }

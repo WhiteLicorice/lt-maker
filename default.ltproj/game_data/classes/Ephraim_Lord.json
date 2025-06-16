@@ -2,7 +2,7 @@
     {
         "nid": "Ephraim_Lord",
         "name": "Lord",
-        "desc": "??",
+        "desc": "The prince of Renais. A spear fighter on an important mission.",
         "tier": 1,
         "movement_group": "Light Foot",
         "promotes_from": null,
@@ -131,7 +131,7 @@
             0
         ],
         "map_sprite_nid": "Ephraim_Lord",
-        "combat_anim_nid": null,
+        "combat_anim_nid": "Ephraim_Lord",
         "fields": []
     }
 ]

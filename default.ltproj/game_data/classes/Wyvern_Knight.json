@@ -1,11 +1,11 @@
 [
     {
-        "nid": "Wyvern Knight",
+        "nid": "Wyvern_Knight",
         "name": "Wyvern Knight",
-        "desc": "",
+        "desc": "Wyvern riders who can pierce enemy defenses.",
         "tier": 2,
         "movement_group": "Fliers",
-        "promotes_from": "Wyvern Rider",
+        "promotes_from": "Wyvern_Rider",
         "turns_into": [],
         "tags": [
             "Mounted",
@@ -82,7 +82,7 @@
         "learned_skills": [
             [
                 1,
-                "Flying"
+                "Luna"
             ],
             [
                 1,
@@ -136,13 +136,13 @@
                 251
             ]
         },
-        "icon_nid": "Generic_Portrait_Wyvern_Rider",
+        "icon_nid": "Wyvern Knight (U) Lance {IS}",
         "icon_index": [
             0,
             0
         ],
         "map_sprite_nid": "WyvernKnight",
-        "combat_anim_nid": null,
+        "combat_anim_nid": "Wyvern_Knight",
         "fields": []
     }
 ]

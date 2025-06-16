@@ -2,9 +2,9 @@
     {
         "nid": "Necromancer",
         "name": "Necromancer",
-        "desc": "??",
+        "desc": "Master of the Dark Stone who uses dark magic to command corpses.",
         "tier": 2,
-        "movement_group": "Light Foot",
+        "movement_group": "Mages",
         "promotes_from": "Shaman",
         "turns_into": [],
         "tags": [],
@@ -129,7 +129,7 @@
             0
         ],
         "map_sprite_nid": "Necromancer",
-        "combat_anim_nid": null,
+        "combat_anim_nid": "Necromancer",
         "fields": []
     }
 ]

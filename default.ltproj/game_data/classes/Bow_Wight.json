@@ -2,7 +2,7 @@
     {
         "nid": "Bow_Wight",
         "name": "Wight",
-        "desc": "A summoned phantom.",
+        "desc": "Skeletons driven by terrible magic.",
         "tier": 2,
         "movement_group": "Light Foot",
         "promotes_from": "Bow_Bonewalker",
@@ -131,7 +131,7 @@
             0
         ],
         "map_sprite_nid": "Bow_Wight",
-        "combat_anim_nid": null,
+        "combat_anim_nid": "Wight",
         "fields": []
     }
 ]

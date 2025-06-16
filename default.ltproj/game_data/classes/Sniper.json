@@ -75,7 +75,12 @@
             "LEAD": 60,
             "New Stat": 30
         },
-        "learned_skills": [],
+        "learned_skills": [
+            [
+                1,
+                "Sure_Strike"
+            ]
+        ],
         "wexp_gain": {
             "Sword": [
                 false,

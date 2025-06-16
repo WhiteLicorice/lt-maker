@@ -2,7 +2,7 @@
     {
         "nid": "Bow_Bonewalker",
         "name": "Bonewalker",
-        "desc": "A summoned phantom.",
+        "desc": "Dead warriors given will by dark magic.",
         "tier": 1,
         "movement_group": "Light Foot",
         "promotes_from": null,
@@ -133,7 +133,7 @@
             0
         ],
         "map_sprite_nid": "Bow_Bonewalker",
-        "combat_anim_nid": null,
+        "combat_anim_nid": "Bonewalker",
         "fields": []
     }
 ]

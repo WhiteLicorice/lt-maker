@@ -18,7 +18,7 @@
             "show_layer;Village1",
             "change_background",
             "transition;Open",
-            "give_item;{unit};Iron Axe",
+            "give_item;{unit};Iron_Axe",
             "has_traded;{unit}"
         ],
         "nid": "4 Village1"

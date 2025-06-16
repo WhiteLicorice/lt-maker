@@ -1,14 +1,14 @@
 [
     {
-        "nid": "Wyvern Rider",
+        "nid": "Wyvern_Rider",
         "name": "Wyvern Rider",
-        "desc": "",
+        "desc": "High-flying knights only vulnerable to bows and magic.",
         "tier": 1,
         "movement_group": "Fliers",
         "promotes_from": null,
         "turns_into": [
-            "Wyvern Lord",
-            "Wyvern Knight"
+            "Wyvern_Lord",
+            "Wyvern_Knight"
         ],
         "tags": [
             "Mounted",
@@ -85,10 +85,6 @@
         "learned_skills": [
             [
                 1,
-                "Flying"
-            ],
-            [
-                1,
                 "Canto"
             ]
         ],
@@ -145,7 +141,7 @@
             0
         ],
         "map_sprite_nid": "WyvernRider",
-        "combat_anim_nid": "Wyvern Knight",
+        "combat_anim_nid": "Wyvern_Rider",
         "fields": []
     }
 ]

@@ -3,7 +3,7 @@
         "nid": "O'Neill",
         "name": "O'Neill",
         "desc": "A troop leader in Grado's army.",
-        "variant": null,
+        "variant": "",
         "level": 4,
         "klass": "Fighter",
         "tags": [

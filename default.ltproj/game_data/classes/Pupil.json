@@ -1,0 +1,110 @@
+[
+    {
+        "nid": "Pupil",
+        "name": "Pupil",
+        "desc": "Mages in training with lofty aspirations.",
+        "tier": 0,
+        "movement_group": "Mages",
+        "promotes_from": null,
+        "turns_into": [
+            "Mage",
+            "Shaman"
+        ],
+        "tags": [
+            "AutoPromote"
+        ],
+        "max_level": 10,
+        "bases": {
+            "HP": 13,
+            "STR": 0,
+            "MAG": 1,
+            "SKL": 0,
+            "SPD": 1,
+            "LCK": 0,
+            "DEF": 0,
+            "RES": 3,
+            "CON": 5,
+            "MOV": 4
+        },
+        "growths": {
+            "HP": 55,
+            "STR": 0,
+            "MAG": 55,
+            "SKL": 40,
+            "SPD": 35,
+            "LCK": 40,
+            "DEF": 10,
+            "RES": 30
+        },
+        "growth_bonus": {},
+        "promotion": {},
+        "max_stats": {
+            "HP": 60,
+            "STR": 0,
+            "MAG": 20,
+            "SKL": 20,
+            "SPD": 20,
+            "LCK": 30,
+            "DEF": 20,
+            "RES": 20,
+            "CON": 20,
+            "MOV": 15
+        },
+        "learned_skills": [],
+        "wexp_gain": {
+            "Sword": [
+                false,
+                0,
+                null
+            ],
+            "Lance": [
+                false,
+                0,
+                null
+            ],
+            "Axe": [
+                false,
+                0,
+                null
+            ],
+            "Bow": [
+                false,
+                0,
+                null
+            ],
+            "Staff": [
+                false,
+                0,
+                null
+            ],
+            "Light": [
+                false,
+                0,
+                null
+            ],
+            "Anima": [
+                true,
+                1,
+                null
+            ],
+            "Dark": [
+                false,
+                0,
+                null
+            ],
+            "Default": [
+                false,
+                0,
+                null
+            ]
+        },
+        "icon_nid": "Generic_Portrait_Citizen",
+        "icon_index": [
+            0,
+            0
+        ],
+        "map_sprite_nid": "Pupil",
+        "combat_anim_nid": null,
+        "fields": []
+    }
+]

@@ -10,7 +10,7 @@
         "_source": [
             "unlock;{unit}",
             "show_layer;Chest4",
-            "give_item;{unit};Iron Sword"
+            "give_item;{unit};Iron_Sword"
         ],
         "nid": "3 Chest4"
     }

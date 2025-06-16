@@ -2,7 +2,7 @@
     {
         "nid": "Swordmaster",
         "name": "Swordmaster",
-        "desc": "Swordfighters with superior speed and skill.",
+        "desc": "Lightning-fast swordsmen of peerless and lethal skill.",
         "tier": 2,
         "movement_group": "Light Foot",
         "promotes_from": "Myrmidon",

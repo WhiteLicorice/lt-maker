@@ -32,6 +32,10 @@
             [
                 "gba_steal",
                 null
+            ],
+            [
+                "no_map_hp_display",
+                null
             ]
         ]
     }

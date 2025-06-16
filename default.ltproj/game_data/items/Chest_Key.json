@@ -27,6 +27,10 @@
             [
                 "can_unlock",
                 "region.nid.startswith('Chest')"
+            ],
+            [
+                "no_map_hp_display",
+                null
             ]
         ]
     }

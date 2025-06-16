@@ -14,8 +14,12 @@
                 null
             ],
             [
-                "lifelink",
-                -1.0
+                "attack_proc",
+                "Devil_Luck_Proc"
+            ],
+            [
+                "proc_rate",
+                "DEVIL_AXE"
             ]
         ]
     }

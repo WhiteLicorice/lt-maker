@@ -2,12 +2,13 @@
     {
         "nid": "Monk",
         "name": "Monk",
-        "desc": "Kind-hearted healers.",
+        "desc": "Users of light magic with high resistance.",
         "tier": 1,
         "movement_group": "Mages",
         "promotes_from": null,
         "turns_into": [
-            "Bishop"
+            "Bishop",
+            "Sage"
         ],
         "tags": [],
         "max_level": 20,
@@ -131,7 +132,7 @@
             0
         ],
         "map_sprite_nid": "Monk",
-        "combat_anim_nid": "Tactician",
+        "combat_anim_nid": "Monk",
         "fields": []
     }
 ]

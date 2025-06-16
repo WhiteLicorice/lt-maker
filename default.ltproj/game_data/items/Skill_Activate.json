@@ -1,0 +1,18 @@
+[
+    {
+        "nid": "Skill_Activate",
+        "name": "Skill Activate",
+        "desc": "(Item override to add the skill activation animation.)",
+        "icon_nid": "Skills",
+        "icon_index": [
+            2,
+            0
+        ],
+        "components": [
+            [
+                "pre_combat_effect",
+                "Luna_proc"
+            ]
+        ]
+    }
+]

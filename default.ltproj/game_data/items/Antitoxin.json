@@ -43,6 +43,14 @@
             [
                 "restore_specific",
                 "Poisoned"
+            ],
+            [
+                "no_map_hp_display",
+                null
+            ],
+            [
+                "map_cast_pose",
+                null
             ]
         ]
     }

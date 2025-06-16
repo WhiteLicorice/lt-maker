@@ -1,0 +1,22 @@
+[
+    {
+        "nid": "Sure_Strike_Proc",
+        "name": "Sure Strike",
+        "desc": "Ensures the user's attack will hit the foe.",
+        "icon_nid": "Skills",
+        "icon_index": [
+            2,
+            5
+        ],
+        "components": [
+            [
+                "hit",
+                1000
+            ],
+            [
+                "item_override",
+                "Skill_Activate"
+            ]
+        ]
+    }
+]
