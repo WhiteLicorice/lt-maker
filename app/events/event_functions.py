@@ -3841,10 +3841,79 @@ def party_transfer(self: Event, party1, party2, fixed_units = None, party1_name 
     self.game.state.change('party_transfer')
     self.state = 'paused'
 
-def dump_vars(self: Event, flags=None):
+def dump_vars(self: Event, flags:set[str]=None) -> None:
+    def is_json_serializable(obj: Any) -> bool:
+        """
+            Return True if obj can be serialized by json.dumps, False otherwise.
+            Narrowly catches errors associated with serialization failure, rather than all broad errors.
+        """
+        try:
+            json.dumps(obj)
+            return True
+        except (TypeError, OverflowError):
+            return False
+        
+    def sanitize_vars(data: Any, path: str = "") -> Any:
+        """
+        Recursively sanitize data so that the result is JSON-serializable.
+        - dict: returns a new dict with same keys, sanitized values
+        - list: returns list of sanitized elements
+        - tuple: returns tuple of sanitized elements
+        - set: returns list of sanitized elements
+        - other: if JSON-serializable, return as-is; else log and return None.
+        - path: a dotted path for logging context.
+        """
+        # Primitive JSON types pass through quickly
+        # But we still check to ensure e.g. custom objects (if any, ugh) are caught.
+        if isinstance(data, dict):
+            new_dict: dict[str, Any] = {}
+            for key, val in data.items():
+                sub_path = f"{path}.{key}" if path else key
+                sanitized_val = sanitize_vars(val, sub_path)
+                new_dict[key] = sanitized_val
+            return new_dict
+
+        elif isinstance(data, list):
+            new_list: list[Any] = []
+            for idx, val in enumerate(data):
+                sub_path = f"{path}[{idx}]"
+                sanitized_list_val = sanitize_vars(val, sub_path)
+                new_list.append(sanitized_list_val)
+            return new_list
+
+        elif isinstance(data, tuple):
+            new_tuple = tuple(sanitize_vars(val, f"{path}[{idx}]") for idx, val in enumerate(data))
+            return new_tuple
+
+        elif isinstance(data, set):
+            # Convert to list for JSON, safely, then sanitize elements
+            new_list: list[Any] = []
+            for idx, val in enumerate(data):
+                sub_path = f"{path}{{{idx}}}"
+                sanitized_val = sanitize_vars(val, sub_path)
+                new_list.append(sanitized_val)
+            return new_list
+
+        else:
+            # Fallback in case we missed something when validating input for game_vars & level_vars
+            # Normally shouldn't happen, but is good to have...
+            if is_json_serializable(data):
+                return data
+            else:
+                self.logger.error(f"dump_vars: {path or '<root>'} value {data!r} is not JSON-serializable; replacing with None... Perhaps try casting into a serializable type?")
+                return None
+           
     try:
         app_data_fman = file_manager_utils.get_app_data_fman()
-        all_vars = {'level_vars': self.game.level_vars, 'game_vars': self.game.game_vars}
+        
+        from copy import deepcopy
+        local_level_vars = deepcopy(self.game.level_vars)
+        local_game_vars = deepcopy(self.game.game_vars)
+
+        clean_level_vars = sanitize_vars(local_level_vars, path="level_vars")
+        clean_game_vars  = sanitize_vars(local_game_vars, path="game_vars")
+        
+        all_vars = {'level_vars': clean_level_vars, 'game_vars': clean_game_vars}
         app_data_fman.save('_vars.json', json.dumps(all_vars), True)
         file_utils.startfile(app_data_fman.get_path('_vars.json'))
     except:
