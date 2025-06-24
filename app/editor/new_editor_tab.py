@@ -4,12 +4,13 @@ import json
 import logging
 from typing import Generic, List, Optional, Type, TypeVar
 
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QIcon, QBrush
 from PyQt5.QtWidgets import (QGridLayout, QHBoxLayout,
                              QMessageBox, QPushButton, QSplitter, QVBoxLayout,
                              QWidget, QApplication)
 
 from app.data.database.database import DB, Database
+from app.data.resources.resources import RESOURCES, Resources
 from app.data.category import Categories, CategorizedCatalog
 from app.editor import timer
 from app.editor.data_editor import SingleDatabaseEditor
@@ -25,23 +26,26 @@ class NewEditorTab(QWidget, Generic[T]):
     """
     # Make sure you define these
     catalog_type: Type[T] = None
-    properties_type = None 
+    properties_type = None
+    allow_rename = False
     allow_import_from_xml = False
     allow_import_from_csv = False
     allow_copy_and_paste = False
 
-    def __init__(self, parent, database: Database) -> None:
+    def __init__(self, parent, database: Database, resources: Resources) -> None:
         QWidget.__init__(self, parent)
         self.setWindowTitle(_('%s Editor') % self.properties_type.title)
         self._db = database
+        self._res = resources
         self.categories = self.data.categories
 
         self.left_frame = QWidget()
         left_frame_layout = QVBoxLayout()
         self.left_frame.setLayout(left_frame_layout)
-        self.tree_list = LTNestedList(self, self.data.keys(), self.categories, self.get_icon,
-                                      self.on_select, self.resort_db, self.delete_from_db, self.create_new,
-                                      self.duplicate)
+        self.tree_list = LTNestedList(self, self.data.keys(), self.categories, self.allow_rename,
+                                      self.get_icon, self.get_foreground,
+                                      self.on_select, self.resort_db, self.on_begin_rename,
+                                      self.delete_from_db, self.create_new, self.duplicate, self.rename)
         left_frame_layout.setContentsMargins(0, 0, 0, 0)
         left_frame_layout.setSpacing(0)
         left_frame_layout.addWidget(self.tree_list)
@@ -119,6 +123,10 @@ class NewEditorTab(QWidget, Generic[T]):
         self.data.categories = categories
         self.data.sort(lambda x: entries.index(x.nid) if x.nid in entries else -1)
 
+    def on_begin_rename(self, entry_nid: NID, on_begin: bool = True):
+        self.right_frame.setEnabled(not on_begin)
+        return
+
     def delete_from_db(self, nid):
         if len(self.data) == 1:
             return False
@@ -146,6 +154,20 @@ class NewEditorTab(QWidget, Generic[T]):
         orig_obj = self.catalog_type.datatype.restore(orig_obj.save())
         orig_obj.nid = nid
         self.data.append(orig_obj)
+        return True
+
+    def rename(self, old_nid, new_nid):
+        if self.data.get(new_nid):
+            QMessageBox.warning(self, 'Warning', 'ID %s already in use' % new_nid)
+            return False
+        orig_obj = self.data.get(old_nid)
+        if not orig_obj:
+            QMessageBox.warning(self, 'Warning', 'ID %s not found' % old_nid)
+            return False
+        self._on_nid_changed(old_nid, new_nid)
+        self.data.change_key(old_nid, new_nid)
+        self.tree_list.on_filter_changed(self.tree_list.search_box.text())
+        self.tree_list.select_item(new_nid)
         return True
 
     def copy_to_clipboard(self):
@@ -176,9 +198,10 @@ class NewEditorTab(QWidget, Generic[T]):
             QMessageBox.critical(self, "Import Error", "Could not read valid json from clipboard!")
 
     @classmethod
-    def create(cls, parent=None, db=None):
+    def create(cls, parent=None, db=None, res=None):
         db = db or DB
-        return cls(parent, db)
+        res = res or RESOURCES
+        return cls(parent, db, res)
 
     @property
     def data(self):
@@ -186,6 +209,9 @@ class NewEditorTab(QWidget, Generic[T]):
 
     def get_icon(self, unit_nid: NID) -> Optional[QIcon]:
         raise NotImplementedError
+
+    def get_foreground(self, unit_nid: NID) -> Optional[QBrush]:
+        return None
 
     def import_xml(self):
         raise NotImplementedError

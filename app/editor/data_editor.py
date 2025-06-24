@@ -335,3 +335,16 @@ class MultiResourceEditor(SingleResourceEditor):
         for tab in self.tabs:
             tab.closeEvent(event)
         super().closeEvent(event)
+
+class NewMultiResourceEditor(MultiResourceEditor):
+    def on_tab_changed(self, idx):
+        # Make each tab individually resizable
+        for i in range(self.tab_bar.count()):
+            if i == idx:
+                self.tab_bar.widget(i).setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+            else:
+                self.tab_bar.widget(i).setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
+
+        new_tab = self.tab_bar.currentWidget()
+        self.current_tab = new_tab
+        self.current_tab.reset()
