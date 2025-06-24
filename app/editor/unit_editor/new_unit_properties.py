@@ -2,7 +2,7 @@ from app.editor.lib.components.database_delegate import UnitFieldDelegate
 from app.extensions.key_value_delegate import KeyValueDelegate, KeyValueDoubleListModel
 from app.data.database.database import DB
 from app.editor.custom_widgets import AffinityBox, ClassBox
-from app.editor.component_editor_properties import T
+from app.editor.component_editor_types import T
 from app.editor.icons import UnitPortrait
 from app.editor.item_list_widget import ItemListWidget
 from app.editor.learned_skill_delegate import LearnedSkillDelegate

@@ -14,6 +14,7 @@ from app import dark_theme
 
 from app.data.database.components import Component
 from app.editor import component_database
+from app.editor.component_editor_types import T
 from app.editor.component_search_dialog import ShowComponentSearchDialog
 from app.editor.icons import PushableIcon16
 from app.editor.lib.components.validated_line_edit import NidLineEdit
@@ -21,16 +22,6 @@ from app.extensions.custom_gui import PropertyBox, QHLine
 from app.extensions.qhelpmenu import QHelpMenu
 from app.utilities.data import Data
 from app.utilities.typing import NID
-
-class HasComponents(Protocol):
-    nid: NID
-    name: str
-    desc: str
-    components: Data[Component]
-    icon_nid: Optional[NID]
-    icon_index: Tuple[int, int]
-
-T = TypeVar('T', bound=HasComponents)
 
 class NewComponentProperties(QWidget, Generic[T]):
     title = None
