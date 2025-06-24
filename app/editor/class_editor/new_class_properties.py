@@ -24,7 +24,7 @@ from app.editor.weapon_editor.weapon_rank import WexpGainDelegate, WexpGainMulti
 from app.editor.learned_skill_delegate import LearnedSkillDelegate
 from app.editor.icons import ItemIcon80, MapSpriteBox
 from app.editor.lib.components.validated_line_edit import NidLineEdit
-from app.editor.component_editor_properties import T
+from app.editor.component_editor_types import T
 
 from app.editor.class_editor import class_model
 from app.editor.map_sprite_editor import map_sprite_tab

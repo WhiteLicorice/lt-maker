@@ -1,9 +1,11 @@
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene
 from PyQt5.QtGui import QPixmap
+from PyQt5.QtCore import pyqtSignal
 
 from app.data.resources.icons import Icon, IconSheet
 
 class IconView(QGraphicsView):
+    sourceChanged = pyqtSignal(str)
     min_scale = 0.5
     max_scale = 5
     static_size = False
