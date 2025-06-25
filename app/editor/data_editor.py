@@ -192,6 +192,8 @@ class SingleResourceEditor(QDialog):
         self.setWindowFlag(Qt.WindowContextHelpButtonHint, False)
         self.setWindowFlag(Qt.WindowMinMaxButtonsHint, True)
 
+        self.save()
+
         self.grid = QGridLayout(self)
         self.setLayout(self.grid)
 
@@ -231,6 +233,7 @@ class SingleResourceEditor(QDialog):
         current_proj = self.settings.get_current_project()
         if current_proj:
             RESOURCES.load(current_proj, CURRENT_SERIALIZATION_VERSION)
+        DB.restore(self.saved_data)
         self.save_geometry()
         super().reject()
         self.close()
@@ -239,6 +242,7 @@ class SingleResourceEditor(QDialog):
         current_proj = self.settings.get_current_project()
         if current_proj and current_proj != 'default.ltproj':
             RESOURCES.save(current_proj, self.resource_types)
+        self.save()
         self.save_geometry()
 
     def closeEvent(self, event):
@@ -247,6 +251,10 @@ class SingleResourceEditor(QDialog):
 
     def _type(self):
         return self.tab.__class__.__name__
+
+    def save(self):
+        self.saved_data = DB.save()
+        return self.saved_data
 
     def save_geometry(self):
         self.settings.component_controller.set_geometry(self._type(), self.saveGeometry())
