@@ -709,7 +709,7 @@ class HasNotTraded(Reset):
 
 # === RESCUE ACTIONS ========================================================
 class Rescue(Action):
-    def __init__(self, unit, rescuee):
+    def __init__(self, unit: UnitObject, rescuee: UnitObject):
         self.unit = unit
         self.rescuee = rescuee
         self.old_pos = self.rescuee.position
@@ -721,7 +721,8 @@ class Rescue(Action):
         self.unit.traveler = self.rescuee.nid
         # TODO Add transition
 
-        game.leave(self.rescuee)
+        if self.rescuee.position:
+            game.leave(self.rescuee)
         self.unit.has_rescued = True
 
         if not skill_system.ignore_rescue_penalty(self.unit) and 'Rescue' in DB.skills:
@@ -734,7 +735,8 @@ class Rescue(Action):
     def execute(self):
         self.unit.traveler = self.rescuee.nid
 
-        game.leave(self.rescuee)
+        if self.rescuee.position:
+            game.leave(self.rescuee)
         self.unit.has_rescued = True
 
         for action in self.subactions:
@@ -742,7 +744,8 @@ class Rescue(Action):
         self.update_fow_rescuee.execute()
 
     def reverse(self):
-        game.arrive(self.rescuee, self.old_pos)
+        if self.old_pos:
+            game.arrive(self.rescuee, self.old_pos)
         self.unit.traveler = None
         self.unit.has_rescued = False
 
