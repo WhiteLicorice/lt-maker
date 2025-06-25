@@ -114,7 +114,7 @@ def change_special_music(self: Event, special_music_type: str, music: SongPrefab
     elif special_music_type == 'game_over':
         action.do(action.SetGameVar('_music_game_over', music_nid))
 
-def add_portrait(self: Event, portrait, screen_position: Tuple | str, slide=None, 
+def add_portrait(self: Event, portrait, screen_position: Tuple | str, slide=None,
                  expression_list: Optional[List[str]] = None, speed_mult: float = 1.0, flags=None):
     flags = flags or set()
 
@@ -326,21 +326,17 @@ def say(self: Event, speaker_or_style: str, text: List[str], text_position: Poin
           message_tail, transparency, name_tag_bg, boop_sound, flags)
 
 def speak(self: Event, speaker_or_style: str, text, text_position: Point | Alignments=None, width=None, style_nid=None, text_speed=None,
-          font_color=None, font_type=None, dialog_box=None, num_lines=None, draw_cursor=None,
+          font_color=None, font_type=None, dialog_box=None, num_lines=None, draw_cursor: bool=None,
           message_tail=None, transparency=None, name_tag_bg=None, boop_sound=None, flags=None):
     flags = flags or set()
     text = dialog.process_dialog_shorthand(text)
 
     if 'no_block' in flags:
         text += '{no_wait}'
-
-    if draw_cursor:
-        cursor = draw_cursor.lower() in self.true_vals
-    else:
-        cursor = None
+    cursor = True if draw_cursor is None else draw_cursor
 
     manual_style = SpeakStyle(None, None, text_position, width, text_speed, font_color,
-                              font_type, dialog_box, num_lines, cursor, message_tail, 
+                              font_type, dialog_box, num_lines, cursor, message_tail,
                               transparency, name_tag_bg, boop_sound, flags)
 
     style = self._resolve_speak_style(speaker_or_style, style_nid, manual_style)
@@ -3497,8 +3493,8 @@ def paired_ending(self: Event, left_portrait, right_portrait, left_title, right_
         return False
 
     new_ending = \
-        dialog.PairedEnding(left_portrait, right_portrait, left_title, right_title, 
-                            text, left_unit, right_unit, 
+        dialog.PairedEnding(left_portrait, right_portrait, left_title, right_title,
+                            text, left_unit, right_unit,
                             wait_for_input='wait_for_input' in flags)
     self.text_boxes.append(new_ending)
     self.state = 'dialog'
@@ -3852,7 +3848,7 @@ def dump_vars(self: Event, flags:set[str]=None) -> None:
             return True
         except (TypeError, OverflowError):
             return False
-        
+
     def sanitize_vars(data: Any, path: str = "") -> Any:
         """
         Recursively sanitize data so that the result is JSON-serializable.
@@ -3902,17 +3898,17 @@ def dump_vars(self: Event, flags:set[str]=None) -> None:
             else:
                 self.logger.error(f"dump_vars: {path or '<root>'} value {data!r} is not JSON-serializable; replacing with None... Perhaps try casting into a serializable type?")
                 return None
-           
+
     try:
         app_data_fman = file_manager_utils.get_app_data_fman()
-        
+
         from copy import deepcopy
         local_level_vars = deepcopy(self.game.level_vars)
         local_game_vars = deepcopy(self.game.game_vars)
 
         clean_level_vars = sanitize_vars(local_level_vars, path="level_vars")
         clean_game_vars  = sanitize_vars(local_game_vars, path="game_vars")
-        
+
         all_vars = {'level_vars': clean_level_vars, 'game_vars': clean_game_vars}
         app_data_fman.save('_vars.json', json.dumps(all_vars), True)
         file_utils.startfile(app_data_fman.get_path('_vars.json'))
