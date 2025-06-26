@@ -271,6 +271,8 @@ class MultiResourceEditor(SingleResourceEditor):
         self.setWindowFlag(Qt.WindowContextHelpButtonHint, False)
         self.setWindowFlag(Qt.WindowMinMaxButtonsHint, True)
 
+        self.save()
+
         self.grid = QGridLayout(self)
         self.setLayout(self.grid)
 
