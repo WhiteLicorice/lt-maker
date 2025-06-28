@@ -2992,12 +2992,13 @@ For instance, if nid was "tactician", use `{var:tactician}` anywhere in events t
 *String* is the text describing the choice, such as "Please enter a name."
 *PositiveInteger* is the character limit. If not set, defaults to 16.
 *StringList* specifies which characters to ban. Only accepts 'uppercase', 'lowercase', 'uppercase_UTF8', 'lowercase_UTF8', 'numbers_and_punctuation'
-
+*DefaultString* specifies an optional string already loaded into the menu when it starts. If this default string violates character limit or contains illegal characters, it won't work.
 If the force_entry flag is set, the player will not be able to exit text entry before assigning a value to the game variables. (i.e., they must hit 'Yes' in the entry confirmation to end text entry)
         """
 
     keywords = ['Nid', 'String']
-    optional_keywords = ['PositiveInteger', 'IllegalCharacterList']
+    optional_keywords = ['PositiveInteger', 'IllegalCharacterList', 'DefaultString']
+    keyword_types = ['Nid', 'String', 'PositiveInteger', 'IllegalCharacterList', 'String']
     _flags = ['force_entry']
 
 class ChapterTitle(EventCommand):
