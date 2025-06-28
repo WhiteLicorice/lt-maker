@@ -13,10 +13,14 @@ class TextEntryState(MapState):
     keyboard_mode_sprite = SPRITES.get('focus_fade')
 
     def start(self):
-        self.constant_id, self.header, self.character_limit, illegal_characters, self.force_entry = game.memory['text_entry']
+        self.constant_id, self.header, self.character_limit, illegal_characters, self.force_entry, self.default_string = game.memory['text_entry']
         self.menu = menus.KeyboardMenu(self.header, self.character_limit, illegal_characters)
         self.bg_surf, self.topleft = self.create_bg_surf()
         self.keyboard_mode = False
+        
+        if self.default_string is not None:
+            for c in self.default_string:
+                self.menu.updateName(c)
 
         game.state.change('transition_in')
         return 'repeat'

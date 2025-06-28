@@ -42,7 +42,7 @@ from app.events.speak_style import SpeakStyle
 from app.events.utils import TableRows
 from app.sprites import SPRITES
 from app.utilities import file_manager_utils, file_utils, str_utils, utils
-from app.utilities.enums import Alignments, HAlignment, Orientation, VAlignment
+from app.utilities.enums import Alignments, HAlignment, Orientation, VAlignment, CharacterSet
 from app.utilities.type_checking import is_primitive_or_primitive_collection
 from app.utilities.typing import NID, Point
 from app.engine.source_type import SourceType
@@ -3154,14 +3154,23 @@ def table(self: Event, nid: NID, table_data: str, title: str = None,
 def remove_table(self: Event, nid, flags=None):
     self.other_boxes = [(bnid, box) for (bnid, box) in self.other_boxes if bnid != nid]
 
-def text_entry(self: Event, nid, string, positive_integer: int=16, illegal_character_list: Optional[List[str]]=None, flags=None):
+def text_entry(self: Event, nid: NID, string: str, positive_integer:int=16, illegal_character_list: Optional[List[str]]=None, default_string: Optional[str]=None, flags:Optional[set[str]]=None):
     flags = flags or set()
 
     header = string
     limit = positive_integer
     force_entry = 'force_entry' in flags
+    
+    # Check if the dev is violating their own established ruleset lmao
+    if default_string is not None:
+        all_illegal_characters = set().union(*[
+            CharacterSet[name.upper()].charset for name in illegal_character_list
+        ])
+        if (len(default_string) > limit or any(c in all_illegal_characters for c in default_string)):                
+            self.logger.error(f"text_entry: default_string {default_string} violates established restrictions!")
+            default_string = None
 
-    self.game.memory['text_entry'] = (nid, header, limit, illegal_character_list or [], force_entry)
+    self.game.memory['text_entry'] = (nid, header, limit, illegal_character_list or [], force_entry, default_string)
     self.game.state.change('text_entry')
     self.state = 'paused'
 
@@ -3837,7 +3846,7 @@ def party_transfer(self: Event, party1, party2, fixed_units = None, party1_name 
     self.game.state.change('party_transfer')
     self.state = 'paused'
 
-def dump_vars(self: Event, flags:set[str]=None) -> None:
+def dump_vars(self: Event, flags:Optional[set[str]]=None):
     def is_json_serializable(obj: Any) -> bool:
         """
             Return True if obj can be serialized by json.dumps, False otherwise.
