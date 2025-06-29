@@ -19,6 +19,7 @@ from app.engine.objects.item import ItemObject
 from app.engine.objects.unit import UnitObject
 from app.engine.game_state import game
 from app.engine.achievements import Achievement
+from app.utilities.enums import CharacterSet
 
 def draw_unit_top(surf, topleft, unit):
     x, y = topleft
