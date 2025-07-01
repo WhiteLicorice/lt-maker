@@ -119,8 +119,10 @@ class DropAbility(Ability):
         u = game.get_unit(unit.traveler)
         action.do(action.Drop(unit, u, game.cursor.position))
         if skill_system.has_canto(unit, u):
-            action.do(action.HasTraded(unit))
-            game.state.change('menu')
+            action.do(action.HasAttacked(unit))
+            game.state.change('move')
+            action.do(action.SetMovementLeft(unit, skill_system.canto_movement(unit, u)))
+            game.cursor.place_arrows()
         else:
             game.state.change('free')
             game.cursor.set_pos(unit.position)
@@ -142,8 +144,10 @@ class RescueAbility(Ability):
     def do(unit):
         u = game.board.get_unit(game.cursor.position)
         if skill_system.has_canto(unit, u):
-            game.state.change('menu')
-            action.do(action.HasTraded(unit))
+            action.do(action.HasAttacked(unit))
+            game.state.change('move')
+            action.do(action.SetMovementLeft(unit, skill_system.canto_movement(unit, u)))
+            game.cursor.place_arrows()
             # Actually Rescuing needs to be after the state changes above, so that if rescuing causes
             # a state change, such as an event, that event will actually fire.
             action.do(action.Rescue(unit, u))  
