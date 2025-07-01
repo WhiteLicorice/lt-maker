@@ -98,10 +98,10 @@ class MapSpriteModel(ResourceCollectionModel):
                 stand_full_path = fn
                 if standing_pix.width() == 192 and standing_pix.height() == 144:
                     lion_throne_mode = True
-                elif 16 <= standing_pix.width() <= 64 and standing_pix.height() % 3 == 0:  # Try for GBA mode
+                elif 16 <= standing_pix.width() <= 64 and 48 <= standing_pix.height() <= 144 and standing_pix.height() % 3 == 0:  # Try for GBA mode
                     lion_throne_mode = False
                 else:
-                    QMessageBox.critical(self.window, "Error", "Standing Map Sprite is not correct size for Legacy import (192x144 px)")
+                    QMessageBox.critical(self.window, "Error", "Standing Map Sprite is not correct size for Legacy import (192x144 px) or GBA import (16x48 px)")
                     return
             else:
                 QMessageBox.critical(self.window, "Error", "Image must be PNG format")
