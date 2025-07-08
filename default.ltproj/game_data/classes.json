@@ -7,7 +7,9 @@
         "movement_group": "Light Foot",
         "promotes_from": null,
         "turns_into": [],
-        "tags": [],
+        "tags": [
+            "ArenaIgnore"
+        ],
         "max_level": 10,
         "bases": {
             "HP": 10,
@@ -143,7 +145,8 @@
             "Eirika_Great_Lord"
         ],
         "tags": [
-            "Sword"
+            "Sword",
+            "ArenaIgnore"
         ],
         "max_level": 20,
         "bases": {
@@ -280,7 +283,8 @@
         "tags": [
             "Horse",
             "Mounted",
-            "Sword"
+            "Sword",
+            "ArenaIgnore"
         ],
         "max_level": 20,
         "bases": {
@@ -421,7 +425,9 @@
         "turns_into": [
             "Ephraim_Great_Lord"
         ],
-        "tags": [],
+        "tags": [
+            "ArenaIgnore"
+        ],
         "max_level": 20,
         "bases": {
             "HP": 18,
@@ -556,7 +562,8 @@
         "turns_into": [],
         "tags": [
             "Horse",
-            "Mounted"
+            "Mounted",
+            "ArenaIgnore"
         ],
         "max_level": 20,
         "bases": {
@@ -695,7 +702,9 @@
         "movement_group": "Light Foot",
         "promotes_from": null,
         "turns_into": [],
-        "tags": [],
+        "tags": [
+            "ArenaIgnore"
+        ],
         "max_level": 20,
         "bases": {
             "HP": 14,
@@ -1811,7 +1820,8 @@
             "Knight"
         ],
         "tags": [
-            "AutoPromote"
+            "AutoPromote",
+            "ArenaIgnore"
         ],
         "max_level": 10,
         "bases": {
@@ -2293,7 +2303,12 @@
             "LEAD": 60,
             "New Stat": 30
         },
-        "learned_skills": [],
+        "learned_skills": [
+            [
+                1,
+                "Canto"
+            ]
+        ],
         "wexp_gain": {
             "Sword": [
                 true,
@@ -2430,7 +2445,12 @@
             "LEAD": 60,
             "New Stat": 30
         },
-        "learned_skills": [],
+        "learned_skills": [
+            [
+                1,
+                "Canto"
+            ]
+        ],
         "wexp_gain": {
             "Sword": [
                 true,
@@ -3057,7 +3077,8 @@
             "Pirate"
         ],
         "tags": [
-            "AutoPromote"
+            "AutoPromote",
+            "ArenaIgnore"
         ],
         "max_level": 10,
         "bases": {
@@ -4423,7 +4444,9 @@
             "Sage",
             "Valkyrie"
         ],
-        "tags": [],
+        "tags": [
+            "ArenaIgnore"
+        ],
         "max_level": 20,
         "bases": {
             "HP": 18,
@@ -4698,7 +4721,8 @@
             "Shaman"
         ],
         "tags": [
-            "AutoPromote"
+            "AutoPromote",
+            "ArenaIgnore"
         ],
         "max_level": 10,
         "bases": {
@@ -5584,7 +5608,8 @@
         ],
         "tags": [
             "Horse",
-            "Mounted"
+            "Mounted",
+            "ArenaIgnore"
         ],
         "max_level": 20,
         "bases": {
@@ -5794,7 +5819,12 @@
             "LEAD": 60,
             "New Stat": 30
         },
-        "learned_skills": [],
+        "learned_skills": [
+            [
+                1,
+                "Canto"
+            ]
+        ],
         "wexp_gain": {
             "Sword": [
                 false,
@@ -6076,7 +6106,12 @@
             "LEAD": 60,
             "New Stat": 30
         },
-        "learned_skills": [],
+        "learned_skills": [
+            [
+                1,
+                "Canto"
+            ]
+        ],
         "wexp_gain": {
             "Sword": [
                 2,
@@ -6217,6 +6252,10 @@
             [
                 1,
                 "Luna"
+            ],
+            [
+                1,
+                "Canto"
             ]
         ],
         "wexp_gain": {
@@ -6283,7 +6322,9 @@
         "movement_group": "Mages",
         "promotes_from": "Shaman",
         "turns_into": [],
-        "tags": [],
+        "tags": [
+            "ArenaIgnore"
+        ],
         "max_level": 20,
         "bases": {
             "HP": 18,
@@ -6419,7 +6460,8 @@
             "Entombed"
         ],
         "tags": [
-            "Monster"
+            "Monster",
+            "ArenaIgnore"
         ],
         "max_level": 20,
         "bases": {
@@ -6554,7 +6596,8 @@
         "promotes_from": "Revenant",
         "turns_into": [],
         "tags": [
-            "Monster"
+            "Monster",
+            "ArenaIgnore"
         ],
         "max_level": 20,
         "bases": {
@@ -6691,7 +6734,8 @@
             "Sword_Wight"
         ],
         "tags": [
-            "Monster"
+            "Monster",
+            "ArenaIgnore"
         ],
         "max_level": 20,
         "bases": {
@@ -6826,7 +6870,8 @@
         "promotes_from": "Sword_Bonewalker",
         "turns_into": [],
         "tags": [
-            "Monster"
+            "Monster",
+            "ArenaIgnore"
         ],
         "max_level": 20,
         "bases": {
@@ -6963,7 +7008,8 @@
             "Bow_Wight"
         ],
         "tags": [
-            "Monster"
+            "Monster",
+            "ArenaIgnore"
         ],
         "max_level": 20,
         "bases": {
@@ -7098,7 +7144,8 @@
         "promotes_from": "Bow_Bonewalker",
         "turns_into": [],
         "tags": [
-            "Monster"
+            "Monster",
+            "ArenaIgnore"
         ],
         "max_level": 20,
         "bases": {
@@ -7236,7 +7283,8 @@
         ],
         "tags": [
             "Flying",
-            "Monster"
+            "Monster",
+            "ArenaIgnore"
         ],
         "max_level": 20,
         "bases": {
@@ -7372,7 +7420,8 @@
         "turns_into": [],
         "tags": [
             "Flying",
-            "Monster"
+            "Monster",
+            "ArenaIgnore"
         ],
         "max_level": 20,
         "bases": {
@@ -7507,7 +7556,8 @@
         "promotes_from": null,
         "turns_into": [],
         "tags": [
-            "Dragon"
+            "Dragon",
+            "ArenaIgnore"
         ],
         "max_level": 20,
         "bases": {
@@ -7636,7 +7686,8 @@
         "promotes_from": null,
         "turns_into": [],
         "tags": [
-            "Tile"
+            "Tile",
+            "ArenaIgnore"
         ],
         "max_level": 20,
         "bases": {
@@ -7780,7 +7831,8 @@
         "promotes_from": null,
         "turns_into": [],
         "tags": [
-            "Tile"
+            "Tile",
+            "ArenaIgnore"
         ],
         "max_level": 20,
         "bases": {
@@ -7923,7 +7975,9 @@
         "movement_group": "Regular",
         "promotes_from": null,
         "turns_into": [],
-        "tags": [],
+        "tags": [
+            "ArenaIgnore"
+        ],
         "max_level": 20,
         "bases": {
             "HP": 1,

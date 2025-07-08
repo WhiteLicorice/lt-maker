@@ -7,7 +7,9 @@
         "movement_group": "Mages",
         "promotes_from": "Shaman",
         "turns_into": [],
-        "tags": [],
+        "tags": [
+            "ArenaIgnore"
+        ],
         "max_level": 20,
         "bases": {
             "HP": 18,

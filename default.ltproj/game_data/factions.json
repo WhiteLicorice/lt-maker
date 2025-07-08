@@ -48,5 +48,15 @@
             0,
             0
         ]
+    },
+    {
+        "nid": "Enemy",
+        "name": "Enemy",
+        "desc": "A fighter in the arena.",
+        "icon_nid": "BlankEmblem",
+        "icon_index": [
+            0,
+            0
+        ]
     }
 ]

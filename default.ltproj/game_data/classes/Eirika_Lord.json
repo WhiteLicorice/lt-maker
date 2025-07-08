@@ -10,7 +10,8 @@
             "Eirika_Great_Lord"
         ],
         "tags": [
-            "Sword"
+            "Sword",
+            "ArenaIgnore"
         ],
         "max_level": 20,
         "bases": {

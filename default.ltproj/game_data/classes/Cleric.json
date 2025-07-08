@@ -11,7 +11,9 @@
             "Sage",
             "Valkyrie"
         ],
-        "tags": [],
+        "tags": [
+            "ArenaIgnore"
+        ],
         "max_level": 20,
         "bases": {
             "HP": 18,
