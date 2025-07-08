@@ -8,7 +8,8 @@
         "promotes_from": "Bow_Bonewalker",
         "turns_into": [],
         "tags": [
-            "Monster"
+            "Monster",
+            "ArenaIgnore"
         ],
         "max_level": 20,
         "bases": {

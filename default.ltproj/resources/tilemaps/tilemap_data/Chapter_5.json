@@ -2825,6 +2825,22 @@
                         ]
                     ]
                 }
+            },
+            {
+                "nid": "Arena",
+                "visible": true,
+                "foreground": false,
+                "terrain_grid": {
+                    "11,5": "Arena",
+                    "11,6": "Arena",
+                    "11,7": "Arena",
+                    "12,7": "Arena",
+                    "13,7": "Arena",
+                    "13,6": "Arena",
+                    "13,5": "Arena",
+                    "12,5": "Arena"
+                },
+                "sprite_grid": {}
             }
         ],
         "tilesets": [

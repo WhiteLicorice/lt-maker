@@ -11,7 +11,8 @@
             "Shaman"
         ],
         "tags": [
-            "AutoPromote"
+            "AutoPromote",
+            "ArenaIgnore"
         ],
         "max_level": 10,
         "bases": {

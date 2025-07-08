@@ -10,7 +10,8 @@
         "tags": [
             "Horse",
             "Mounted",
-            "Sword"
+            "Sword",
+            "ArenaIgnore"
         ],
         "max_level": 20,
         "bases": {

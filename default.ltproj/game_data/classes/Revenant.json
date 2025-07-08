@@ -10,7 +10,8 @@
             "Entombed"
         ],
         "tags": [
-            "Monster"
+            "Monster",
+            "ArenaIgnore"
         ],
         "max_level": 20,
         "bases": {

@@ -7,7 +7,9 @@
         "movement_group": "Light Foot",
         "promotes_from": null,
         "turns_into": [],
-        "tags": [],
+        "tags": [
+            "ArenaIgnore"
+        ],
         "max_level": 20,
         "bases": {
             "HP": 14,

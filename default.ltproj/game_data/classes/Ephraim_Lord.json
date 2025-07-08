@@ -9,7 +9,9 @@
         "turns_into": [
             "Ephraim_Great_Lord"
         ],
-        "tags": [],
+        "tags": [
+            "ArenaIgnore"
+        ],
         "max_level": 20,
         "bases": {
             "HP": 18,

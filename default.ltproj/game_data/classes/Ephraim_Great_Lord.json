@@ -9,7 +9,8 @@
         "turns_into": [],
         "tags": [
             "Horse",
-            "Mounted"
+            "Mounted",
+            "ArenaIgnore"
         ],
         "max_level": 20,
         "bases": {
