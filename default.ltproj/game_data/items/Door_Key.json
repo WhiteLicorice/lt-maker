@@ -27,6 +27,10 @@
             [
                 "can_unlock",
                 "region.nid.startswith('Door')"
+            ],
+            [
+                "no_map_hp_display",
+                null
             ]
         ]
     }

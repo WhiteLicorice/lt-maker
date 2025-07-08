@@ -1297,7 +1297,6 @@ class AnimationCombat(BaseCombat, MockCombat):
 
         self.attacker.built_guard = True
         if self.defender:
-            self.defender.strike_partner = None
             self.defender.built_guard = True
 
         # Clean up battle anims so we can re-use them later

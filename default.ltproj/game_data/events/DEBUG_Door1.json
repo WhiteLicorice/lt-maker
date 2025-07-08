@@ -9,7 +9,7 @@
         "priority": 20,
         "_source": [
             "unlock;{unit}",
-            "give_item;{unit};Iron Sword"
+            "give_item;{unit};Iron_Sword"
         ],
         "nid": "DEBUG Door1"
     }

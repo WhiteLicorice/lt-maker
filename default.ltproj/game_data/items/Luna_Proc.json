@@ -1,0 +1,22 @@
+[
+    {
+        "nid": "Luna_Proc",
+        "name": "Luna",
+        "desc": "(Item override for the Luna skill.)",
+        "icon_nid": "Skills",
+        "icon_index": [
+            4,
+            3
+        ],
+        "components": [
+            [
+                "alternate_resist_formula",
+                "ZERO"
+            ],
+            [
+                "pre_combat_effect",
+                "Luna_proc"
+            ]
+        ]
+    }
+]

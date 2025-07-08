@@ -1,11 +1,11 @@
 [
     {
-        "nid": "Wyvern Lord",
+        "nid": "Wyvern_Lord",
         "name": "Wyvern Lord",
-        "desc": "",
+        "desc": "Wyvern-mounted knights of superior skill.",
         "tier": 2,
         "movement_group": "Fliers",
-        "promotes_from": "Wyvern Rider",
+        "promotes_from": "Wyvern_Rider",
         "turns_into": [],
         "tags": [
             "Mounted",
@@ -82,10 +82,6 @@
         "learned_skills": [
             [
                 1,
-                "Flying"
-            ],
-            [
-                1,
                 "Canto"
             ]
         ],
@@ -142,7 +138,7 @@
             0
         ],
         "map_sprite_nid": "WyvernLord",
-        "combat_anim_nid": "Wyvern Lord",
+        "combat_anim_nid": "Wyvern_Lord",
         "fields": []
     }
 ]

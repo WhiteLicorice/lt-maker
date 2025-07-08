@@ -2,7 +2,7 @@
     {
         "nid": "Troubadour",
         "name": "Troubadour",
-        "desc": "Kind-hearted healers.",
+        "desc": "Maidens who wield staves from horseback.",
         "tier": 1,
         "movement_group": "Heavy Cav",
         "promotes_from": null,
@@ -11,7 +11,8 @@
         ],
         "tags": [
             "Horse",
-            "Mounted"
+            "Mounted",
+            "ArenaIgnore"
         ],
         "max_level": 20,
         "bases": {
@@ -139,7 +140,7 @@
             0
         ],
         "map_sprite_nid": "Troubadour",
-        "combat_anim_nid": null,
+        "combat_anim_nid": "Troubadour",
         "fields": []
     }
 ]

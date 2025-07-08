@@ -2,14 +2,15 @@
     {
         "nid": "Ephraim_Great_Lord",
         "name": "Great Lord",
-        "desc": "??",
+        "desc": "Mounted lords whose fine qualities set them apart from their peers.",
         "tier": 2,
         "movement_group": "Heavy Cav",
         "promotes_from": "Ephraim_Lord",
         "turns_into": [],
         "tags": [
             "Horse",
-            "Mounted"
+            "Mounted",
+            "ArenaIgnore"
         ],
         "max_level": 20,
         "bases": {
@@ -137,7 +138,7 @@
             0
         ],
         "map_sprite_nid": "Ephraim_Great_Lord",
-        "combat_anim_nid": null,
+        "combat_anim_nid": "Ephraim_Great_Lord",
         "fields": []
     }
 ]

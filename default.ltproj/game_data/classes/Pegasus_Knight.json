@@ -8,7 +8,7 @@
         "promotes_from": null,
         "turns_into": [
             "Falcoknight",
-            "Wyvern Knight"
+            "Wyvern_Knight"
         ],
         "tags": [
             "Mounted",
@@ -84,10 +84,6 @@
         "learned_skills": [
             [
                 1,
-                "Flying"
-            ],
-            [
-                1,
                 "Canto"
             ]
         ],
@@ -144,7 +140,7 @@
             0
         ],
         "map_sprite_nid": "PegasusKnight",
-        "combat_anim_nid": null,
+        "combat_anim_nid": "Pegasus_Knight",
         "fields": []
     }
 ]

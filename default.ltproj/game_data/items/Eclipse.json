@@ -75,6 +75,10 @@
             [
                 "no_double",
                 null
+            ],
+            [
+                "eclipse",
+                null
             ]
         ]
     }

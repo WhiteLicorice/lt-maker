@@ -10,6 +10,7 @@ import traceback
 from typing import Dict, List
 
 from app import sprites
+from app.data.category import Categories, CategorizedCatalog
 from app.data.resources.base_catalog import ManifestCatalog
 from app.data.serialization import disk_loader
 from app.utilities import exceptions
@@ -29,6 +30,8 @@ import logging
 
 from app.utilities.serialization import save_json
 from app.utilities.typing import NestedPrimitiveDict
+
+CATEGORY_SUFFIX = '.category'
 
 class Resources():
     save_data_types = ("icons16", "icons32", "icons80", "portraits", "animations", "panoramas", "fonts",
@@ -112,6 +115,10 @@ class Resources():
             getattr(self, data_type).clear()  # Now always clears first
             getattr(self, data_type).load(os.path.join(self.main_folder, data_type), resource_data.get(data_type, []))
 
+            # Also restore the categories if it has any
+            if isinstance(getattr(self, data_type), CategorizedCatalog):
+                getattr(self, data_type).categories = Categories.load(resource_data.get(data_type + CATEGORY_SUFFIX, {}))
+
         # load custom components
         self.load_components()
 
@@ -150,6 +157,9 @@ class Resources():
         for data_type in save_data_types:
             data: ManifestCatalog = getattr(self, data_type)
             to_save[data_type] = data.save()
+            # also save the categories if it has any
+            if isinstance(data, CategorizedCatalog):
+                to_save[data_type + CATEGORY_SUFFIX] = data.categories.save()
         return to_save
 
     def save(self, proj_dir, specific=None, progress=None) -> bool:
@@ -179,7 +189,7 @@ class Resources():
             # serialize manifest data
             try:
                 for key, value in to_save.items():
-                    save_dir = Path(resource_dir, key)
+                    save_dir = Path(resource_dir, key.replace(CATEGORY_SUFFIX, ''))
                     # if chunks, delete the old directory
                     actual_save_dir = save_dir
                     if key in self.save_as_chunks:

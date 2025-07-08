@@ -2992,12 +2992,13 @@ For instance, if nid was "tactician", use `{var:tactician}` anywhere in events t
 *String* is the text describing the choice, such as "Please enter a name."
 *PositiveInteger* is the character limit. If not set, defaults to 16.
 *StringList* specifies which characters to ban. Only accepts 'uppercase', 'lowercase', 'uppercase_UTF8', 'lowercase_UTF8', 'numbers_and_punctuation'
-
+*DefaultString* specifies an optional string already loaded into the menu when it starts. If this default string violates character limit or contains illegal characters, it won't work.
 If the force_entry flag is set, the player will not be able to exit text entry before assigning a value to the game variables. (i.e., they must hit 'Yes' in the entry confirmation to end text entry)
         """
 
     keywords = ['Nid', 'String']
-    optional_keywords = ['PositiveInteger', 'IllegalCharacterList']
+    optional_keywords = ['PositiveInteger', 'IllegalCharacterList', 'DefaultString']
+    keyword_types = ['Nid', 'String', 'PositiveInteger', 'IllegalCharacterList', 'String']
     _flags = ['force_entry']
 
 class ChapterTitle(EventCommand):
@@ -3229,11 +3230,18 @@ class Ending(EventCommand):
 
     desc = \
         """
-Displays the epilogue text for a character. *Portrait* is the portrait to be displayed, *Title* is the name displayed (ex: "Marcus, Badass Paladin"), the *Text* is the block of text describing what happened to the character.
+Displays the epilogue text for a character. 
+*Portrait* is the portrait to be displayed, 
+*Title* is the name displayed (ex: "Marcus, Badass Paladin"), 
+the *Text* is the block of text describing what happened to the character.
+If *wait_for_input* flag is set, the dialog will wait for the player to press SELECT
+before preceding. Use this if you plan to have {w} or | commands in your text.
+Without the *wait_for_input* flag, the Ending will just wait 5 seconds after the first {w}.
         """
 
     keywords = ["Portrait", "Title", "Text"]
     keyword_types = ["Portrait", "String", "String"]
+    _flags = ['wait_for_input']
 
 class PairedEnding(EventCommand):
     nid = 'paired_ending'
@@ -3241,11 +3249,18 @@ class PairedEnding(EventCommand):
 
     desc = \
         """
-Displays paired epilogue text for two characters. *LeftPortrait* and *RightPortrait* are the portraits to be displayed, *LeftTitle* and *RightTitle* are the names displayed (ex: "Marcus, Badass Paladin"), the *Text* is the block of text describing what happened to the characters.
+Displays paired epilogue text for two characters. 
+*LeftPortrait* and *RightPortrait* are the portraits to be displayed, 
+*LeftTitle* and *RightTitle* are the names displayed (ex: "Marcus, Badass Paladin"), 
+the *Text* is the block of text describing what happened to the characters.
+If *wait_for_input* flag is set, the dialog will wait for the player to press SELECT
+before preceding. Use this if you plan to have {w} or | commands in your text.
+Without the *wait_for_input* flag, the Ending will just wait 5 seconds after the first {w}.
         """
 
     keywords = ["LeftPortrait", "RightPortrait", "LeftTitle", "RightTitle", "Text"]
     keyword_types = ["Portrait", "Portrait", "String", "String", "String"]
+    _flags = ['wait_for_input']
 
 class PopDialog(EventCommand):
     nid = 'pop_dialog'

@@ -2,16 +2,18 @@
     {
         "nid": "Recruit",
         "name": "Recruit",
-        "desc": "Mounted knights with superior movement.",
+        "desc": "Unproven knights with dreams of glory.",
         "tier": 1,
         "movement_group": "Regular",
         "promotes_from": null,
         "turns_into": [
             "Cavalier",
-            "Pegasus_Knight",
             "Knight"
         ],
-        "tags": [],
+        "tags": [
+            "AutoPromote",
+            "ArenaIgnore"
+        ],
         "max_level": 10,
         "bases": {
             "HP": 13,
@@ -133,7 +135,7 @@
             0
         ],
         "map_sprite_nid": "Recruit",
-        "combat_anim_nid": null,
+        "combat_anim_nid": "Recruit",
         "fields": []
     }
 ]

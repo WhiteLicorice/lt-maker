@@ -5,7 +5,7 @@
         "desc": "A wyvern knight of Grado. A gentle man, but a ferocious warrior.",
         "variant": null,
         "level": 9,
-        "klass": "Wyvern Rider",
+        "klass": "Wyvern_Rider",
         "tags": [],
         "bases": {
             "HP": 30,

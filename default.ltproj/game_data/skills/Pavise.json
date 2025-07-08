@@ -1,0 +1,26 @@
+[
+    {
+        "nid": "Pavise",
+        "name": "Pavise",
+        "desc": "Proc Rate: SKL/4%\nNullifies damage done to unit.",
+        "icon_nid": "Skills",
+        "icon_index": [
+            10,
+            3
+        ],
+        "components": [
+            [
+                "class_skill",
+                null
+            ],
+            [
+                "defense_proc",
+                "Pavise_Proc"
+            ],
+            [
+                "proc_rate",
+                "SKILL_PROC"
+            ]
+        ]
+    }
+]

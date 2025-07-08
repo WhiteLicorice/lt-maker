@@ -255,6 +255,7 @@ class Logo():
             [self.num_frames - 1, self.num_frames - 1] + list(reversed(range(1, self.num_frames - 1)))
         self.last_update = engine.get_time()
         self.transition_counter = 0
+        self.transition_speed = 3
 
         self.image = self.get_image()
         self.draw_image = self.image
@@ -279,10 +280,11 @@ class Logo():
             self.draw_image = self.image
 
         elif self.state == 'out':
-            self.transition_counter -= 1
-            self.draw_image = engine.subsurface(self.image, (0, self.height//2 - self.transition_counter, self.width, self.transition_counter * 2))
+            self.transition_counter = max(self.transition_counter - self.transition_speed, 0)
 
-            if self.transition_counter <= 0:
+            self.draw_image = engine.transform_scale(self.image, (self.width, self.transition_counter))
+
+            if self.transition_counter == 0:
                 self.state = 'in'
                 self.texture = self.next_texture
                 self.height = self.texture.get_height()//self.num_frames
@@ -290,19 +292,19 @@ class Logo():
                 self.image = self.get_image()
 
         elif self.state == 'in':
-            self.transition_counter += 1
-            if self.transition_counter >= self.height//2:
-                self.transition_counter = self.height//2
+            self.transition_counter = min(self.transition_counter + self.transition_speed, self.height)
+
+            if self.transition_counter == self.height:
                 self.state = 'idle'
 
-            self.draw_image = engine.subsurface(self.image, (0, self.height//2 - self.transition_counter, self.width, self.transition_counter * 2))
+            self.draw_image = engine.transform_scale(self.image, (self.width, self.transition_counter))
 
     def draw(self, surf):
         engine.blit_center(surf, self.draw_image, self.center)
 
     def switch_image(self, new_image):
         self.next_texture = new_image
-        self.transition_counter = self.height//2
+        self.transition_counter = self.height
         self.state = 'out'
 
 class PopUpDisplay():

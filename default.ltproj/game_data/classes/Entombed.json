@@ -8,7 +8,8 @@
         "promotes_from": "Revenant",
         "turns_into": [],
         "tags": [
-            "Monster"
+            "Monster",
+            "ArenaIgnore"
         ],
         "max_level": 20,
         "bases": {
@@ -131,7 +132,7 @@
             0
         ],
         "map_sprite_nid": "Entombed",
-        "combat_anim_nid": null,
+        "combat_anim_nid": "Entombed",
         "fields": []
     }
 ]

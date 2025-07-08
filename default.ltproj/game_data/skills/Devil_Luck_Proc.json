@@ -1,0 +1,22 @@
+[
+    {
+        "nid": "Devil_Luck_Proc",
+        "name": "Devil Luck",
+        "desc": "Skill gained by equipping the Devil Axe.\nReceives damage equal to damage dealt.",
+        "icon_nid": "Axe",
+        "icon_index": [
+            0,
+            8
+        ],
+        "components": [
+            [
+                "hidden",
+                null
+            ],
+            [
+                "devil_axe_gba",
+                "Affect attacks done by unit"
+            ]
+        ]
+    }
+]

@@ -78,5 +78,20 @@
         "To A Higher Place",
         false,
         false
+    ],
+    [
+        "Arena Victory",
+        false,
+        false
+    ],
+    [
+        "Arena Battle",
+        false,
+        false
+    ],
+    [
+        "Arena Entrance",
+        false,
+        false
     ]
 ]

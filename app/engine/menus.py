@@ -19,6 +19,7 @@ from app.engine.objects.item import ItemObject
 from app.engine.objects.unit import UnitObject
 from app.engine.game_state import game
 from app.engine.achievements import Achievement
+from app.utilities.enums import CharacterSet
 
 def draw_unit_top(surf, topleft, unit):
     x, y = topleft
@@ -1944,15 +1945,12 @@ class KeyboardMenu(Table):
         self.name = ''
         self.topleft = (9, 42)
 
-        self.all_characters = {}
-        self.all_characters['uppercase'] = string.ascii_uppercase
-        self.all_characters['lowercase'] = string.ascii_lowercase
-        self.all_characters['uppercase_UTF8'] = \
-            ['Á','À','Â','Ä','Å','Ç','Ð','É','È','Ê','Ë','Í','Ì','Î','Ï','Ñ','Ó','Ò','Ô','Ö','Ø','Þ','Ú','Ù','Û','Ü','Ý','Ÿ','Ƿ','Æ','Œ']
-        self.all_characters['lowercase_UTF8'] = \
-            ['á','à','â','ä','å','ç','ð','é','è','ê','ë','í','ì','î','ï','ñ','ó','ò','ô','ö','ø','þ','ú','ù','û','ü','ý','ÿ','ƿ','æ','œ']
-        self.all_characters['numbers_and_punctuation'] = \
-            ['0','1','2','3','4','5','6','7','8','9','!','¡','?','¿','&','-','+',';',':',"'",',','.','"'] + ([' '] * (26 - 7))
+        self.all_characters: dict[str, list] = {}
+        self.all_characters['uppercase'] = CharacterSet.UPPERCASE.chars
+        self.all_characters['lowercase'] = CharacterSet.LOWERCASE.chars
+        self.all_characters['uppercase_UTF8'] = CharacterSet.UPPERCASE_UTF8.chars
+        self.all_characters['lowercase_UTF8'] = CharacterSet.LOWERCASE_UTF8.chars
+        self.all_characters['numbers_and_punctuation'] = CharacterSet.NUMBERS_AND_PUNCTUATION.chars
 
         for group in self.illegal_characters:
             if group in self.all_characters:

@@ -2,7 +2,7 @@
     {
         "nid": "Hero",
         "name": "Hero",
-        "desc": "",
+        "desc": "Seasoned veteran with remarkable skill.",
         "tier": 2,
         "movement_group": "Light Foot",
         "promotes_from": "Mercenary",
@@ -131,7 +131,7 @@
             0
         ],
         "map_sprite_nid": "Hero",
-        "combat_anim_nid": "Vanguard",
+        "combat_anim_nid": "Hero",
         "fields": []
     }
 ]

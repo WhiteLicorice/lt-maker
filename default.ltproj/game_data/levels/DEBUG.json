@@ -143,7 +143,7 @@
                 "team": "player",
                 "ai": "None",
                 "roam_ai": null,
-                "ai_group": null,
+                "ai_group": "",
                 "starting_position": [
                     4,
                     6

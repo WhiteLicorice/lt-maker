@@ -2,10 +2,10 @@
     {
         "nid": "Riev",
         "name": "Riev",
-        "desc": "",
+        "desc": "A heretic and general in Grado's army. He's also known as Blood Beryl.",
         "variant": null,
         "level": 16,
-        "klass": "Cleric",
+        "klass": "Bishop",
         "tags": [],
         "bases": {
             "HP": 51,
@@ -89,7 +89,7 @@
         },
         "alternate_classes": [],
         "portrait_nid": "Riev",
-        "affinity": null,
+        "affinity": "None",
         "fields": []
     }
 ]

@@ -2,10 +2,10 @@
     {
         "nid": "Selena",
         "name": "Selena",
-        "desc": "",
+        "desc": "One of Grado's generals. She's also known by the name Fluorspar.",
         "variant": "Female",
         "level": 11,
-        "klass": "Mage Knight",
+        "klass": "Mage_Knight",
         "tags": [],
         "bases": {
             "HP": 39,

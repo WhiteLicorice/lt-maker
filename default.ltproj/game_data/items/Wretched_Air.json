@@ -34,10 +34,6 @@
                 null
             ],
             [
-                "status_on_equip",
-                "Wretched_Air"
-            ],
-            [
                 "wexp",
                 0
             ],
@@ -54,8 +50,11 @@
                 2
             ],
             [
-                "alternate_resist_formula",
-                "ZERO"
+                "multi_status_on_equip",
+                [
+                    "Wretched_Air",
+                    "Luna_Proc"
+                ]
             ]
         ]
     }

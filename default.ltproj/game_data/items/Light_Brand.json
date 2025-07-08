@@ -65,6 +65,10 @@
                 2
             ],
             [
+                "battle_cast_anim",
+                "Lightning"
+            ],
+            [
                 "magic",
                 null
             ]

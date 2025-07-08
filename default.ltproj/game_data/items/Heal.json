@@ -67,6 +67,10 @@
             [
                 "equation_heal",
                 "HEAL"
+            ],
+            [
+                "magic",
+                null
             ]
         ]
     }

@@ -9,7 +9,7 @@
         "priority": 20,
         "_source": [
             "transition;Close",
-            "shop;{unit};Iron Sword,Slim Sword,Iron Lance,Slim Lance,Iron Axe;armory",
+            "shop;{unit};Iron_Sword,Slim_Sword,Iron_Lance,Slim_Lance,Iron_Axe;armory",
             "transition;Open"
         ],
         "nid": "DEBUG Armory"

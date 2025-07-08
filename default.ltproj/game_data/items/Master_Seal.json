@@ -53,7 +53,7 @@
                     "Mage",
                     "Shaman",
                     "Troubadour",
-                    "Wyvern Rider"
+                    "Wyvern_Rider"
                 ]
             ],
             [
@@ -63,6 +63,14 @@
             [
                 "eval_target_restrict_2",
                 "unit.level >= 10"
+            ],
+            [
+                "no_map_hp_display",
+                null
+            ],
+            [
+                "map_cast_pose",
+                null
             ]
         ]
     }

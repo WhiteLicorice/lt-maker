@@ -57,6 +57,7 @@ class MapCombat(SimpleCombat):
 
         # Only for the very first phase
         if self.state == 'init':
+            game.highlight.remove_highlights()
             self.start_combat()
             self.start_event()
             self.set_state('init_pause')
@@ -149,13 +150,9 @@ class MapCombat(SimpleCombat):
                 self.attacker.sprite.change_state("start_cast")
                 self.cast_pose = True
             
-            self.set_state('red_cursor')
+            self.set_state('proc_animations')
 
-        elif self.state == 'red_cursor':
-            if self.defender:
-                game.cursor.combat_show()
-            else:
-                game.cursor.hide()
+        elif self.state == 'proc_animations':
             # Handle proc effects
             self.set_up_proc_animation('attack_proc')
             self.set_up_proc_animation('attack_hit_proc')
@@ -165,9 +162,7 @@ class MapCombat(SimpleCombat):
             self.set_state('start_anim')
 
         elif self.state == 'start_anim':
-            if self._skip or current_time > 400:
-                game.cursor.hide()
-                game.highlight.remove_highlights()
+            if self._skip or current_time > 200:
                 animation_brushes = self.get_from_playback('cast_anim')
                 for brush in animation_brushes:
                     anim = RESOURCES.animations.get(brush.anim)
@@ -264,7 +259,7 @@ class MapCombat(SimpleCombat):
         if self.state != current_state:
             self.last_update = engine.get_time()
 
-        if self.state not in ('begin_phase', 'red_cursor'):
+        if self.state not in ('begin_phase', 'proc_animations'):
             for hp_bar in self.health_bars.values():
                 hp_bar.update()
 

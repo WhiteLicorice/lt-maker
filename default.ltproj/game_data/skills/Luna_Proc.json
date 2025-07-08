@@ -1,0 +1,18 @@
+[
+    {
+        "nid": "Luna_Proc",
+        "name": "Luna",
+        "desc": "Ignores enemy defense and resistance.",
+        "icon_nid": "Skills",
+        "icon_index": [
+            4,
+            3
+        ],
+        "components": [
+            [
+                "item_override",
+                "Luna_Proc"
+            ]
+        ]
+    }
+]

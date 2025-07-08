@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
 
 from app.data.database.database import DB
-from app.data.database.difficulty_modes import GrowthOption
 from app.data.database.level_units import GenericUnit, UniqueUnit
 from app.data.database.units import UnitPrefab
 from app.engine import (combat_calcs, equations, item_funcs, item_system,
@@ -71,7 +70,7 @@ class UnitObject(Prefab):
 
     name: str = None  #: This unit's name. Usually only used by non-generic units. Generic units use their faction's name.
     desc: str = None  #: This unit's description. Usually only used by non-generic units. Generic units use their faction's description.
-    _tags: List[str] = field(default_factory=list)
+    _tags: Set[str] = field(default_factory=set)
     party: NID = None  #: NID of the unit's party
     level: int = 1  #: The unit's level
     exp: int = 0  #: The unit's current exp (out of 100)
@@ -164,7 +163,7 @@ class UnitObject(Prefab):
 
         self.name = prefab.name
         self.desc = prefab.desc
-        self._tags = [tag for tag in prefab.tags] if not self.generic else []
+        self._tags = {tag for tag in prefab.tags} if not self.generic else set()
         self.party = None
 
         if is_level_unit:
@@ -610,16 +609,16 @@ class UnitObject(Prefab):
         return self._sound
 
     @property
-    def tags(self) -> List[str]:
+    def tags(self) -> Set[str]:
         """Returns all tags this unit has.
 
         Gathers tags from the unit itself, its current class, and any additional tags given by the unit's skills.
         Never includes any duplicates.
 
         Returns:
-            A List of Tags (strs)
+            A Set of Tags (strs)
         """
-        return set(self._tags) | set(DB.classes.get(self.klass).tags) | skill_system.additional_tags(self)
+        return self._tags | set(DB.classes.get(self.klass).tags) | skill_system.additional_tags(self)
 
     def get_ai(self) -> NID:
         """Returns the NID of the unit's current combat AI."""
@@ -955,7 +954,7 @@ class UnitObject(Prefab):
         self.faction = s_dict['faction']
         self.name = s_dict['name']
         self.desc = s_dict['desc']
-        self._tags = s_dict['tags']
+        self._tags = set(s_dict['tags'])
         self.stats = s_dict['stats']
         self.growths = s_dict['growths']
         self.growth_points = s_dict['growth_points']

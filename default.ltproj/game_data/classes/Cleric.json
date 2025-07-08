@@ -7,9 +7,13 @@
         "movement_group": "Mages",
         "promotes_from": null,
         "turns_into": [
-            "Bishop"
+            "Bishop",
+            "Sage",
+            "Valkyrie"
         ],
-        "tags": [],
+        "tags": [
+            "ArenaIgnore"
+        ],
         "max_level": 20,
         "bases": {
             "HP": 18,

@@ -1,6 +1,6 @@
 from app.data.database.item_components import ItemComponent, ItemTags
 from app.data.database.components import ComponentType
-from app.engine import action
+from app.engine import action, item_funcs
 from app.engine import skill_system
 from app.engine.game_state import game
 from app.engine.combat import playback as pb
@@ -84,3 +84,21 @@ class UnloadUnit(ItemComponent):
                 actions.append(action.Warp(rescuee, target_pos))
                 # Move camera over position
                 game.cursor.set_pos(target_pos)
+
+class AdditionalItemCommand(ItemComponent):
+    nid = 'additional_item_command'
+    desc = "Adds another item as a menu option to an existing item."
+    tag = ItemTags.BASE
+    
+    expose = ComponentType.Item
+        
+    def extra_command(self, unit, item):
+        if item.command_item:
+            return item.command_item
+        else:
+            new_item = item_funcs.create_item(unit, self.value)
+            game.register_item(new_item)
+            item.command_item = new_item
+            item.command_uid = new_item.uid
+            new_item.command_parent_item = item
+            return new_item
