@@ -5,17 +5,17 @@ from app.data.database.database import DB
 from app.data.database import supports
 import app.editor.utilities as editor_utilities
 
-from app.editor.unit_editor import unit_model
+from app.editor.portrait_editor import portrait_model
 from app.editor.base_database_gui import DragDropCollectionModel
 
 def get_pixmap(support_pair):
     unit1_chibi, unit2_chibi = None, None
     if support_pair.unit1 and support_pair.unit1 in DB.units:
         unit1 = DB.units.get(support_pair.unit1)
-        unit1_chibi = unit_model.get_chibi(unit1)
+        unit1_chibi = portrait_model.get_chibi(unit1.portrait_nid)
     if support_pair.unit2 and support_pair.unit2 in DB.units:
         unit2 = DB.units.get(support_pair.unit2)
-        unit2_chibi = unit_model.get_chibi(unit2)
+        unit2_chibi = portrait_model.get_chibi(unit2.portrait_nid)
 
     if unit1_chibi and unit2_chibi:
         combined_chibi = QImage(64, 32, QImage.Format_RGB32)

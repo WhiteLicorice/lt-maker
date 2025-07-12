@@ -27,10 +27,14 @@ from app.editor.combat_animation_editor.combat_animation_model import palette_sw
 from app.editor.file_manager.project_file_backend import DEFAULT_PROJECT
 import app.editor.combat_animation_editor.combat_animation_imports as combat_animation_imports
 import app.editor.combat_animation_editor.combat_animation_export as combat_animation_export
+from app.editor.component_editor_types import T
 from app.extensions.custom_gui import ComboBox
 
 import app.editor.utilities as editor_utilities
 from app.utilities import str_utils
+from app.utilities.typing import NID
+
+from typing import (Callable, Optional)
 
 # Game interface
 import app.editor.game_actions.game_actions as GAME_ACTIONS
@@ -49,11 +53,20 @@ def populate_anim_pixmaps(combat_anim, force=False):
                 x, y, width, height = frame.rect
                 frame.pixmap = weapon_anim.pixmap.copy(x, y, width, height)
 
-class CombatAnimProperties(QWidget):
-    def __init__(self, parent, current=None):
+class NewCombatAnimProperties(QWidget):
+    title = "Combat Animation"
+
+    def __init__(self, parent, current: Optional[T] = None,
+                 attempt_change_nid: Optional[Callable[[NID, NID], bool]] = None,
+                 on_icon_change: Optional[Callable] = None):
         QWidget.__init__(self, parent)
         self.window = parent
-        self._data = self.window._data
+        self._data = self.window.data
+
+        self.current: Optional[T] = current
+        self.cached_nid: Optional[NID] = self.current.nid if self.current else None
+        self.attempt_change_nid = attempt_change_nid
+        self.on_icon_change = on_icon_change
 
         # Populate resources
         # for combat_anim in self._data:
@@ -227,10 +240,12 @@ class CombatAnimProperties(QWidget):
         self.import_anim_button.clicked.connect(self.import_anim)
         self.export_anim_button = QPushButton("Export...")
         self.export_anim_button.clicked.connect(self.export_anim)
-
-        self.window.left_frame.layout().addWidget(self.import_anim_button, 3, 0)
-        self.window.left_frame.layout().addWidget(self.export_anim_button, 3, 1)
-        self.window.left_frame.layout().addWidget(self.export_from_lt_button, 4, 0, 1, 2)
+        
+        import_export = QHBoxLayout()
+        import_export.addWidget(self.import_anim_button)
+        import_export.addWidget(self.export_anim_button)
+        self.window.tree_list.layout().addLayout(import_export)
+        self.window.tree_list.layout().addWidget(self.export_from_lt_button)
 
         frame_layout.addWidget(self.import_from_lt_button)
         frame_layout.addWidget(self.import_from_gba_button)
@@ -315,21 +330,11 @@ class CombatAnimProperties(QWidget):
 
     def nid_changed(self, text):
         self.current.nid = text
-        self.window.update_list()
 
     def nid_done_editing(self):
-        other_nids = [d.nid for d in self._data if d is not self.current]
-        if self.current.nid in other_nids:
-            QMessageBox.warning(self.window, 'Warning', 'ID %s already in use' % self.current.nid)
-            self.current.nid = str_utils.get_next_name(self.current.nid, other_nids)
-        self.on_nid_changed(self._data.find_key(self.current), self.current.nid)
-        self._data.update_nid(self.current, self.current.nid)
-        self.window.update_list()
-
-    def on_nid_changed(self, old_nid, new_nid):
-        for klass in DB.classes:
-            if klass.combat_anim_nid == old_nid:
-                klass.combat_anim_nid = new_nid
+        if not self.attempt_change_nid(self.cached_nid, self.current.nid):
+            self.current.nid = self.cached_nid
+        self.cached_nid = self.current.nid
 
     def ask_permission(self, obj, text: str) -> bool:
         ret = QMessageBox.warning(self, "Deletion Warning",
@@ -653,35 +658,39 @@ class CombatAnimProperties(QWidget):
 
     def set_current(self, current):
         self.stop()
-
-        self.current = current
-        populate_anim_pixmaps(self.current)
-        self.nid_box.setText(self.current.nid)
-
-        self.weapon_box.clear()
-        weapon_anims = self.current.weapon_anims
-        self.weapon_box.addItems([d.nid for d in weapon_anims])
-        if weapon_anims:
-            self.has_weapon(True)
-            self.weapon_box.setValue(weapon_anims[0].nid)
-            weapon_anim = self.get_current_weapon_anim()
-            poses = self.reset_pose_box(weapon_anim)
-            self.timeline_menu.set_current_frames(weapon_anim.frames)
+        if not current:
+            self.setEnabled(False)
         else:
-            self.has_weapon(False)
-            self.pose_box.clear()
-            weapon_anim, poses = None, None
+            self.setEnabled(True)
+            self.current = current
+            self.cached_nid = self.current.nid
+            populate_anim_pixmaps(self.current)
+            self.nid_box.setText(self.current.nid)
 
-        self.palette_menu.set_current(self.current)
+            self.weapon_box.clear()
+            weapon_anims = self.current.weapon_anims
+            self.weapon_box.addItems([d.nid for d in weapon_anims])
+            if weapon_anims:
+                self.has_weapon(True)
+                self.weapon_box.setValue(weapon_anims[0].nid)
+                weapon_anim = self.get_current_weapon_anim()
+                poses = self.reset_pose_box(weapon_anim)
+                self.timeline_menu.set_current_frames(weapon_anim.frames)
+            else:
+                self.has_weapon(False)
+                self.pose_box.clear()
+                weapon_anim, poses = None, None
 
-        if weapon_anim and poses:
-            self.has_pose(True)
-            current_pose_nid = self.pose_box.currentText()
-            current_pose = poses.get(current_pose_nid)
-            self.timeline_menu.set_current_pose(current_pose)
-        else:
-            self.has_pose(False)
-            self.timeline_menu.clear_pose()
+            self.palette_menu.set_current(self.current)
+
+            if weapon_anim and poses:
+                self.has_pose(True)
+                current_pose_nid = self.pose_box.currentText()
+                current_pose = poses.get(current_pose_nid)
+                self.timeline_menu.set_current_pose(current_pose)
+            else:
+                self.has_pose(False)
+                self.timeline_menu.clear_pose()
 
     def get_current_palette(self):
         return self.palette_menu.get_palette()
@@ -867,7 +876,7 @@ class CombatAnimProperties(QWidget):
             populate_anim_pixmaps(anim)
             RESOURCES.combat_anims.append(anim)
         # Print done import! Import complete!
-        self.window.update_list()
+        self.on_icon_change()
         QMessageBox.information(self, "Import Complete", "Import of combat animation %s complete!" % fn_dir)
 
     def export_anim(self):

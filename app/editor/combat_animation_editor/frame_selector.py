@@ -56,10 +56,10 @@ class FrameSelector(Dialog):
         # animations aren't loaded yet
         if not self.current or not self.current.pixmap:
             try:
-                from app.editor.combat_animation_editor.combat_animation_display import populate_anim_pixmaps
+                from app.editor.combat_animation_editor.new_combat_animation_properties import populate_anim_pixmaps
                 populate_anim_pixmaps(combat_anim)
             except:
-                from app.editor.combat_animation_editor.combat_effect_display import populate_effect_pixmaps
+                from app.editor.combat_animation_editor.new_combat_effect_properties import populate_effect_pixmaps
                 populate_effect_pixmaps(combat_anim)
 
 

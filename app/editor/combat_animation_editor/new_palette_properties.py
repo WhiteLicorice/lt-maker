@@ -17,12 +17,17 @@ from app.editor import timer
 from app.utilities import str_utils
 from app.extensions.custom_gui import PropertyBox, ComboBox, Dialog
 from app.editor.combat_animation_editor.frame_selector import FrameSelector
-from app.editor.combat_animation_editor import combat_animation_model, combat_effect_display, combat_animation_display
+from app.editor.combat_animation_editor import combat_animation_model, new_combat_effect_properties, new_combat_animation_properties, palette_model
 from app.editor.combat_animation_editor.color_editor import ColorEditorWidget
 from app.editor.lib.components.validated_line_edit import NidLineEdit
 from app.data.resources.combat_anims import Frame
 from app.data.resources.combat_palettes import Palette
 from app.editor.icon_editor.icon_view import IconView
+from app.editor.component_editor_types import T
+from app.utilities.typing import NID
+
+from typing import (Callable, Optional)
+
 import app.editor.utilities as editor_utilities
 
 import logging
@@ -310,11 +315,15 @@ class EaselWidget(QGraphicsView):
         return base_image
 
     def set_current(self, current_palette: Palette, current_frame: Frame):
-        self.current_palette = current_palette
-        self.current_frame = current_frame
-        self.current_coord = None
-        self.update_view()
-        self.selectionChanged.emit(None)
+        if not current_palette:
+            self.setEnabled(False)
+        else:
+            self.setEnabled(True)
+            self.current_palette = current_palette
+            self.current_frame = current_frame
+            self.current_coord = None
+            self.update_view()
+            self.selectionChanged.emit(None)
 
     def set_current_color(self, color: QColor):
         if self.current_palette and self.current_coord:
@@ -450,16 +459,24 @@ class EffectSelection(Dialog):
                 return combat_effect.nid
         return None
 
-class PaletteProperties(QWidget):
-    def __init__(self, parent):
+class NewPaletteProperties(QWidget):
+    title = "Palette"
+
+    def __init__(self, parent, current: Optional[T] = None,
+                 attempt_change_nid: Optional[Callable[[NID, NID], bool]] = None,
+                 on_icon_change: Optional[Callable] = None):
         QWidget.__init__(self, parent)
         self.window = parent
-        self._data = self.window._data
-        self.model = self.window.left_frame.model
+        self._data = self.window.data
+
+        self.current_palette: Optional[T] = current
+        self.cached_nid: Optional[NID] = self.current_palette.nid if self.current_palette else None
+        self.attempt_change_nid = attempt_change_nid
+        self.on_icon_change = on_icon_change
+        self.set_current(None)
 
         self.settings = MainSettingsController()
 
-        self.current_palette = None
         self.current_frame = None
         self.current_frame_set = None
         self.painting_color: QColor = QColor(0, 0, 0)
@@ -480,11 +497,11 @@ class PaletteProperties(QWidget):
         self.import_with_base_box = QPushButton("Import from PNG Image with base frame...")
         self.import_with_base_box.clicked.connect(self.import_palette_from_image_with_base)
 
-        left_frame = self.window.left_frame
-        grid = left_frame.layout()
-        grid.addWidget(self.import_box, 3, 0, 1, 2)
-        grid.addWidget(self.import_with_base_box, 4, 0, 1, 2)
-        grid.addWidget(self.nid_box, 5, 0, 1, 2)
+        left_frame = self.window.tree_list.layout()
+        layout = left_frame
+        layout.addWidget(self.import_box)
+        layout.addWidget(self.import_with_base_box)
+        layout.addWidget(self.nid_box)
 
         self.raw_view = AnimView(self)
         self.raw_view.static_size = True
@@ -539,28 +556,28 @@ class PaletteProperties(QWidget):
 
     def nid_changed(self, text):
         self.current_palette.nid = text
-        self.window.update_list()
 
     def nid_done_editing(self):
         # Check validity of nid!
-        other_nids = [d.nid for d in self._data.values() if d is not self.current_palette]
-        if self.current_palette.nid in other_nids:
-            QMessageBox.warning(self.window, 'Warning', 'Palette ID %s already in use' % self.current_palette.nid)
-            self.current_palette.nid = str_utils.get_next_name(self.current_palette.nid, other_nids)
-        self.model.on_nid_changed(self._data.find_key(self.current_palette), self.current_palette.nid)
-        self._data.update_nid(self.current_palette, self.current_palette.nid)
-        self.window.update_list()
+        if not self.attempt_change_nid(self.cached_nid, self.current_palette.nid):
+            self.current_palette.nid = self.cached_nid
+        self.cached_nid = self.current_palette.nid
 
     @property
     def current(self):
         return self.current_palette
 
     def set_current(self, current):
-        palette_commands.clear()
-        self.current_palette = current
-        self.nid_box.edit.setText(self.current_palette.nid)
-        self.easel_widget.set_current(current, self.current_frame)
-        self.draw_frame()
+        if not current:
+            self.setEnabled(False)
+        else:
+            self.setEnabled(True)
+            self.current_palette = current
+            palette_commands.clear()
+            self.current_palette = current
+            self.nid_box.edit.setText(self.current_palette.nid)
+            self.easel_widget.set_current(current, self.current_frame)
+            self.draw_frame()
 
     def get_current_palette(self):
         return self.current_palette.nid
@@ -573,7 +590,7 @@ class PaletteProperties(QWidget):
         weapon_anim = combat_anim.weapon_anims.get(weapon_anim_nid)
         if not weapon_anim:
             return
-        combat_animation_display.populate_anim_pixmaps(combat_anim)
+        new_combat_animation_properties.populate_anim_pixmaps(combat_anim)
         frame, ok = FrameSelector.get(combat_anim, weapon_anim, self)
         if frame and ok:
             self.current_frame_set = weapon_anim
@@ -586,7 +603,7 @@ class PaletteProperties(QWidget):
         effect_anim = RESOURCES.combat_effects.get(effect_nid)
         if not effect_anim:
             return
-        combat_effect_display.populate_effect_pixmaps(effect_anim)
+        new_combat_effect_properties.populate_effect_pixmaps(effect_anim)
         frame, ok = FrameSelector.get(effect_anim, effect_anim, self)
         if frame and ok:
             self.current_frame_set = effect_anim
@@ -609,7 +626,7 @@ class PaletteProperties(QWidget):
         if not weapon_anim.frames:
             QMessageBox.critical(self, "Autoselect Error", 'Could not find a good frame. Try using manual "Select".')
             return
-        combat_animation_display.populate_anim_pixmaps(combat_anim)
+        new_combat_animation_properties.populate_anim_pixmaps(combat_anim)
         frame = weapon_anim.frames[0]
         if frame:
             self.current_frame_set = weapon_anim
@@ -628,7 +645,7 @@ class PaletteProperties(QWidget):
         if not effect_anim.frames:
             QMessageBox.critical(self, "Autoselect Error", 'Could not find a good frame. Try using manual "Select".')
             return
-        combat_effect_display.populate_effect_pixmaps(effect_anim)
+        new_combat_effect_properties.populate_effect_pixmaps(effect_anim)
         frame = effect_anim.frames[0]
         if frame:
             self.current_frame_set = effect_anim
@@ -684,7 +701,7 @@ class PaletteProperties(QWidget):
                     did_import = True
             if did_import:
                 # Move view
-                self.model.move_to_bottom()
+                palette_model.move_to_bottom()
 
     def import_palette_from_image_with_base(self):
         """
@@ -701,7 +718,7 @@ class PaletteProperties(QWidget):
         weapon_anim = combat_anim.weapon_anims.get(weapon_anim_nid)
         if not weapon_anim:
             return
-        combat_animation_display.populate_anim_pixmaps(combat_anim)
+        new_combat_animation_properties.populate_anim_pixmaps(combat_anim)
         frame, ok = FrameSelector.get(combat_anim, weapon_anim, self)
         if frame and ok:
             starting_path = self.settings.get_last_open_path()
@@ -737,4 +754,4 @@ class PaletteProperties(QWidget):
                     new_palette.colors = colors
                     RESOURCES.combat_palettes.append(new_palette)
                     # Move view
-                    self.model.move_to_bottom()
+                    palette_model.move_to_bottom()

@@ -17,20 +17,6 @@ from app.editor.combat_animation_editor import combat_animation_model
 
 from app.utilities.typing import NID
 
-def get_map_sprite_icon(klass_obj, num=0, current=False, team: NID = 'player', variant=None):
-    res = None
-    if variant and klass_obj.map_sprite_nid:
-        res = RESOURCES.map_sprites.get(klass_obj.map_sprite_nid + variant)
-    if klass_obj.map_sprite_nid and (not variant or not res):
-        res = RESOURCES.map_sprites.get(klass_obj.map_sprite_nid)
-    if not res:
-        return None
-    if not res.standing_pixmap:
-        res.standing_pixmap = QPixmap(res.stand_full_path)
-    pixmap = res.standing_pixmap
-    pixmap = map_sprite_model.get_basic_icon(pixmap, num, current, team)
-    return pixmap
-
 def get_combat_anim_icon(klass_obj):
     if not klass_obj.combat_anim_nid:
         return None
@@ -104,7 +90,7 @@ class ClassModel(DragDropCollectionModel):
                 active = index == self.window.view.currentIndex()
             else:
                 active = False
-            pixmap = get_map_sprite_icon(klass, num, active, self.display_team)
+            pixmap = map_sprite_model.get_map_sprite_icon(klass.map_sprite_nid, num, active, self.display_team)
             if pixmap:
                 return QIcon(pixmap)
             else:

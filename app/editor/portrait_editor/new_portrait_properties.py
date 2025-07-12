@@ -12,9 +12,15 @@ from app.extensions.custom_gui import PropertyBox
 from app.editor import timer
 from app.editor.icon_editor.icon_view import IconView
 from app.editor.portrait_editor import portrait_model
+from app.editor.component_editor_types import T
+from app.utilities.typing import NID
 import app.editor.utilities as editor_utilities
 
-class PortraitProperties(QWidget):
+from typing import (Callable, Optional)
+
+class NewPortraitProperties(QWidget):
+    title = "Unit Portrait"
+
     width, height = 128, 112
 
     halfblink = (96, 48, 32, 16)
@@ -28,10 +34,17 @@ class PortraitProperties(QWidget):
     halfsmile = (32, 80, 32, 16)
     closesmile = (64, 80, 32, 16)
 
-    def __init__(self, parent, current=None):
+    def __init__(self, parent, current: Optional[T] = None,
+                 attempt_change_nid: Optional[Callable[[NID, NID], bool]] = None,
+                 on_icon_change: Optional[Callable] = None):
         QWidget.__init__(self, parent)
         self.window = parent
-        self._data = self.window._data
+        self._data = self.window.data
+
+        self.current: Optional[T] = current
+        self.cached_nid: Optional[NID] = self.current.nid if self.current else None
+        self.attempt_change_nid = attempt_change_nid
+        self.on_icon_change = on_icon_change
 
         # Populate resources
         for resource in self._data:
@@ -118,17 +131,21 @@ class PortraitProperties(QWidget):
         timer.get_timer().tick_elapsed.connect(self.tick)
 
     def set_current(self, current):
-        self.current = current
-        self.raw_view.edit.set_image(self.current.pixmap)
-        self.raw_view.edit.show_image()
+        if not current:
+            self.setEnabled(False)
+        else:
+            self.setEnabled(True)
+            self.current = current
+            self.raw_view.edit.set_image(self.current.pixmap)
+            self.raw_view.edit.show_image()
 
-        bo = self.current.blinking_offset
-        so = self.current.smiling_offset
-        self.blinking_offset.edit.set_current(bo[0], bo[1])
-        self.smiling_offset.edit.set_current(so[0], so[1])
-        self.info_offset.edit.setValue(self.current.info_offset)
+            bo = self.current.blinking_offset
+            so = self.current.smiling_offset
+            self.blinking_offset.edit.set_current(bo[0], bo[1])
+            self.smiling_offset.edit.set_current(so[0], so[1])
+            self.info_offset.edit.setValue(self.current.info_offset)
 
-        self.draw_portrait()
+            self.draw_portrait()
 
     def tick(self):
         self.draw_portrait()
