@@ -249,8 +249,8 @@ class CreditPushableIcon(PushableIcon16):
 
     def onIconSourcePicker(self):
         if self.credit_type == ResourceType.PORTRAITS:
-            from app.editor.portrait_editor import portrait_tab
-            res, ok = portrait_tab.get()
+            from app.editor.portrait_editor import new_portrait_tab
+            res, ok = new_portrait_tab.get()
         else:           
             from app.editor.icon_editor import icon_tab
             if self.credit_type == ResourceType.MAP_ICONS:

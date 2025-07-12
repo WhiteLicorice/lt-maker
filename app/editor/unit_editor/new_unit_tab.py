@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import QApplication, QFileDialog, QMessageBox
 from app.data.database.database import DB
 from app.data.database.units import UnitCatalog
 from app.editor.unit_editor import unit_import, unit_model, new_unit_properties
+from app.editor.portrait_editor import portrait_model
 from app.editor.settings.main_settings_controller import MainSettingsController
 from app.editor.new_editor_tab import NewEditorTab
 from app.utilities.typing import NID
@@ -27,9 +28,10 @@ class NewUnitDatabase(NewEditorTab):
         return self._db.units
 
     def get_icon(self, unit_nid: NID) -> Optional[QIcon]:
-        if not self.data.get(unit_nid):
+        unit = self.data.get(unit_nid)
+        if not unit:
             return None
-        pix = unit_model.get_chibi(self.data.get(unit_nid))
+        pix = portrait_model.get_chibi(unit.portrait_nid)
         if pix:
             return QIcon(pix.scaled(32, 32))
         return None

@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import List, Optional, Set
 from typing_extensions import override
 
+from app.data.category import CategorizedCatalog
 from app.data.resources.base_catalog import ManifestCatalog
 from app.data.resources import combat_commands
 from app.data.resources.resource_prefab import WithResources
@@ -167,7 +168,7 @@ class EffectAnimation(WithResources, Prefab):
             self.palettes.append([palette_name, palette_nid])
         return self
 
-class CombatCatalog(ManifestCatalog):
+class CombatCatalog(ManifestCatalog, CategorizedCatalog):
     manifest = 'combat_anims.json'
     title = 'Combat Animations'
     datatype = CombatAnimation
@@ -191,7 +192,7 @@ class CombatCatalog(ManifestCatalog):
         for combat_anim in self:
             self.save_image(loc, combat_anim)
 
-class CombatEffectCatalog(ManifestCatalog):
+class CombatEffectCatalog(ManifestCatalog, CategorizedCatalog):
     manifest = 'combat_effects.json'
     title = 'Combat Effects'
     datatype = EffectAnimation

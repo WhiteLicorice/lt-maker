@@ -8,19 +8,10 @@ from app.data.database.level_units import UniqueUnit
 from app.extensions.custom_gui import DeletionTab, DeletionDialog
 
 from app.editor.base_database_gui import DragDropCollectionModel
+from app.editor.portrait_editor import portrait_model
 import app.editor.utilities as editor_utilities
 
 from app.utilities.typing import NID
-
-def get_chibi(unit):
-    res = RESOURCES.portraits.get(unit.portrait_nid)
-    if not res:
-        return None
-    if not res.pixmap:
-        res.pixmap = QPixmap(res.full_path)
-    pixmap = res.pixmap.copy(res.pixmap.width() - 32, 16, 32, 32)
-    pixmap = QPixmap.fromImage(editor_utilities.convert_colorkey(pixmap.toImage()))
-    return pixmap
 
 def check_delete(nid: NID, window) -> bool:
     affected_ais = [ai for ai in DB.ai if ai.has_unit_spec("ID", nid)]
@@ -94,7 +85,7 @@ class UnitModel(DragDropCollectionModel):
             if not unit:
                 return None
             # Get chibi image
-            pixmap = get_chibi(unit)
+            pixmap = portrait_model.get_chibi(unit.portrait_nid)
             if pixmap:
                 return QIcon(pixmap)
             else:

@@ -6,7 +6,7 @@ from app.data.database.database import DB
 from app.data.database.levels import LevelPrefab
 from app.data.resources.tiles import TileMapPrefab
 from app.editor import tilemap_editor, timer
-from app.editor.class_editor import class_model
+from app.editor.map_sprite_editor import map_sprite_model
 from app.editor.overworld_editor.road_sprite_wrapper import RoadSpriteWrapper
 from app.editor.settings import MainSettingsController
 from app.data.resources.resources import RESOURCES
@@ -93,8 +93,7 @@ class SimpleMapView(QGraphicsView):
         klass = DB.classes.get(klass_nid)
         if not klass:
             klass = DB.classes[0]
-        pixmap = class_model.get_map_sprite_icon(
-            klass, num, False, unit.team, unit.variant)
+        pixmap = map_sprite_model.get_map_sprite_icon(klass.map_sprite_nid, num, False, unit.team, unit.variant)
         coord = position
         if pixmap:
             if opacity:
