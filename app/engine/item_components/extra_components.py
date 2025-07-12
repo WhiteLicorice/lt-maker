@@ -170,6 +170,21 @@ class Eclipse(ItemComponent):
             playback.append(pb.HitSound('No Damage'))
             playback.append(pb.HitAnim('MapNoDamage', target))
 
+class EclipseFE7(ItemComponent):
+    nid = 'eclipse_fe7'
+    desc = "Reduces target's HP to 1"
+    tag = ItemTags.EXTRA
+
+    def on_hit(self, actions, playback, unit, item, target, item2, target_pos, mode, attack_info):
+        true_damage = damage = target.get_hp() - 1
+        actions.append(action.ChangeHP(target, -damage))
+
+        # For animation
+        playback.append(pb.DamageHit(unit, item, target, damage, true_damage))
+        if true_damage == 0:
+            playback.append(pb.HitSound('No Damage'))
+            playback.append(pb.HitAnim('MapNoDamage', target))
+
 class NoDouble(ItemComponent):
     nid = 'no_double'
     desc = "Item cannot double"
