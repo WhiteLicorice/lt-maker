@@ -107,6 +107,7 @@ def create_new(window):
     standing_pix, moving_pix = None, None
     lion_throne_mode = True
     fn, sok = QFileDialog.getOpenFileName(window, "Choose Standing Map Sprite", starting_path)
+    first_fn = fn
     if sok:
         if fn.endswith('.png'):
             nid = os.path.split(fn)[-1][:-4]
@@ -128,8 +129,9 @@ def create_new(window):
     else:
         return
     starting_path = settings.get_last_open_path()
-    fn, mok = QFileDialog.getOpenFileName(window, "Choose Moving Map Sprite", starting_path)
+    fn, mok = QFileDialog.getOpenFileName(window, "Choose Moving Map Sprite (Choose Standing Sprite Again If No Moving Sprite)", starting_path)
     gba_overhang = False
+    gba_no_move = False
     if mok:
         if fn.endswith('.png'):
             moving_pix = QPixmap(fn)
@@ -141,7 +143,9 @@ def create_new(window):
                     QMessageBox.critical(window, "Error", "Moving Map Sprite is not correct size for Legacy import (192x160 px)")
                     return
             else:
-                if moving_pix.width() == 32 and moving_pix.height() == 32 * 15:
+                if fn == first_fn:
+                    gba_no_move = True
+                elif moving_pix.width() == 32 and moving_pix.height() == 32 * 15:
                     pass
                 elif moving_pix.width() == 32 and moving_pix.height() == 32 * 15 + 8:
                     gba_overhang = True
@@ -160,7 +164,7 @@ def create_new(window):
         else:
             current_proj = settings.get_current_project()
             if current_proj:
-                standing_pix, moving_pix = import_gba_map_sprite(standing_pix, moving_pix, gba_overhang)
+                standing_pix, moving_pix = import_gba_map_sprite(standing_pix, moving_pix, gba_overhang, gba_no_move)
                 stand_full_path = os.path.join(current_proj, 'resources', 'map_sprites', nid + '-stand.png')
                 move_full_path = os.path.join(current_proj, 'resources', 'map_sprites', nid + '-move.png')
                 standing_pix.save(stand_full_path)
@@ -174,7 +178,7 @@ def create_new(window):
         settings.set_last_open_path(parent_dir)
         return new_map_sprite
 
-def import_gba_map_sprite(standing_pix, moving_pix, gba_overhang=False):
+def import_gba_map_sprite(standing_pix: QPixmap, moving_pix: QPixmap, gba_overhang:bool=False, gba_no_move:bool=False) -> tuple[QPixmap, QPixmap]:
     s_width = standing_pix.width()
     s_height = standing_pix.height()
     new_s = QPixmap(192, 144)
@@ -185,25 +189,37 @@ def import_gba_map_sprite(standing_pix, moving_pix, gba_overhang=False):
     passive1 = standing_pix.copy(0, 0, s_width, s_height//3)
     passive2 = standing_pix.copy(0, s_height//3, s_width, s_height//3)
     passive3 = standing_pix.copy(0, 2*s_height//3, s_width, s_height//3)
+        
+    if not gba_no_move:
+        left1 = moving_pix.copy(0, 0, 32, 32)
+        left2 = moving_pix.copy(0, 32, 32, 32)
+        left3 = moving_pix.copy(0, 32*2, 32, 32)
+        left4 = moving_pix.copy(0, 32*3, 32, 32)
 
-    left1 = moving_pix.copy(0, 0, 32, 32)
-    left2 = moving_pix.copy(0, 32, 32, 32)
-    left3 = moving_pix.copy(0, 32*2, 32, 32)
-    left4 = moving_pix.copy(0, 32*3, 32, 32)
+        down1 = moving_pix.copy(0, 32*4, 32, 32)
+        down2 = moving_pix.copy(0, 32*5, 32, 32)
+        down3 = moving_pix.copy(0, 32*6, 32, 32)
+        down4 = moving_pix.copy(0, 32*7, 32, 32)
 
-    down1 = moving_pix.copy(0, 32*4, 32, 32)
-    down2 = moving_pix.copy(0, 32*5, 32, 32)
-    down3 = moving_pix.copy(0, 32*6, 32, 32)
-    down4 = moving_pix.copy(0, 32*7, 32, 32)
+        up1 = moving_pix.copy(0, 32*8, 32, 32)
+        up2 = moving_pix.copy(0, 32*9, 32, 32)
+        up3 = moving_pix.copy(0, 32*10, 32, 32)
+        up4 = moving_pix.copy(0, 32*11, 32, 32)
 
-    up1 = moving_pix.copy(0, 32*8, 32, 32)
-    up2 = moving_pix.copy(0, 32*9, 32, 32)
-    up3 = moving_pix.copy(0, 32*10, 32, 32)
-    up4 = moving_pix.copy(0, 32*11, 32, 32)
-
-    focus1 = moving_pix.copy(0, 32*12, 32, 32)
-    focus2 = moving_pix.copy(0, 32*13, 32, 32)
-    focus3 = moving_pix.copy(0, 32*14, 32, 32)
+        focus1 = moving_pix.copy(0, 32*12, 32, 32)
+        focus2 = moving_pix.copy(0, 32*13, 32, 32)
+        focus3 = moving_pix.copy(0, 32*14, 32, 32)
+    else:
+        frames = [QPixmap(32, 32) for _ in range(12)]
+        for frame in frames:
+            frame.fill(QColor(editor_utilities.qCOLORKEY))
+            
+        left1, left2, left3, left4, down1, down2, down3, down4, up1, up2, up3, up4 = frames
+        
+        # We still want reactivity for corpses (i.e. when viewing the info_menu or hovering on map) so we just copy the standing frames here
+        focus1 = standing_pix.copy(0, 0, s_width, s_height//3)
+        focus2 = standing_pix.copy(0, s_height//3, s_width, s_height//3)
+        focus3 = standing_pix.copy(0, 2*s_height//3, s_width, s_height//3)
 
     if gba_overhang:
         overhang = moving_pix.copy(0, 32*15, 32, 8)
@@ -218,14 +234,21 @@ def import_gba_map_sprite(standing_pix, moving_pix, gba_overhang=False):
         new_width = 16
 
     painter = QPainter()
+    
     # Standing pixmap
     painter.begin(new_s)
     painter.drawPixmap(new_width, new_height, passive1)
     painter.drawPixmap(new_width + 64, new_height, passive2)
     painter.drawPixmap(new_width + 128, new_height, passive3)
-    painter.drawPixmap(16, 8 + 96, focus1)
-    painter.drawPixmap(16 + 64, 8 + 96, focus2)
-    painter.drawPixmap(16 + 128, 8 + 96, focus3)
+    
+    # If a corpse, the focus row is essentially just the standing row shifted downward - so we need to mirror base width & height
+    focus1_pt = (new_width if gba_no_move else 16), (new_height if gba_no_move else 8) + 96
+    focus2_pt = (new_width if gba_no_move else 16) + 64, (new_height if gba_no_move else 8) + 96
+    focus3_pt = (new_width if gba_no_move else 16) + 128, (new_height if gba_no_move else 8) + 96
+    
+    painter.drawPixmap(*focus1_pt, focus1)
+    painter.drawPixmap(*focus2_pt, focus2)
+    painter.drawPixmap(*focus3_pt, focus3)
 
     if gba_overhang:
         painter.drawPixmap(16 + 128, 8 + 96 - 8, overhang)  # right above focus3
