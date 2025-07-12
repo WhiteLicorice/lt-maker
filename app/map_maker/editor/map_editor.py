@@ -225,6 +225,7 @@ class MapEditor(QMainWindow):
         paint_group.addAction(self.erase_action)
         self.resize_action = QAction(QIcon(f"{icon_folder}/resize.png"), "Resize", self, shortcut="R", triggered=self.resize_map)
 
+        self.clear_all_action = QAction(QIcon(f"{icon_folder}/eraser.png"), "Clear All", self, triggered=self.clear_map)
         self.export_as_png_action = QAction(QIcon(f"{icon_folder}/export_as_png.png"), "Export Current Image as PNG", self, triggered=self.export_as_png)
         self.export_to_lt_action = QAction(QIcon("favicon.ico"), "Export to LT-maker", self, triggered=self.export_to_lt)
 
@@ -282,6 +283,7 @@ class MapEditor(QMainWindow):
         edit_menu.addAction(self.add_cliff_marker_action)
         edit_menu.addAction(self.remove_cliff_marker_action)
         edit_menu.addSeparator()
+        edit_menu.addAction(self.clear_all_action)
         edit_menu.addAction(self.show_gridlines_action)
         edit_menu.addAction(self.zoom_in_action)
         edit_menu.addAction(self.zoom_out_action)
@@ -378,6 +380,11 @@ class MapEditor(QMainWindow):
 
     def resize_map(self):
         ResizeDialog.get_new_size(self.current, self)
+
+    def clear_map(self):
+        self.current.clear()
+        self.current.reset_all()
+        self.view.update_view()
 
     def gridline_toggle(self, val):
         self.view.draw_gridlines = val

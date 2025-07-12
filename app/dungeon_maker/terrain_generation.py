@@ -8,6 +8,8 @@ https://www.youtube.com/watch?v=fudOO713qYo
 from __future__ import annotations
 from typing import Any, Dict, List, Optional, Set, Tuple
 
+import random
+
 from app.utilities import utils
 from app.utilities.typing import Pos, NID
 from app.utilities.direction import Direction, get_cardinal_positions, get_diagonal_positions
@@ -24,11 +26,16 @@ import logging
 PRINT = True
 
 def generate_terrain(theme: Dict[NID, Any], seed: int) -> DungeonTileMap:
+    if seed == -1:  # Random seed
+        seed = random.randint(0, 999_999)
+    orig_seed = seed
     while True:
         result = _generate_terrain_process(theme, seed)
         seed += 1  # If that didn't work, try a different seed
         if result:
             break
+        if seed > orig_seed + 10:
+            return None
 
     return result
 
@@ -73,7 +80,7 @@ def _generate_terrain_process(theme: Dict[NID, Any], seed: int) -> Optional[Dung
         tilemap.print_terrain_grid()
 
     # All floor tiles must be reachable
-    if not tilemap.is_fully_connected():
+    if theme["require_connectivity"] and not tilemap.is_fully_connected():
         return
 
     # 7. Make sure all walls are at least 2 tiles high if grounded on the lower level
@@ -111,7 +118,7 @@ def _generate_terrain_process(theme: Dict[NID, Any], seed: int) -> Optional[Dung
     if theme["convert_void_to_water"]:
         tilemap.convert_void_to_water()
     # All floor tiles must be reachable
-    if not tilemap.is_fully_connected():
+    if theme["require_connectivity"] and not tilemap.is_fully_connected():
         return
 
     tilemap.print_terrain_grid()
@@ -192,7 +199,7 @@ class DungeonTileMap:
         if floor_tiles:
             self.print_terrain_grid()
             # There are some tiles that haven't been reached
-            logging.debug("Could not find these tiles:", sorted(floor_tiles))
+            logging.debug("Could not find these tiles:", list(sorted(floor_tiles)))
             logging.debug(sorted(can_reach))
             return False
         return True

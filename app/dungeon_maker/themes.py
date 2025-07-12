@@ -43,6 +43,7 @@ theme_parameters = Data([
     ThemeParameter('fill_in_empty_areas', "Fill in Empty Areas", False, bool, "Attempt to fill large areas of void with floor?"),
     ThemeParameter('use_global_section', "Fill Outside", False, bool, "Fill the outside of the map with lower floor"),
     ThemeParameter('convert_void_to_water', "Void -> Pool", False, bool, "Convert all void to pool terrain"),
+    ThemeParameter('require_connectivity', "Require Full Connectivity", True, bool, "All floor tiles will be reachable from one another"),
 ])
 
 theme_presets: Dict[str, Dict[NID, Any]] = {

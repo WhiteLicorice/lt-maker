@@ -3,8 +3,8 @@ from typing import Any, Dict, Tuple
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtWidgets import QDoubleSpinBox, \
     QDialog, QGroupBox, QFormLayout, QSpinBox, \
-    QCheckBox, QVBoxLayout, QLabel, \
-    QPushButton, QHBoxLayout
+    QCheckBox, QVBoxLayout, QLabel, QWidget, \
+    QPushButton, QHBoxLayout, QMessageBox, QScrollArea
 
 from app.utilities.typing import NID
 
@@ -48,8 +48,16 @@ class AutogenerateIndoorMap(QDialog):
         h_line = QHLine()
         self.layout.addWidget(h_line)
 
-        form_layout = QFormLayout()
-        self.layout.addLayout(form_layout)
+        form_widget = QWidget(self)
+        form_layout = QFormLayout(form_widget)
+        form_widget.setLayout(form_layout)
+
+        scroll_area = QScrollArea(self)
+        scroll_area.setWidget(form_widget)
+        scroll_area.setWidgetResizable(True)
+        self.layout.addWidget(scroll_area)
+        self.setMaximumWidth(350)
+        self.resize(350, 800)
 
         self.boxes = {}
         for theme_parameter in themes.theme_parameters:
@@ -94,10 +102,11 @@ class AutogenerateIndoorMap(QDialog):
         generate_button = QPushButton("Generate")
         generate_button.clicked.connect(self.generate)
         self.random_seed_box = PropertyBox("Seed", QSpinBox, self)
-        self.random_seed_box.edit.setRange(0, 1023)
+        self.random_seed_box.edit.setRange(-1, 1023)
         self.random_seed_box.edit.setValue(0)
         self.random_seed_box.setMaximumWidth(60)
         self.random_seed_box.edit.setAlignment(Qt.AlignRight)
+        self.random_seed_box.setToolTip("Seed utilized to generate a unique map. Set to -1 for a random seed each time.")
         generate_layout.addWidget(generate_button)
         generate_layout.addWidget(self.random_seed_box)
         self.layout.addLayout(generate_layout)
@@ -181,9 +190,12 @@ class AutogenerateIndoorMap(QDialog):
     def generate(self):
         theme = self.get_parameters()
         dungeon_tilemap = terrain_generation.generate_terrain(theme, self.random_seed_box.edit.value())
-        # Update the current with the dungeon tilemap values
-        self.tilemap.set_new_terrain_grid(
-            (dungeon_tilemap.width, dungeon_tilemap.height), dungeon_tilemap.terrain_grid)
+        if dungeon_tilemap:
+            # Update the current with the dungeon tilemap values
+            self.tilemap.set_new_terrain_grid(
+                (dungeon_tilemap.width, dungeon_tilemap.height), dungeon_tilemap.terrain_grid)
+        else:
+            QMessageBox.information(self, "Map Generation Failed", "Unable to generate a map. Check your connectivity rules!")
 
     @classmethod
     def customize(cls, parent=None):
