@@ -147,6 +147,7 @@ class LostOnEndCombat2(SkillComponent):
         "lost_on_ally": ComponentType.Bool,
         "lost_on_enemy": ComponentType.Bool,
         "lost_on_splash": ComponentType.Bool,
+        "only_if_initiated": ComponentType.Bool,
     }
 
     def __init__(self, value=None):
@@ -155,6 +156,7 @@ class LostOnEndCombat2(SkillComponent):
             "lost_on_ally": True,
             "lost_on_enemy": True,
             "lost_on_splash": True,
+            "only_if_initiated": False,
         }
         if value:
             self.value.update(value)
@@ -167,6 +169,10 @@ class LostOnEndCombat2(SkillComponent):
         if not self.marked_for_delete:
             return
         from app.engine import skill_system
+        # Skip this if the unit didn't initiate
+        if self.value.get('only_if_initiated', False):
+            if mode == "attack":
+                return
         remove_skill = False
         if self.value.get('lost_on_self', True):
             if unit == target:
@@ -222,6 +228,18 @@ class EventOnRemove(SkillComponent):
     expose = ComponentType.Event
 
     def after_true_remove(self, unit, skill):
+        event_prefab = DB.events.get_from_nid(self.value)
+        if event_prefab:
+            game.events.trigger_specific_event(event_prefab.nid, unit)
+
+class EventOnWait(SkillComponent):
+    nid = 'event_on_wait'
+    desc = "Calls event when unit waits"
+    tag = SkillTags.TIME
+
+    expose = ComponentType.Event
+
+    def on_wait(self, unit, actively_chosen):
         event_prefab = DB.events.get_from_nid(self.value)
         if event_prefab:
             game.events.trigger_specific_event(event_prefab.nid, unit)

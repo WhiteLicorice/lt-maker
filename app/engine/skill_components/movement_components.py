@@ -187,12 +187,30 @@ class Galeforce(SkillComponent):
     desc = "After killing an enemy on player phase, unit can move again."
     tag = SkillTags.MOVEMENT
 
+    _did_something = False
+
     def end_combat(self, playback, unit, item, target, item2, mode):
         mark_playbacks = [p for p in playback if p.nid in ('mark_miss', 'mark_hit', 'mark_crit')]
         if target and target.get_hp() <= 0 and \
                 any(p.main_attacker is unit for p in mark_playbacks):  # Unit is overall attacker
-            action.do(action.Reset(unit))
+            self._did_something = True
             action.do(action.TriggerCharge(unit, self.skill))
+
+    def on_wait(self, unit, actively_chosen):
+        if self._did_something:
+            action.do(action.Reset(unit))
+        self._did_something = False
+
+
+class SimpleGaleforce(SkillComponent):
+    nid = 'simple_galeforce'
+    desc = "Unit can move again."
+    tag = SkillTags.MOVEMENT
+
+    def on_wait(self, unit, actively_chosen):
+        action.do(action.TriggerCharge(unit, self.skill))
+        action.do(action.Reset(unit))
+
 
 class ModernGaleforce(SkillComponent):
     nid = 'modern_galeforce'
@@ -214,4 +232,3 @@ class ModernGaleforce(SkillComponent):
             action.do(action.Reset(unit))
             action.do(action.TriggerCharge(unit, self.skill))
             self._should_refresh = False
-        
