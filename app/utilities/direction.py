@@ -75,6 +75,9 @@ class Direction(str, Enum):
 
     @staticmethod
     def next(direction, pos: Tuple[int, int]) -> Tuple[int, int]:
+        """
+        Returns the next position in the given direction
+        """
         if direction == Direction.NORTH:
             pos = pos[0], pos[1] - 1
         elif direction == Direction.SOUTH:

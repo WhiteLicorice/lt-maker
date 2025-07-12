@@ -9,6 +9,7 @@ stages:
     - test
     - generate_engine
     - generate_editor
+    - generate_map_maker
     - release
 
 run_tests:
@@ -106,6 +107,41 @@ build_editor:
             - lt_editor/
         expire_in: 3 mos
 
+build_map_maker:
+    stage: generate_map_maker
+    image: "python:3.11.8"
+    extends:
+    - .shared_windows_runners
+    except: # If this double builds consider changing to only: pushes
+        refs:
+            - merge_requests
+    only:
+        - release
+    before_script:
+        - choco install -y python --version=3.11.8
+        - "C:\\Python311\\python.exe -m pip install -r requirements_editor.txt"
+        - "C:\\Python311\\python.exe -m pip install pywin32"
+        # Necessary to use setuptools < 70 until we upgrade to Pyinstaller v6.7.0
+        - "C:\\Python311\\python.exe -m pip install setuptools<70 --upgrade"
+        - echo "Prereqs successfully installed"
+    script:
+        - start powershell
+        - echo "Building map maker..."
+        - cp ./utilities/build_tools/map_maker.spec .
+        - "C:\\Python311\\Scripts\\pyinstaller.exe -y map_maker.spec"
+        - rm map_maker.spec -fo
+        - mkdir lt_map_maker
+        - mv dist/lt_map_maker ./lt_map_maker/lt_map_maker
+        - cp utilities/install/double_click_to_run.bat ./lt_map_maker
+        - echo "Copying generated files"
+        - echo $CI_COMMIT_SHORT_SHA > ./lt_map_maker/lt_map_maker/version.txt
+        - echo "Done!"
+    artifacts:
+        name: "LT Map Maker"
+        paths:
+            - lt_map_maker/
+        expire_in: 3 mos
+
 release:
     stage: release
     image: registry.gitlab.com/gitlab-org/release-cli:latest
@@ -113,6 +149,7 @@ release:
     - job: build_editor
       artifacts: true
     - job: build_engine
+    - job: build_map_maker
     except:
         refs:
             - merge_requests
@@ -134,4 +171,8 @@ release:
                 - name: 'Lex_Talionis_Engine'
                   filepath: /lex_talionis_engine
                   url: "https://gitlab.com/rainlash/lt-maker/-/jobs/artifacts/release/download?job=build_engine"
+                  link_type: package
+                - name: 'Lex_Talionis_Map_Maker'
+                  filepath: /lex_talionis_map_maker
+                  url: "https://gitlab.com/rainlash/lt-maker/-/jobs/artifacts/release/download?job=build_map_maker"
                   link_type: package
