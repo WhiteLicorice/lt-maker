@@ -1,5 +1,3 @@
-from typing import Optional
-
 from PyQt5.QtGui import QIcon, QBrush, QColor
 from PyQt5.QtWidgets import QDialog, QWidget
 
@@ -15,10 +13,15 @@ from app.editor.combat_animation_editor.new_palette_tab import NewPaletteDatabas
 from app.editor.data_editor import SingleResourceEditor, NewMultiResourceEditor
 from app.utilities.typing import NID
 
+from app.editor.component_editor_types import T
+from typing import (Callable, Optional)
+
 class NewSimpleCombatAnimProperties(QWidget):
     title = "Combat Animation"
 
-    def __init__(self, parent, current=None):
+    def __init__(self, parent, current: Optional[T] = None,
+                 attempt_change_nid: Optional[Callable[[NID, NID], bool]] = None,
+                 on_icon_change: Optional[Callable] = None):
         QWidget.__init__(self, parent)
         self.window = parent
         self.current = current
