@@ -1,0 +1,34 @@
+[
+    {
+        "name": "SupportFranzGilliamB",
+        "trigger": "on_support",
+        "level_nid": null,
+        "condition": "check_pair('Franz','Gilliam') and support_rank_nid == 'B'",
+        "commands": [],
+        "only_once": false,
+        "priority": 20,
+        "_source": [
+            "uu;Gilliam;Right;Franz;Left",
+            "s;Gilliam;Franz, I can see your training has paid off.",
+            "e;Franz;Smile",
+            "s;Franz;Yes, and I have to say, I'm surprised. I feel the energy flowing through me.|I think it's because of my resistance training, actually.",
+            "s;Gilliam;Frelia's resistance training, you mean.|You mean to tell me that you have no training like that in Renais?",
+            "s;Franz;We do have a system to strengthen our chest, arms, shoulders, and legs.|However, that's where we stop. We don't train each individual finger...",
+            "s;Gilliam;Every muscle acts in relation to each other muscle. How can you neglect the fingers?|That's how we Frelians think.",
+            "s;Franz;Fascinating how our countries can have such distinct training systems, isn't it?",
+            "s;Gilliam;And you've been training with our system every day without a single complaint!|I'm impressed.",
+            "s;Franz;Oh, that's because, each night before I go to sleep...|I do our traditional relaxation exercises.",
+            "s;Gilliam;Relaxation exercises?",
+            "s;Franz;Before going to bed, flex each muscle you used, and you'll wake up feeling refreshed.",
+            "s;Gilliam;What, no fatigue the following day?",
+            "s;Franz;That's right. That's what it's for.",
+            "e;Gilliam;Smile",
+            "s;Gilliam;That's wonderful!",
+            "s;Franz;I can teach you if you like.",
+            "s;Gilliam;Please.",
+            "s;Franz;Fantastic! We'll start tonight!",
+            "rrr"
+        ],
+        "nid": "Global SupportFranzGilliamB"
+    }
+]

@@ -1,0 +1,31 @@
+[
+    {
+        "nid": "Filla_s_Might",
+        "name": "Filla's Might",
+        "desc": "+10 Str/Mag for one turn.",
+        "icon_nid": "Skills",
+        "icon_index": [
+            11,
+            1
+        ],
+        "components": [
+            [
+                "time",
+                1
+            ],
+            [
+                "stat_change",
+                [
+                    [
+                        "STR",
+                        10
+                    ],
+                    [
+                        "MAG",
+                        10
+                    ]
+                ]
+            ]
+        ]
+    }
+]

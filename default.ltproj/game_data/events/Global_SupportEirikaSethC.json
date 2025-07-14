@@ -1,0 +1,26 @@
+[
+    {
+        "name": "SupportEirikaSethC",
+        "trigger": "on_support",
+        "level_nid": null,
+        "condition": "check_pair('Eirika','Seth') and support_rank_nid == 'C'",
+        "commands": [],
+        "only_once": false,
+        "priority": 20,
+        "_source": [
+            "multi_add_portrait;Eirika;Left;Seth;Right",
+            "speak;Eirika;Seth.",
+            "speak;Seth;What brings you, Princess?",
+            "speak;Eirika;How fare you, Seth?|Ever since the castle fell you have been protecting me,|despite your own injuries...",
+            "speak;Seth;Would that I could have served you better, my lady...|You were not meant to see such things.|But my wound has closed up, and it does not affect my lance arm...",
+            "speak;Eirika;Wait.{br}Show it to me.|Look. The wound has closed, but it has not yet fully healed.",
+            "speak;Seth;......|What made you think of this, my lady?",
+            "speak;Eirika;Your fighting is as superb as ever, Seth.|But when you raise your lance, I see a flicker of pain on your face,|as if you were merely enduring it...|But it only lasts a moment. Perhaps it is all just my imagination...",
+            "speak;Seth;Your Highness, please put your mind at ease.|My wound has healed. There is no reason to worry.",
+            "speak;Eirika;I would that were so, Seth.|Please do not overextend yourself.{br}I beg this of you.|Without you, I may not be able to continue this quest...",
+            "speak;Seth;You praise me too much, my lady...",
+            "remove_all_portraits"
+        ],
+        "nid": "Global SupportEirikaSethC"
+    }
+]

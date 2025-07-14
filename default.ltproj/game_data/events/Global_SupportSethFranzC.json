@@ -1,0 +1,34 @@
+[
+    {
+        "name": "SupportSethFranzC",
+        "trigger": "on_support",
+        "level_nid": null,
+        "condition": "check_pair('Seth','Franz') and support_rank_nid == 'C'",
+        "commands": [],
+        "only_once": false,
+        "priority": 20,
+        "_source": [
+            "uu;Seth;Left;Franz;Right",
+            "e;Franz;Smile",
+            "s;Franz;General!",
+            "e;Seth;Smile",
+            "s;Seth;Franz. How are you holding up?",
+            "s;Franz;Fine. I may be young, but I'm every bit a Knight of Renais.|I'll fight to the end to protect the princess, just like you, sir!",
+            "s;Seth;Good, good! That's the spirit!|You know, you're looking much improved from when we set out.",
+            "s;Franz;Hm. Do you really think so, General?",
+            "s;Seth;Oh, definitely. You seem much more sure of yourself. All doubt has left your face.|By the time you reach my age, you'll be the finest spear- and swordsman around.",
+            "bop;Franz;1",
+            "s;Franz;Honestly? Sir, do you really believe that?",
+            "e;Seth;NoSmile",
+            "s;Seth;...I do... But we are in a battle right now, Franz.|Concentrate on the enemies before you, and don't get too cocky.",
+            "e;Franz;NoSmile",
+            "s;Franz;Yes, sir!!!|You know I'd never let you down, sir!",
+            "e;Seth;Smile",
+            "s;Seth;Don't be too eager for success. Know your limits.",
+            "e;Franz;Smile",
+            "s;Franz;Yes, sir!",
+            "rrr"
+        ],
+        "nid": "Global SupportSethFranzC"
+    }
+]

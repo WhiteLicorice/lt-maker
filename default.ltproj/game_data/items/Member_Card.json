@@ -1,0 +1,22 @@
+[
+    {
+        "nid": "Member_Card",
+        "name": "Member Card",
+        "desc": "If someone with this card stops in a suspicious space...",
+        "icon_nid": "Valuable",
+        "icon_index": [
+            0,
+            4
+        ],
+        "components": [
+            [
+                "value",
+                6000
+            ],
+            [
+                "hover_description",
+                "Grants access to secret shops."
+            ]
+        ]
+    }
+]
