@@ -1,5 +1,5 @@
 from PyQt5.QtGui import QIcon, QBrush, QColor
-from PyQt5.QtWidgets import QDialog, QWidget
+from PyQt5.QtWidgets import QDialog, QWidget, QMessageBox
 
 from app.data.resources.resources import RESOURCES
 from app.data.resources.combat_anims import CombatCatalog, CombatEffectCatalog
@@ -37,6 +37,15 @@ class NewCombatAnimDatabase(NewEditorTab):
     catalog_type = CombatCatalog
     properties_type = NewCombatAnimProperties
     allow_rename = True
+    allow_duplicate = False
+
+    def create_new(self, nid):
+        if self.data.get(nid):
+            QMessageBox.warning(self, 'Warning', 'ID %s already in use' % nid)
+            return False
+        new_class = self.catalog_type.datatype(nid)
+        self.data.append(new_class)
+        return True
 
     @classmethod
     def edit(cls, parent=None):
@@ -66,18 +75,27 @@ class NewCombatAnimDatabase(NewEditorTab):
         else:
             return False
 
-class NewSimpleCombatAnimTab(NewCombatAnimDatabase):
+class NewSimpleCombatAnimDatabase(NewCombatAnimDatabase):
     properties_type = NewSimpleCombatAnimProperties
 
     @classmethod
     def edit(cls, parent=None):
-        window = SingleResourceEditor(NewSimpleCombatAnimTab, ['combat_anims'], parent)
+        window = SingleResourceEditor(NewSimpleCombatAnimDatabase, ['combat_anims'], parent)
         window.exec_()
 
 class NewCombatEffectDatabase(NewEditorTab):
     catalog_type = CombatEffectCatalog
     properties_type = NewCombatEffectProperties
     allow_rename = True
+    allow_duplicate = False
+
+    def create_new(self, nid):
+        if self.data.get(nid):
+            QMessageBox.warning(self, 'Warning', 'ID %s already in use' % nid)
+            return False
+        new_class = self.catalog_type.datatype(nid, '')
+        self.data.append(new_class)
+        return True
 
     @classmethod
     def edit(cls, parent=None):
@@ -120,7 +138,7 @@ def get_full_editor() -> NewMultiResourceEditor:
     return editor
 
 def get_animations() -> tuple:
-    window = SingleResourceEditor(NewSimpleCombatAnimTab, ['combat_anims'])
+    window = SingleResourceEditor(NewSimpleCombatAnimDatabase, ['combat_anims'])
     result = window.exec_()
     if result == QDialog.Accepted:
         selected_combat_anim = window.tab.right_frame.current

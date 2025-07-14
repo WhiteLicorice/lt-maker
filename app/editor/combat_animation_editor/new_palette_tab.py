@@ -1,7 +1,7 @@
 from typing import Optional
 
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QDialog
+from PyQt5.QtWidgets import QDialog, QMessageBox
 
 from app.data.resources.resources import RESOURCES
 from app.data.resources.combat_palettes import PaletteCatalog
@@ -16,6 +16,14 @@ class NewPaletteDatabase(NewEditorTab):
     catalog_type = PaletteCatalog
     properties_type = new_palette_properties.NewPaletteProperties
     allow_rename = True
+
+    def create_new(self, nid):
+        if self.data.get(nid):
+            QMessageBox.warning(self, 'Warning', 'ID %s already in use' % nid)
+            return False
+        new_class = self.catalog_type.datatype(nid)
+        self.data.append(new_class)
+        return True
 
     @classmethod
     def edit(cls, parent=None):

@@ -87,6 +87,7 @@ class LTNestedList(QWidget):
                  list_entries: Optional[List[NID]]=None,
                  list_categories: Optional[Categories]=None,
                  allow_rename: Optional[bool]=False,
+                 allow_duplicate: Optional[bool]=False,
                  get_icon: Optional[Callable[[NID], Optional[QIcon]]]=None,
                  get_foreground: Optional[Callable[[NID], Optional[QBrush]]]=None,
                  on_click_item: Optional[Callable[[Optional[NID]], None]]=None,
@@ -99,6 +100,7 @@ class LTNestedList(QWidget):
                  ) -> None:
         super().__init__(parent)
         self.allow_rename = allow_rename
+        self.allow_duplicate = allow_duplicate
         self.get_icon = get_icon or (lambda nid: create_empty_icon(32, 32))
         self.get_foreground = get_foreground or None
         self.on_click_item = on_click_item
@@ -167,7 +169,7 @@ class LTNestedList(QWidget):
         menu.addAction(new_category)
         if item:
             is_category = item.data(0, IsCategoryRole)
-            if not is_category:
+            if self.allow_duplicate and not is_category:
                 duplicate_action = QAction("Duplicate", self, triggered=lambda: self.duplicate(index, item))
                 menu.addAction(duplicate_action)
             if self.can_delete(index, item):
@@ -512,7 +514,7 @@ class LTNestedList(QWidget):
         new_item.setText(0, nid)
         new_item.setIcon(0, icon)
         new_item.setData(0, IsCategoryRole, is_category)
-        if not is_category and not self.allow_rename:
+        if not is_category:
             new_item.setFlags(new_item.flags() & ~QtCore.Qt.ItemIsDropEnabled)
         else:
             new_item.setFlags(new_item.flags() | QtCore.Qt.ItemIsEditable)

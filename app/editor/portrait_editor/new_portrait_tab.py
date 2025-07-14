@@ -20,6 +20,7 @@ class NewPortraitDatabase(NewEditorTab):
     catalog_type = PortraitCatalog
     properties_type = new_portrait_properties.NewPortraitProperties
     allow_rename = True
+    allow_duplicate = False
 
     @classmethod
     def edit(cls, parent=None):
