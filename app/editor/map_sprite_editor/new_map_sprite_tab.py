@@ -16,6 +16,7 @@ class NewMapSpriteDatabase(NewEditorTab):
     catalog_type = MapSpriteCatalog
     properties_type = new_map_sprite_properties.NewMapSpriteProperties
     allow_rename = True
+    allow_duplicate = False
 
     @classmethod
     def edit(cls, parent=None):
