@@ -573,6 +573,7 @@ class NewPaletteProperties(QWidget):
         else:
             self.setEnabled(True)
             self.current_palette = current
+            self.cached_nid = self.current_palette.nid
             palette_commands.clear()
             self.current_palette = current
             self.nid_box.edit.setText(self.current_palette.nid)
