@@ -1,0 +1,67 @@
+[
+    {
+        "nid": "Set_s_Litany",
+        "name": "Refresh",
+        "desc": "A dance that increases allies' evasion for a turn.",
+        "icon_nid": "Ring",
+        "icon_index": [
+            0,
+            3
+        ],
+        "components": [
+            [
+                "map_cast_sfx",
+                "RefreshDanceMap"
+            ],
+            [
+                "min_range",
+                1
+            ],
+            [
+                "max_range",
+                1
+            ],
+            [
+                "exp",
+                11
+            ],
+            [
+                "target_ally",
+                null
+            ],
+            [
+                "spell",
+                null
+            ],
+            [
+                "no_map_hp_display",
+                null
+            ],
+            [
+                "map_cast_pose",
+                null
+            ],
+            [
+                "uses",
+                15
+            ],
+            [
+                "uses_options",
+                {
+                    "lose_uses_on_miss": false,
+                    "one_loss_per_combat": false
+                }
+            ],
+            [
+                "status_after_combat_on_hit",
+                "Set_s_Litany"
+            ],
+            [
+                "prf_class",
+                [
+                    "Dancer"
+                ]
+            ]
+        ]
+    }
+]

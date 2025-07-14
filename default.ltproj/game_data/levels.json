@@ -3988,18 +3988,36 @@
                 "hide_time": false
             },
             {
-                "nid": "Arena",
+                "nid": "FoWToggle",
                 "region_type": "event",
                 "position": [
-                    2,
-                    6
+                    7,
+                    2
                 ],
                 "size": [
                     1,
                     1
                 ],
-                "sub_nid": "Arena",
-                "condition": "not unit.has_attacked",
+                "sub_nid": "Visit",
+                "condition": "True",
+                "time_left": null,
+                "only_once": false,
+                "interrupt_move": false,
+                "hide_time": false
+            },
+            {
+                "nid": "SecretShop",
+                "region_type": "event",
+                "position": [
+                    2,
+                    7
+                ],
+                "size": [
+                    1,
+                    1
+                ],
+                "sub_nid": "Secret",
+                "condition": "has_item('Member_Card',unit.nid)",
                 "time_left": null,
                 "only_once": false,
                 "interrupt_move": false,

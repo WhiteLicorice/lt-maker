@@ -284,6 +284,22 @@
         "text": "Drop in again."
     },
     {
+        "nid": "secret_opener",
+        "text": "Shhh... Hee hee...{w}{clear}This is a secret shop!"
+    },
+    {
+        "nid": "secret_buy",
+        "text": "What do you need?"
+    },
+    {
+        "nid": "secret_back",
+        "text": "Any other requests?"
+    },
+    {
+        "nid": "secret_leave",
+        "text": "Hee hee... Buh-bye!"
+    },
+    {
         "nid": "shop_again",
         "text": "Do you need anything else?"
     },
@@ -350,6 +366,10 @@
     {
         "nid": "Vendor_desc",
         "text": "Enter a magic and item shop."
+    },
+    {
+        "nid": "Secret_desc",
+        "text": "Enter a secret shop."
     },
     {
         "nid": "Spells_desc",

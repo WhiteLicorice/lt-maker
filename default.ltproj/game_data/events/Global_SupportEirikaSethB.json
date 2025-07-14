@@ -1,0 +1,33 @@
+[
+    {
+        "name": "SupportEirikaSethB",
+        "trigger": "on_support",
+        "level_nid": null,
+        "condition": "check_pair('Eirika','Seth') and support_rank_nid == 'B'",
+        "commands": [],
+        "only_once": false,
+        "priority": 20,
+        "_source": [
+            "uu;Eirika;Left;Seth;Right",
+            "bop;Eirika;1",
+            "s;Eirika;Hrrngh...",
+            "move_portrait;Eirika;MidLeft",
+            "s;Eirika;Hahh!",
+            "move_portrait;Eirika;Left",
+            "s;Eirika;What do you think?",
+            "e;Seth;Smile",
+            "s;Seth;Your sword arm is magnificent, my lady.|You have improved yet again.",
+            "e;Eirika;Smile",
+            "s;Eirika;Thank you.|It is only because I know my brother will scold me if I do not practice every day.|But I still am nowhere near your level of skill, Seth.",
+            "e;Seth;NoSmile",
+            "s;Seth;...My lady, I hardly think...",
+            "s;Eirika;Perhaps next time, you could spar with me and help me learn some technique?|The basics I've learned from my brother all apply to skills with the spear.|If I could learn the sword techniques of the Knights of Renais,|then perhaps I could be even stronger.|I would be of greater help to you on the battlefield.",
+            "s;Seth;Yes, but...|Princess Eirika, I think you should stay away from the front lines.|You are of the royal family of Renais.{br}Please leave the fighting to me...",
+            "e;Eirika;NoSmile",
+            "s;Eirika;Still...|How can I just watch from afar while others risk their lives for me?|I cannot rely on you always.|I must learn to protect myself.|So please, continue to observe as I practice.",
+            "s;Seth;Princess Eirika...",
+            "rrr"
+        ],
+        "nid": "Global SupportEirikaSethB"
+    }
+]

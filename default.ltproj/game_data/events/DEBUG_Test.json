@@ -8,9 +8,6 @@
         "only_once": false,
         "priority": 20,
         "_source": [
-            "#level_var;_fog_of_war;1",
-            "#level_var;_fog_of_war_radius;3",
-            "#level_var;_ai_fog_of_war_radius;5",
             "add_lore;Eirika",
             "add_base_convo;Dreams of Home",
             "add_weather;rain",

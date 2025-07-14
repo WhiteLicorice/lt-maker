@@ -1,0 +1,35 @@
+[
+    {
+        "name": "SupportMoulderVanessaC",
+        "trigger": "on_support",
+        "level_nid": null,
+        "condition": "check_pair('Moulder','Vanessa') and support_rank_nid == 'C'",
+        "commands": [],
+        "only_once": false,
+        "priority": 20,
+        "_source": [
+            "uu;Moulder;Left;Vanessa;Right",
+            "s;Moulder;Vanessa, how are you holding up?",
+            "e;Vanessa;Smile",
+            "s;Vanessa;Father Moulder.|We are struggling, but I'll pull through somehow.|{c:e;Vanessa;NoSmile}Say, Father Moulder...",
+            "s;Moulder;You want to know about Prince Innes, don't you? He's doing well.|I was worried for a moment, but he'll be fine.",
+            "s;Vanessa;Oh!|I, uh... Thank you.{br}...|How did you know?",
+            "s;Moulder;Well...|You see, as a priest, I've met people from all walks of life.|Some of them--like you--well, I can read them like an open book.",
+            "s;Vanessa;You...can read my mind? That's so...embarrassing.",
+            "s;Moulder;No, no. It's not like that. I just mean you are a pure, straightforward girl.|That's a compliment worthy of a knight.",
+            "s;Vanessa;Do you think so? Thank you, Father.",
+            "s;Moulder;Hm. Say, would you like to hear a story from the prince's youth?",
+            "s;Vanessa;I'd like that, Father. Very much!",
+            "s;Moulder;Hm...{br}Oh my!|You know, I think we'd better take care of our enemies, first.",
+            "s;Vanessa;Look out!{br}Over there!|Stay here, Father. I'll take care of this.",
+            "s;Moulder;Yes, I think that would be best.",
+            "s;Vanessa;Tell me your story another time, though. I'd like to hear it.",
+            "e;Moulder;Smile",
+            "s;Moulder;I'd be delighted. Another time, then.",
+            "e;Vanessa;Smile",
+            "s;Vanessa;Yes, Father!",
+            "rrr"
+        ],
+        "nid": "Global SupportMoulderVanessaC"
+    }
+]

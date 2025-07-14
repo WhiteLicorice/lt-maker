@@ -1,0 +1,26 @@
+[
+    {
+        "nid": "Silver_Card",
+        "name": "Silver Card",
+        "desc": "A special card that reduces the cost of all items by half.",
+        "icon_nid": "Valuable",
+        "icon_index": [
+            0,
+            5
+        ],
+        "components": [
+            [
+                "value",
+                4000
+            ],
+            [
+                "hover_description",
+                "Reduces the cost of items."
+            ],
+            [
+                "status_on_hold",
+                "Bargain"
+            ]
+        ]
+    }
+]

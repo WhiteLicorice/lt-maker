@@ -1,0 +1,36 @@
+[
+    {
+        "name": "SupportMoulderVanessaA",
+        "trigger": "on_support",
+        "level_nid": null,
+        "condition": "check_pair('Moulder','Vanessa') and support_rank_nid == 'A'",
+        "commands": [],
+        "only_once": false,
+        "priority": 20,
+        "_source": [
+            "uu;Moulder;Left;Vanessa;Right",
+            "s;Moulder;I'm glad to see you well, Vanessa. You do your fellow pegasus knights proud.|We are blessed to have you fighting at our side.",
+            "e;Vanessa;Smile",
+            "s;Vanessa;You credit us warriors too much, Father. Without healers, we would all be lost.|Nothing I say can tell you how much I value your presence here.",
+            "s;Moulder;We are all doing our part in this war.|No need to thank me.",
+            "e;Vanessa;NoSmile",
+            "s;Vanessa;I'm serious!|Without your help, we would never survive these skirmishes!",
+            "s;Moulder;I'm gratified by that. Thank you.",
+            "s;Vanessa;Father... Thank you again for the other day.",
+            "s;Moulder;Hmm? Oh, you mean that story?",
+            "s;Vanessa;Yes.",
+            "s;Moulder;Ah...|You know, you remind me of myself, twenty years back.",
+            "s;Vanessa;Huh?",
+            "s;Moulder;Oh, never mind...{br}...|Good luck to you, Vanessa.|I don't know where this will lead, but I'm sure the prince knows your feelings.",
+            "s;Vanessa;Father Moulder, I only aspire to be worthy of his greatness.|I expect nothing in return.",
+            "s;Moulder;Are you sure?",
+            "s;Vanessa;...;no_talk",
+            "s;Moulder;Well, do what you think is best for you.|We all carry many burdens... To country, family, duty, honor...|However, we are all ultimately free to embrace or reject those burdens.|If you find yourself in need of spiritual guidance, speak to me.",
+            "s;Vanessa;Father Moulder, you're so kind.|{c:e;Vanessa;Smile}Thank you. I'm so grateful to have you on the field with me.",
+            "s;Moulder;Vanessa, we fight for the greater good.|We fight for our country, for our friends, and...for ourselves.",
+            "s;Vanessa;You're right, Father. In so many things.",
+            "rrr"
+        ],
+        "nid": "Global SupportMoulderVanessaA"
+    }
+]

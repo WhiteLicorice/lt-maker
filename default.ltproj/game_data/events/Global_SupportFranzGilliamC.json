@@ -1,0 +1,32 @@
+[
+    {
+        "name": "SupportFranzGilliamC",
+        "trigger": "on_support",
+        "level_nid": null,
+        "condition": "check_pair('Franz','Gilliam') and support_rank_nid == 'C'",
+        "commands": [],
+        "only_once": false,
+        "priority": 20,
+        "_source": [
+            "uu;Gilliam;Left;Franz;Right",
+            "s;Franz;Say, Sir Gilliam, can I ask you a question?",
+            "s;Gilliam;What is it, Franz?",
+            "s;Franz;Are you disturbed about fighting with me?",
+            "s;Gilliam;Why would you say something like that?",
+            "s;Franz;You and I are from different lands. We have different backgrounds...|I thought that might've made you feel uncomfortable.",
+            "s;Gilliam;Blast. I don't need to answer that.",
+            "move_portrait;Franz;MidRight",
+            "s;Franz;Sir Gilliam!",
+            "s;Gilliam;Listen: I'm here by my king's order, and by his order alone.|I'm well aware that we have diverse backgrounds and experiences.|I don't care who I pair up with. You can't always have your own way.|That's just how it works in Frelia. It's luck of the draw, you follow?|Do they let you swap partners until you find that special someone back in Renais?",
+            "move_portrait;Franz;Right",
+            "s;Franz;Oh, no! No, no, no... That's not what I meant.|It's just... I was worried that I might be slowing you down with my lesser skills.",
+            "s;Gilliam;Franz, you're wasting your time worrying when there are better things to be done.",
+            "s;Franz;Like what?",
+            "s;Gilliam;Like training, of course.|Quit your worrying and show me how good a Knight of Renais can be.",
+            "e;Franz;Smile",
+            "s;Franz;I could ask for nothing better. Please!",
+            "rrr"
+        ],
+        "nid": "Global SupportFranzGilliamC"
+    }
+]
