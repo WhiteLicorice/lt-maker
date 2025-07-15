@@ -6,7 +6,7 @@ from PyQt5.QtCore import Qt, pyqtSignal
 from app import dark_theme
 
 from app.data.resources.resources import RESOURCES
-from app.editor.map_sprite_editor import map_sprite_tab, map_sprite_model
+from app.editor.map_sprite_editor import new_map_sprite_tab, map_sprite_model
 
 import app.editor.utilities as editor_utilities
 
@@ -154,8 +154,8 @@ class UnitPortrait(QPushButton):
         self.change_icon(nid)
 
     def onIconSourcePicker(self):
-        from app.editor.portrait_editor import portrait_tab
-        res, ok = portrait_tab.get()
+        from app.editor.portrait_editor import new_portrait_tab
+        res, ok = new_portrait_tab.get()
         if res and ok:
             self.change_icon(res.nid)
 
@@ -249,10 +249,10 @@ class MapSpriteBox(QWidget):
             self.setLayout(self.layout)
 
     def select_map_sprite(self):
-        res, ok = map_sprite_tab.get()
+        res, ok = new_map_sprite_tab.get()
         if ok:
             nid = res.nid
-            pix = self.get_map_sprite_icon(nid, num=0)
+            pix = map_sprite_model.get_map_sprite_icon(nid, num=0)
             self.map_sprite_label.setPixmap(pix)
             self.sourceChanged.emit(nid)
 
@@ -261,28 +261,13 @@ class MapSpriteBox(QWidget):
         res = RESOURCES.map_sprites.get(nid)
         if res:
             nid = res.nid
-            pix = self.get_map_sprite_icon(nid, num=0)
+            pix = map_sprite_model.get_map_sprite_icon(nid, num=0)
             self.map_sprite_label.setPixmap(pix)
             self.sourceChanged.emit(nid)
 
-    def get_map_sprite_icon(self, nid, num, current=False, team: NID = 'player', variant=None):
-        res = None
-        if variant and nid:
-            res = RESOURCES.map_sprites.get(nid + variant)
-        if nid and (not variant or not res):
-            res = RESOURCES.map_sprites.get(nid)
-        if not res:
-            return None
-        if not res.standing_pixmap:
-            res.standing_pixmap = QPixmap(res.stand_full_path)
-        pixmap = res.standing_pixmap
-        pixmap = map_sprite_model.get_basic_icon(pixmap, num, current, team)
-        pixmap = pixmap.scaled(self.display_width, self.display_width)
-        return pixmap
-
     def set_current(self, current, nid):
         self.current = current
-        pix = self.get_map_sprite_icon(nid, num=0)
+        pix = map_sprite_model.get_map_sprite_icon(nid, num=0)
         if pix:
             self.map_sprite_label.setPixmap(pix)
         else:

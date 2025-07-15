@@ -1,0 +1,23 @@
+[
+    {
+        "name": "Support Gain",
+        "trigger": "on_support",
+        "level_nid": null,
+        "condition": "True",
+        "commands": [],
+        "only_once": false,
+        "priority": 19,
+        "_source": [
+            "if;support_rank_nid == 'C'",
+            "alert;Reached rank C!",
+            "elif;support_rank_nid == 'B'",
+            "alert;Reached rank B!",
+            "elif;support_rank_nid == 'A'",
+            "alert;Reached rank A!",
+            "else",
+            "alert;Support increased!",
+            "end"
+        ],
+        "nid": "Global Support Gain"
+    }
+]

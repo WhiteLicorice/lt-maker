@@ -13,7 +13,7 @@ from app.data.database.level_units import GenericUnit, UnitGroup
 from app.data.database.units import UnitPrefab
 from app.editor import timer
 from app.editor.base_database_gui import DragDropCollectionModel
-from app.editor.class_editor import class_model
+from app.editor.map_sprite_editor import map_sprite_model
 from app.editor.custom_widgets import CustomQtRoles
 from app.editor.level_editor.unit_painter_menu import (AllUnitModel,
                                                        InventoryDelegate,
@@ -292,7 +292,7 @@ class GroupUnitModel(DragDropCollectionModel):
                 active = self.window.view.selectionModel().isSelected(index)
             else:
                 active = False
-            pixmap = class_model.get_map_sprite_icon(klass, num, active, unit.team, unit.variant)
+            pixmap = map_sprite_model.get_map_sprite_icon(klass.map_sprite_nid, num, active, unit.team, unit.variant)
             if pixmap:
                 return QIcon(pixmap)
             else:

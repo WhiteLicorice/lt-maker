@@ -1,0 +1,17 @@
+[
+    {
+        "name": "Torch Staff",
+        "trigger": null,
+        "level_nid": null,
+        "condition": "True",
+        "commands": [],
+        "only_once": false,
+        "priority": 20,
+        "_source": [
+            "level_var;torchRegion1;game.playtime",
+            "level_var;torchRegion2;game.get_random(0,999)",
+            "add_region;{e:\"Torch\" + \"{v:torchRegion1}\" + \"{v:torchRegion2}\"};{target_pos};1,1;vision;9;9"
+        ],
+        "nid": "Global Torch Staff"
+    }
+]

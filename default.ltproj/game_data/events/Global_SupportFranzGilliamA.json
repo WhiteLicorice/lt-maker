@@ -1,0 +1,32 @@
+[
+    {
+        "name": "SupportFranzGilliamA",
+        "trigger": "on_support",
+        "level_nid": null,
+        "condition": "check_pair('Franz','Gilliam') and support_rank_nid == 'A'",
+        "commands": [],
+        "only_once": false,
+        "priority": 20,
+        "_source": [
+            "uu;Gilliam;Left;Franz;Right",
+            "s;Gilliam;Well, Franz, it looks like there's a lot I can learn from Renais.",
+            "s;Franz;Why the change of heart, Sir Gilliam?",
+            "e;Gilliam;Smile",
+            "e;Franz;Smile",
+            "s;Gilliam;I've been doing your exercises every night, and I feel fantastic.",
+            "s;Franz;I'm glad you like it.",
+            "s;Gilliam;I appreciate Renais much more, thanks to you.",
+            "s;Franz;Really?{br}I'm glad.|I'm thrilled that the great Sir Gilliam approves of the training in Renais.",
+            "e;Gilliam;NoSmile",
+            "s;Gilliam;Thrilled? You're overreacting.",
+            "s;Franz;No, honestly! I am thrilled. It's a small thing, I know...|But when someone recognizes the fine qualities of Renais, I get a thrill.|Renais is a small country, but it contains much that is good.",
+            "e;Gilliam;Smile",
+            "s;Gilliam;I don't know Renais, but I do know how you feel as a fellow knight.|The more we are away, the more we think back on our beloved homeland.",
+            "s;Franz;I'm glad that I'm not alone in this.",
+            "s;Gilliam;Chin up, lad. Be proud of your country, Franz, Knight of Renais.|As your friend from neighboring Frelia, I'm glad you're proud of your home.",
+            "s;Franz;Yes, Sir Gilliam! Thank you very much! ",
+            "rrr"
+        ],
+        "nid": "Global SupportFranzGilliamA"
+    }
+]

@@ -1,0 +1,40 @@
+[
+    {
+        "name": "SupportEirikaSethA",
+        "trigger": "on_support",
+        "level_nid": null,
+        "condition": "check_pair('Eirika','Seth') and support_rank_nid == 'A'",
+        "commands": [],
+        "only_once": false,
+        "priority": 20,
+        "_source": [
+            "uu;Eirika;Left;Seth;Right",
+            "s;Eirika;Seth, do you have a moment?|Could you help me practice a bit right now?",
+            "s;Seth;...Princess Eirika.|Before I do, there is something I must say to you.",
+            "s;Eirika;Yes, what is it?",
+            "s;Seth;Please forgive my rudeness...|Princess, I am merely your subject.|Recently, you have been too close to me.|It is not becoming of a noble of Renais to fraternize in this way with her subjects.",
+            "s;Eirika;Oh... But I...|it's just that your wound has not yet...|I was merely...",
+            "s;Seth;It's true. The wound I received the day our castle fell has not yet healed...|Perhaps it will afflict me to the end of my life.|But it would be a mistake to assume you owe me a debt for this wound.|This thought should not rest beneath the crown you soon must wear.",
+            "s;Eirika;But still, you suffered for me...",
+            "s;Seth;Lady Eirika.|You are a noble of Renais.|The nobility should not favor one subject over another.|How can they maintain their fealty if you treat one so differently?",
+            "s;Eirika;......;no_talk",
+            "s;Seth;You may have to forego such attachments just to defend your country.|There will be times when victory in battle demands a sacrifice.|If you cannot send your men to die, then you are not fit to rule.",
+            "s;Eirika;{tgm}......{tgm}|I understand...|Seth...{br}You are correct.|I had forgotten my place, and I had forgotten my duty.|Please forgive me.",
+            "s;Seth;......;no_talk",
+            "s;Eirika;That night...{br}We fled from the soldiers of Grado...|You held me tight, keeping me safe from the enemy's blades...|Perhaps...I did feel something more for you then.|But...it was improper for a queen of Renais.|And with my father dead, I suppose that is my station.|I am a queen, and you are a knight in my service.|If I do not keep this in mind, then I will never be able to rebuild our kingdom.",
+            "s;Seth;I thank you for your understanding, my lady.|Now, if you will excuse me...",
+            "r;Seth",
+            "s;Eirika;......;no_talk",
+            "u;Seth;Right",
+            "s;Seth;Princess Eirika.|If you would allow me to say one more thing...",
+            "s;Eirika;Seth...?",
+            "s;Seth;...That night...|I felt what you felt.|When I held you in my arms as we rode into the night...|It was the first time since I was knighted that I forgot my duty.|I thought of you not as my queen,|but rather as someone I wanted to protect from all harm.|I wanted to leave everything behind...|To take you far away to someplace where we could be together...|Those were my thoughts...",
+            "s;Eirika;Seth...",
+            "s;Seth;Please forgive me.|I swear to you that I will never again forget my duty in that way.|Now, please excuse me.|When I see you next, it will be as a Knight of Renais...|And I will lay down my life to protect my queen.",
+            "r;Seth",
+            "s;Eirika;Seth...",
+            "rrr"
+        ],
+        "nid": "Global SupportEirikaSethA"
+    }
+]

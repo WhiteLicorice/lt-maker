@@ -1,0 +1,22 @@
+[
+    {
+        "name": "FoW Toggle",
+        "trigger": "Visit",
+        "level_nid": "DEBUG",
+        "condition": "True",
+        "commands": [],
+        "only_once": false,
+        "priority": 20,
+        "_source": [
+            "choice;FoWToggle;Enable Fog of War?;Yes,No;;vertical;center",
+            "# Using game.game_vars['FoWToggle'] == 'Yes' also works.",
+            "if;game.game_vars['_last_choice'] == 'Yes'",
+            "enable_fog_of_war;True",
+            "set_fog_of_war;gba;3;5",
+            "else",
+            "enable_fog_of_war;False",
+            "end"
+        ],
+        "nid": "DEBUG FoW Toggle"
+    }
+]

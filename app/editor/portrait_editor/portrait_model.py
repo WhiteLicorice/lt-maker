@@ -17,7 +17,19 @@ from app.extensions.custom_gui import DeletionTab, DeletionDialog
 from app.editor.base_database_gui import ResourceCollectionModel
 from app.editor.settings import MainSettingsController
 from app.utilities import str_utils
+from app.utilities.typing import NID
+
 import app.editor.utilities as editor_utilities
+
+def get_chibi(portrait_nid):
+    res = RESOURCES.portraits.get(portrait_nid)
+    if not res:
+        return None
+    if not res.pixmap:
+        res.pixmap = QPixmap(res.full_path)
+    pixmap = res.pixmap.copy(res.pixmap.width() - 32, 16, 32, 32)
+    pixmap = QPixmap.fromImage(editor_utilities.convert_colorkey(pixmap.toImage()))
+    return pixmap
 
 def auto_frame_portrait(portrait: PortraitPrefab):
     width, height = 32, 16
@@ -76,6 +88,56 @@ def auto_colorkey(portrait: PortraitPrefab):
             raise IOError("some file operation failed, aborting auto-colorkey")
         os.remove(portrait.full_path + '.bak')
 
+def create_new(window):
+    settings = MainSettingsController()
+    starting_path = settings.get_last_open_path()
+    fns, ok = QFileDialog.getOpenFileNames(window, "Select Portraits", starting_path, "PNG Files (*.png);;All Files(*)")
+    new_portrait = None
+    if ok:
+        for fn in fns:
+            if fn.endswith('.png'):
+                nid = os.path.split(fn)[-1][:-4]
+                pix = QPixmap(fn)
+                nid = str_utils.get_next_name(nid, [d.nid for d in RESOURCES.portraits])
+                if pix.width() == PORTRAIT_WIDTH and pix.height() == PORTRAIT_HEIGHT:
+                    # Swap to use colorkey color if it's not
+                    new_portrait = PortraitPrefab(nid, fn, pix)
+                    auto_colorkey(new_portrait)
+                    auto_frame_portrait(new_portrait)
+                    window.data.append(new_portrait)
+                else:
+                    QMessageBox.critical(window, "Error", "Image is not correct size (128x112 px)")
+            else:
+                QMessageBox.critical(window, "File Type Error!", "Portrait must be PNG format!")
+        parent_dir = os.path.split(fns[-1])[0]
+        settings.set_last_open_path(parent_dir)
+    return new_portrait
+
+def check_delete(nid: NID, window) -> bool:
+    # Check to see what is using me?
+    affected_units = [unit for unit in DB.units if unit.portrait_nid == nid]
+    if affected_units:
+        from app.editor.unit_editor.unit_model import UnitModel
+        model = UnitModel
+        msg = "Deleting Portrait <b>%s</b> would affect these units." % nid
+        deletion_tab = DeletionTab(affected_units, model, msg, "Units")
+        return DeletionDialog.inform([deletion_tab], window)
+    return True
+
+def on_delete(nid: NID):
+    # What uses portraits
+    # Units
+    for unit in DB.units:
+        if unit.portrait_nid == nid:
+            unit.portrait_nid = None
+
+def on_nid_changed(old_nid, new_nid):
+    # What uses portraits
+    # Units (Later Dialogues)
+    for unit in DB.units:
+        if unit.portrait_nid == old_nid:
+            unit.portrait_nid = new_nid
+
 class PortraitModel(ResourceCollectionModel):
     def data(self, index, role):
         if not index.isValid():
@@ -97,53 +159,3 @@ class PortraitModel(ResourceCollectionModel):
             text = portrait.nid
             return text
         return None
-
-    def create_new(self):
-        settings = MainSettingsController()
-        starting_path = settings.get_last_open_path()
-        fns, ok = QFileDialog.getOpenFileNames(self.window, "Select Portraits", starting_path, "PNG Files (*.png);;All Files(*)")
-        new_portrait = None
-        if ok:
-            for fn in fns:
-                if fn.endswith('.png'):
-                    nid = os.path.split(fn)[-1][:-4]
-                    pix = QPixmap(fn)
-                    nid = str_utils.get_next_name(nid, [d.nid for d in RESOURCES.portraits])
-                    if pix.width() == PORTRAIT_WIDTH and pix.height() == PORTRAIT_HEIGHT:
-                        # Swap to use colorkey color if it's not
-                        new_portrait = PortraitPrefab(nid, fn, pix)
-                        auto_colorkey(new_portrait)
-                        auto_frame_portrait(new_portrait)
-                        RESOURCES.portraits.append(new_portrait)
-                    else:
-                        QMessageBox.critical(self.window, "Error", "Image is not correct size (128x112 px)")
-                else:
-                    QMessageBox.critical(self.window, "File Type Error!", "Portrait must be PNG format!")
-            parent_dir = os.path.split(fns[-1])[0]
-            settings.set_last_open_path(parent_dir)
-        return new_portrait
-
-    def delete(self, idx):
-        # Check to see what is using me?
-        res = self._data[idx]
-        nid = res.nid
-        affected_units = [unit for unit in DB.units if unit.portrait_nid == nid]
-        if affected_units:
-            from app.editor.unit_editor.unit_model import UnitModel
-            model = UnitModel
-            msg = "Deleting Portrait <b>%s</b> would affect these units." % nid
-            deletion_tab = DeletionTab(affected_units, model, msg, "Units")
-            ok = DeletionDialog.inform([deletion_tab], self.window)
-            if ok:
-                for unit in affected_units:
-                    unit.portrait_nid = None
-            else:
-                return
-        super().delete(idx)
-
-    def on_nid_changed(self, old_nid, new_nid):
-        # What uses portraits
-        # Units (Later Dialogues)
-        for unit in DB.units:
-            if unit.portrait_nid == old_nid:
-                unit.portrait_nid = new_nid

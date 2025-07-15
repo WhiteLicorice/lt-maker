@@ -1,0 +1,40 @@
+[
+    {
+        "name": "SupportSethFranzB",
+        "trigger": "on_support",
+        "level_nid": null,
+        "condition": "check_pair('Seth','Franz') and support_rank_nid == 'B'",
+        "commands": [],
+        "only_once": false,
+        "priority": 20,
+        "_source": [
+            "uu;Seth;Left;Franz;Right",
+            "e;Franz;Smile",
+            "s;Franz;General!",
+            "e;Seth;Smile",
+            "s;Seth;Ah, Franz. Every time I see you, you're getting better and better.|Your parry is a little stiff, but you are clearly improving.",
+            "s;Franz;Are you serious? Do you really think so, sir?",
+            "e;Seth;NoSmile",
+            "s;Seth;...Why is it that, when I compliment you, you always ask me that?",
+            "e;Franz;NoSmile",
+            "s;Franz;Oh, so sorry...{br}{c:e;Franz;Smile}I appreciate your praise, sir.|I mean, you're General Seth, the Silver Knight. You're my hero.",
+            "e;Seth;Smile",
+            "s;Seth;Hahaha... No more flattery, Franz. Please.",
+            "s;Franz;But, General, it's true!",
+            "move_portrait;Franz;MidRight",
+            "s;Franz;Do you remember when Grado's forces overran Castle Renais?|Despite grave injuries, you outcharged the enemy, broke their lines, and escaped.|And then, you delivered the princess, on your own, to Frelia safely.|If I were you, I doubt I could have survived such a challenge...|You are the only person I know who can make impossible feats possible.",
+            "s;Seth;What pressure you put on me! How can I possibly fail now?|You would lose all faith in me! Ah, but, Franz, you're still young.|You will grow into a remarkable warrior, I have no doubt.|Be confident. I'm counting on you. Train your mind and hone your skills.",
+            "s;Franz;Really? Do you really think so, General?",
+            "s;Seth;...Franz...{br}That's enough.",
+            "move_portrait;Franz;Right",
+            "s;Franz;Oh, right! Sorry, sir!",
+            "e;Seth;NoSmile",
+            "e;Franz;NoSmile",
+            "s;Seth;All right, back into the fray! Let's go, Franz!",
+            "e;Franz;Smile",
+            "s;Franz;Yes, General! And remember, I've got your back!",
+            "rrr"
+        ],
+        "nid": "Global SupportSethFranzB"
+    }
+]

@@ -1,0 +1,22 @@
+[
+    {
+        "nid": "Bargain",
+        "name": "Bargain",
+        "desc": "Reduces cost of items by half.",
+        "icon_nid": "Skills",
+        "icon_index": [
+            0,
+            0
+        ],
+        "components": [
+            [
+                "hidden",
+                null
+            ],
+            [
+                "change_buy_price",
+                0.5
+            ]
+        ]
+    }
+]

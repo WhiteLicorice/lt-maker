@@ -1172,7 +1172,7 @@
     {
         "nid": "Lethality_Proc",
         "name": "Lethality",
-        "desc": "Proc rate: SKL/2%\nInstantly kills foe.",
+        "desc": "Proc rate: SKL/4%\nInstantly kills foe.",
         "icon_nid": "Skills",
         "icon_index": [
             7,
@@ -1224,8 +1224,8 @@
         ],
         "components": [
             [
-                "dynamic_damage_multiplier",
-                "combat_calcs.defense(unit, target, unit.get_weapon())"
+                "item_override",
+                "Luna_Proc"
             ]
         ]
     },
@@ -1266,6 +1266,10 @@
             [
                 "resist",
                 1000
+            ],
+            [
+                "item_override",
+                "Skill_Activate"
             ]
         ]
     },
@@ -1306,6 +1310,10 @@
             [
                 "hit",
                 1000
+            ],
+            [
+                "item_override",
+                "Skill_Activate"
             ]
         ]
     },
@@ -1366,6 +1374,144 @@
             [
                 "ability",
                 "Summon"
+            ]
+        ]
+    },
+    {
+        "nid": "Flying",
+        "name": "Flying",
+        "desc": "Can fly.",
+        "icon_nid": "Skills",
+        "icon_index": [
+            3,
+            10
+        ],
+        "components": [
+            [
+                "ignore_terrain",
+                null
+            ],
+            [
+                "class_skill",
+                null
+            ]
+        ]
+    },
+    {
+        "nid": "Bargain",
+        "name": "Bargain",
+        "desc": "Reduces cost of items by half.",
+        "icon_nid": "Skills",
+        "icon_index": [
+            0,
+            0
+        ],
+        "components": [
+            [
+                "hidden",
+                null
+            ],
+            [
+                "change_buy_price",
+                0.5
+            ]
+        ]
+    },
+    {
+        "nid": "Ninis_s_Grace",
+        "name": "Ninis's Grace",
+        "desc": "+10 Def/Res for one turn.",
+        "icon_nid": "Skills",
+        "icon_index": [
+            9,
+            10
+        ],
+        "components": [
+            [
+                "time",
+                1
+            ],
+            [
+                "stat_change",
+                [
+                    [
+                        "DEF",
+                        10
+                    ],
+                    [
+                        "RES",
+                        10
+                    ]
+                ]
+            ]
+        ]
+    },
+    {
+        "nid": "Filla_s_Might",
+        "name": "Filla's Might",
+        "desc": "+10 Str/Mag for one turn.",
+        "icon_nid": "Skills",
+        "icon_index": [
+            11,
+            1
+        ],
+        "components": [
+            [
+                "time",
+                1
+            ],
+            [
+                "stat_change",
+                [
+                    [
+                        "STR",
+                        10
+                    ],
+                    [
+                        "MAG",
+                        10
+                    ]
+                ]
+            ]
+        ]
+    },
+    {
+        "nid": "Thor_s_Ire",
+        "name": "Thor's Ire",
+        "desc": "+10 Crit Rate for one turn.",
+        "icon_nid": "Skills",
+        "icon_index": [
+            11,
+            3
+        ],
+        "components": [
+            [
+                "time",
+                1
+            ],
+            [
+                "crit",
+                10
+            ]
+        ]
+    },
+    {
+        "nid": "Set_s_Litany",
+        "name": "Set's Litany",
+        "desc": "+10 Avo for one turn.",
+        "icon_nid": "Skills",
+        "icon_index": [
+            11,
+            9
+        ],
+        "components": [
+            [
+                "time",
+                1
+            ],
+            [
+                "avoid",
+                10
             ]
         ]
     }

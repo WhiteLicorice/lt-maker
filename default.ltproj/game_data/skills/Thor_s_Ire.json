@@ -1,0 +1,22 @@
+[
+    {
+        "nid": "Thor_s_Ire",
+        "name": "Thor's Ire",
+        "desc": "+10 Crit Rate for one turn.",
+        "icon_nid": "Skills",
+        "icon_index": [
+            11,
+            3
+        ],
+        "components": [
+            [
+                "time",
+                1
+            ],
+            [
+                "crit",
+                10
+            ]
+        ]
+    }
+]

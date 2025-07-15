@@ -18,7 +18,7 @@ from app.extensions.custom_gui import PropertyBox, ComboBox, Dialog, RightClickL
 from app.editor.base_database_gui import DragDropCollectionModel
 from app.editor.custom_widgets import CustomQtRoles, UnitBox, ClassBox, \
     TeamBox, FactionBox, AIBox, ObjBox, RoamAIBox
-from app.editor.class_editor import class_model
+from app.editor.map_sprite_editor import map_sprite_model
 from app.editor.item_editor import item_model
 from app.editor.unit_editor import new_unit_tab
 from app.editor.faction_editor import faction_model
@@ -204,8 +204,7 @@ class LevelUnitModel(DragDropCollectionModel):
                 active = self.window.view.selectionModel().isSelected(index)
             else:
                 active = False
-            pixmap = class_model.get_map_sprite_icon(
-                klass, num, active, unit.team, unit.variant)
+            pixmap = map_sprite_model.get_map_sprite_icon(klass.map_sprite_nid, num, active, unit.team, unit.variant)
             if pixmap:
                 return QIcon(pixmap)
             else:

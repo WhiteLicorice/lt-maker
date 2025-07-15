@@ -1,0 +1,22 @@
+[
+    {
+        "nid": "Set_s_Litany",
+        "name": "Set's Litany",
+        "desc": "+10 Avo for one turn.",
+        "icon_nid": "Skills",
+        "icon_index": [
+            11,
+            9
+        ],
+        "components": [
+            [
+                "time",
+                1
+            ],
+            [
+                "avoid",
+                10
+            ]
+        ]
+    }
+]
