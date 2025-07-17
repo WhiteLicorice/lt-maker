@@ -2,16 +2,15 @@ name: Sync GitLab Upstream
 
 on:
   schedule:
-    - cron: '17 * * * *'   # Runs at HH:17 every hour
+    - cron: '17 * * * *'
   workflow_dispatch:
 
 jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: Sync upstream
-        uses: aormsby/Fork-Sync-With-Upstream-action@v3.4.1
+      - name: Sync from GitLab to GitHub
+        uses: aormsby/Upstream-Sync@v3.4.1
         with:
           target_sync_branch: 'master'
           upstream_sync_repo: 'https://gitlab.com/rainlash/lt-maker.git'
