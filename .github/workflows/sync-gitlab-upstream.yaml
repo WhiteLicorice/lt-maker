@@ -9,10 +9,18 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Sync from GitLab to GitHub
-        uses: aormsby/Upstream-Sync@v3.4.1
+      - name: Checkout target repo
+        uses: actions/checkout@v3
         with:
-          target_sync_branch: 'master'
-          upstream_sync_repo: 'https://gitlab.com/rainlash/lt-maker.git'
-          upstream_sync_branch: 'master'
-          target_repo_token: ${{ secrets.GITHUB_TOKEN }}
+          ref: master
+          persist-credentials: false
+
+      - name: Sync upstream changes
+        id: sync
+        uses: aormsby/Fork-Sync-With-Upstream-action@v3.4.1
+        with:
+          target_branch: 'master'
+          upstream_repository: 'rainlash/lt-maker'
+          upstream_branch: 'master'
+          domain: 'gitlab.com'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
