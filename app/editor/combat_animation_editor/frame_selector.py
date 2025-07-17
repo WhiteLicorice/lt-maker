@@ -9,7 +9,7 @@ from PyQt5.QtGui import QPixmap, QIcon, QImage, QPainter
 from app.constants import WINWIDTH, WINHEIGHT
 
 from app import utilities
-from app.data.resources import combat_anims, combat_palettes
+from app.data.resources import combat_anims, combat_palettes, map_sprites
 from app.data.resources.resources import RESOURCES
 
 from app.editor.settings import MainSettingsController
@@ -17,6 +17,7 @@ from app.editor.settings import MainSettingsController
 from app.extensions.custom_gui import Dialog
 from app.editor.base_database_gui import ResourceCollectionModel
 from app.editor.icon_editor.icon_view import IconView
+from app.editor.map_sprite_editor import map_sprite_model
 from app.editor.combat_animation_editor import combat_animation_model
 from app.editor.combat_animation_editor.animation_import_utils import update_anim_full_image
 
@@ -32,7 +33,7 @@ class FrameModel(ResourceCollectionModel):
             return text
         elif role == Qt.DecorationRole:
             frame = self._data[index.row()]
-            im = combat_animation_model.palette_swap(frame.pixmap, self.window.current_palette_nid)
+            im = self.window.palette_swap(frame.pixmap)
             pix = QPixmap.fromImage(im)
             return QIcon(pix)
         return None
@@ -59,8 +60,12 @@ class FrameSelector(Dialog):
                 from app.editor.combat_animation_editor.new_combat_animation_properties import populate_anim_pixmaps
                 populate_anim_pixmaps(combat_anim)
             except:
-                from app.editor.combat_animation_editor.new_combat_effect_properties import populate_effect_pixmaps
-                populate_effect_pixmaps(combat_anim)
+                if isinstance(combat_anim, map_sprites.MapSprite):
+                    from app.editor.map_sprite_editor.new_map_sprite_properties import populate_map_sprite_pixmaps
+                    populate_map_sprite_pixmaps(combat_anim)
+                else:
+                    from app.editor.combat_animation_editor.new_combat_effect_properties import populate_effect_pixmaps
+                    populate_effect_pixmaps(combat_anim)
 
 
         self.display = IconView(self)
@@ -108,9 +113,10 @@ class FrameSelector(Dialog):
         main_layout = QHBoxLayout()
         left_layout = QVBoxLayout()
         left_layout.addWidget(self.view)
-        left_layout.addWidget(self.add_button)
-        left_layout.addWidget(self.delete_button)
-        left_layout.addWidget(self.export_button)
+        if not isinstance(combat_anim, map_sprites.MapSprite):
+            left_layout.addWidget(self.add_button)
+            left_layout.addWidget(self.delete_button)
+            left_layout.addWidget(self.export_button)
         right_layout = QVBoxLayout()
         right_layout.addWidget(self.display)
         right_layout.addWidget(self.anim_background_check)
@@ -173,6 +179,13 @@ class FrameSelector(Dialog):
                 new_frame = self.frames[new_idx.row()]
                 self.set_current(new_frame)
 
+    def palette_swap(self, pixmap):
+        if isinstance(self.combat_anim, map_sprites.MapSprite):
+            im = map_sprite_model.palette_swap(pixmap, self.current_palette_nid)
+        else:
+            im = combat_animation_model.palette_swap(pixmap, self.current_palette_nid)
+        return im
+
     def draw(self):
         if self.anim_background_check.isChecked():
             base_image = QImage(WINWIDTH, WINHEIGHT, QImage.Format_ARGB32)
@@ -184,7 +197,7 @@ class FrameSelector(Dialog):
             painter = QPainter()
             painter.begin(base_image)
             pixmap = self.current.pixmap
-            im = combat_animation_model.palette_swap(pixmap, self.current_palette_nid)
+            im = self.palette_swap(pixmap)
             painter.drawImage(self.current.offset[0], self.current.offset[1], im)
             painter.end()
 
@@ -266,7 +279,7 @@ class FrameSelector(Dialog):
             painter = QPainter()
             painter.begin(base_image)
             pixmap = frame.pixmap
-            im = combat_animation_model.palette_swap(pixmap, self.current_palette_nid)
+            im = self.palette_swap(pixmap)
             painter.drawImage(frame.offset[0], frame.offset[1], im)
             painter.end()
             path = os.path.join(fn_dir, '%s.png' % frame.nid)

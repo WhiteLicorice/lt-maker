@@ -20,6 +20,30 @@ from app.utilities.typing import NID
 
 from typing import (List, Callable, Optional)
 
+# Populate Map Sprite Sheets as Frames
+def populate_map_sprite_frames(map_sprite):
+    standing = map_sprite.standing_pixmap
+    moving = map_sprite.moving_pixmap
+    frames: List[Frame] = []
+    frames.append(Frame('standing', (192, 144), (0, 0), standing.copy(0, 0, 192, 144), standing))
+    frames.append(Frame('moving', (192, 160), (0, 0), moving.copy(0, 0, 192, 160), moving))
+    return frames
+
+# Fill Out Pixmap Frames for Map Sprites
+def populate_map_sprite_pixmaps(map_sprite, force=False):
+    if not map_sprite.standing_pixmap or force:
+        if map_sprite.stand_full_path and os.path.exists(map_sprite.stand_full_path):
+            map_sprite.standing_pixmap = QPixmap(map_sprite.stand_full_path)
+        else:
+            return
+    if not map_sprite.moving_pixmap or force:
+        if map_sprite.move_full_path and os.path.exists(map_sprite.move_full_path):
+            map_sprite.moving_pixmap = QPixmap(map_sprite.move_full_path)
+        else:
+            return
+    map_sprite.frames = populate_map_sprite_frames(map_sprite)
+    map_sprite.palettes = [[team.nid, team.map_sprite_palette] for team in DB.teams]
+
 class NewMapSpriteProperties(QWidget):
     title = "Map Sprite"
 
