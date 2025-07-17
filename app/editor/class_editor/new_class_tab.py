@@ -88,7 +88,7 @@ if __name__ == '__main__':
     RESOURCES.load('default.ltproj', CURRENT_SERIALIZATION_VERSION)
     from app.data.serialization.versions import CURRENT_SERIALIZATION_VERSION
     DB.load('default.ltproj', CURRENT_SERIALIZATION_VERSION)
-    window = SingleDatabaseEditor(ClassDatabase)
+    window = SingleDatabaseEditor(NewClassDatabase)
     # MEME
     window.setStyleSheet("QDialog {background-image:url(icons/bg.png)};")
     window.show()
