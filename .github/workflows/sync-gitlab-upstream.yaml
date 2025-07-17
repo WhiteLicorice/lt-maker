@@ -9,8 +9,7 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout target repo
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
         with:
           ref: master
           persist-credentials: false
@@ -19,8 +18,8 @@ jobs:
         id: sync
         uses: aormsby/Fork-Sync-With-Upstream-action@v3.4.1
         with:
-          target_branch: 'master'
-          upstream_repository: 'rainlash/lt-maker'
-          upstream_branch: 'master'
-          domain: 'gitlab.com'
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          target_sync_branch: 'master'
+          target_repo_token: ${{ secrets.GITHUB_TOKEN }}
+          upstream_sync_repo: 'rainlash/lt-maker'
+          upstream_sync_branch: 'master'
+          host_domain: 'gitlab.com'
