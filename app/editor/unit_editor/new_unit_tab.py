@@ -7,6 +7,7 @@ from typing import Optional
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QApplication, QFileDialog, QMessageBox
 
+from app.data.resources.resources import RESOURCES
 from app.data.database.database import DB
 from app.data.database.units import UnitCatalog
 from app.editor.unit_editor import unit_import, unit_model, new_unit_properties
@@ -93,7 +94,7 @@ class NewUnitDatabase(NewEditorTab):
                         unit_group.remove(unit_nid)
 
 def get(unit_nid=None):
-    window = NewUnitDatabase(None, DB)
+    window = NewUnitDatabase(None, DB, RESOURCES)
     unit = DB.units.get(unit_nid)
     if unit:
         window.on_select(unit_nid)
@@ -121,6 +122,6 @@ if __name__ == '__main__':
     from app.data.serialization.versions import CURRENT_SERIALIZATION_VERSION
     DB.load('default.ltproj', CURRENT_SERIALIZATION_VERSION)
     RESOURCES.load('default.ltproj', CURRENT_SERIALIZATION_VERSION)
-    window = NewUnitDatabase(None, DB)
+    window = NewUnitDatabase(None, DB, RESOURCES)
     window.show()
     app.exec_()

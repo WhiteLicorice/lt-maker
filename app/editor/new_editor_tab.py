@@ -33,7 +33,7 @@ class NewEditorTab(QWidget, Generic[T]):
     allow_import_from_csv = False
     allow_copy_and_paste = False
 
-    def __init__(self, parent, database: Database, resources: Resources) -> None:
+    def __init__(self, parent, database: Database, resources: Resources = None) -> None:
         QWidget.__init__(self, parent)
         self.setWindowTitle(_('%s Editor') % self.properties_type.title)
         self._db = database
