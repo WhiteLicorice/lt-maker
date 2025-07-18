@@ -18,7 +18,7 @@ class CombatCondition(SkillComponent):
         from app.engine import evaluate
         try:
             x = bool(evaluate.evaluate(self.value, unit, target,
-                                       unit.position, {'item': item, 'item2': item2, 'mode': mode}))
+                                       unit.position, {'item': item, 'item2': item2, 'mode': mode, 'skill': self.skill}))
             self._condition = x
             return x
         except Exception as e:
@@ -54,6 +54,6 @@ class Condition(SkillComponent):
     def condition(self, unit, item):
         from app.engine import evaluate
         try:
-            return bool(evaluate.evaluate(self.value, unit, position=unit.position, local_args={'item': item}))
+            return bool(evaluate.evaluate(self.value, unit, position=unit.position, local_args={'item': item, 'skill': self.skill}))
         except Exception as e:
             print("%s: Could not evaluate condition %s for skill %s" % (e, self.value, self.skill.nid))
