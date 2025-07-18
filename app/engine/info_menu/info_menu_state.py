@@ -737,7 +737,7 @@ class InfoMenuState(State):
                     icons.draw_growth(surf, 'LEAD', self.unit, (111, 16 * true_idx + 24))
                 else:
                     icons.draw_stat(surf, 'LEAD', self.unit, (111, 16 * true_idx + 24))
-                    lead_surf = engine.subsurface(SPRITES.get('lead_star'), (0, 16, 16, 16))
+                    lead_surf = engine.subsurface(SPRITES.get('lead_star'), (0, 0, 16, 16))
                     surf.blit(lead_surf, (111, 16 * true_idx + 24))
 
         return surf
