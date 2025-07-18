@@ -60,7 +60,7 @@ class EmpowerHeal(SkillComponent):
     def empower_heal(self, unit, target):
         from app.engine import evaluate
         try:
-            return int(evaluate.evaluate(self.value, unit, target, unit.position))
+            return int(evaluate.evaluate(self.value, unit, target, unit.position, local_args={'skill': self.skill}))
         except:
             print("Couldn't evaluate %s conditional" % self.value)
             return 0
@@ -75,7 +75,7 @@ class EmpowerHealReceived(SkillComponent):
     def empower_heal_received(self, target, unit):
         from app.engine import evaluate
         try:
-            return int(evaluate.evaluate(self.value, target, unit))
+            return int(evaluate.evaluate(self.value, target, unit, local_args={'skill': self.skill}))
         except:
             print("Couldn't evaluate %s conditional" % self.value)
             return 0

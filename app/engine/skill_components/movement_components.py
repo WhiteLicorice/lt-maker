@@ -171,7 +171,7 @@ class WitchWarpExpression(SkillComponent):
         for target in game.units:
             if target.position:
                 try:
-                    if evaluate.evaluate(self.value, target, unit, target.position):
+                    if evaluate.evaluate(self.value, target, unit, target.position, local_args={'skill': self.skill}):
                         positions += [
                             pos for pos in game.target_system.get_adjacent_positions(target.position)
                             if movement_funcs.check_weakly_traversable(unit, pos) and

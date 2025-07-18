@@ -276,7 +276,7 @@ class EvalMaximumRange(SkillComponent):
     def modify_maximum_range(self, unit, item):
         from app.engine import evaluate
         try:
-            return int(evaluate.evaluate(self.value, unit, local_args={'item': item}))
+            return int(evaluate.evaluate(self.value, unit, local_args={'item': item, 'skill': self.skill}))
         except:
             logging.error("Couldn't evaluate %s conditional" % self.value)
         return 0
@@ -295,7 +295,7 @@ class EvalMinimumRange(SkillComponent):
     def modify_minimum_range(self, unit, item):
         from app.engine import evaluate
         try:
-            return int(evaluate.evaluate(self.value, unit, local_args={'item': item}))
+            return int(evaluate.evaluate(self.value, unit, local_args={'item': item, 'skill': self.skill}))
         except:
             logging.error("Couldn't evaluate %s conditional" % self.value)
         return 0
