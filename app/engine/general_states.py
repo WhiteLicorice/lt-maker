@@ -2880,7 +2880,7 @@ class ShopState(State):
                 item = self.sell_menu.get_current()
                 if item:
                     value = item_funcs.sell_price(self.unit, item)
-                    if value:
+                    if item.value:
                         action.do(action.HasTraded(self.unit))
                         get_sound_thread().play_sfx('GoldExchange')
                         action.do(action.GainMoney(game.current_party, value))
@@ -2890,7 +2890,7 @@ class ShopState(State):
                         self.current_msg = self.get_dialog(self.sell_again_message)
                         self.update_options()
                     else:
-                        # No value, can't be sold
+                        # No value component, can't be sold
                         get_sound_thread().play_sfx('Select 4')
                         self.current_msg = self.get_dialog(self.no_value_message)
                 else:

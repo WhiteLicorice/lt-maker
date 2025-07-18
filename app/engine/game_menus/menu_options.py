@@ -453,7 +453,7 @@ class ValueItemOption(ItemOption):
                 value_string = '--'
         elif self.disp_value == 'sell':
             value = item_funcs.sell_price(owner, self.item)
-            if value:
+            if self.item.value:
                 value_string = str(value)
                 value_color = 'blue'
             else:
