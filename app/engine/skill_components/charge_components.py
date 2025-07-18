@@ -150,7 +150,7 @@ class GainMana(SkillComponent):
         from app.engine import evaluate
         try:
             if target:
-                mana_gain = int(evaluate.evaluate(self.value, unit, target, position=unit.position))
+                mana_gain = int(evaluate.evaluate(self.value, unit, target, position=unit.position, local_args={'item': item, 'skill': self.skill}))
                 action.do(action.ChangeMana(unit, mana_gain))
         except Exception as e:
             print("Could not evaluate %s (%s)" % (self.value, e))
