@@ -62,7 +62,7 @@ class Event():
         if 'unit2' in event_args:
             event_args['target'] = event_args['unit2']
         self.created_unit = None
-        event_args['created_unit'] = PythonProxy('created_unit', lambda: self.created_unit)
+        event_args['created_unit'] = PythonProxy('created_unit', self.nid)
         self.position = event_args.get('position', None)
         self.local_args = event_args or {}
         if game:
