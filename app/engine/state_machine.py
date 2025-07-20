@@ -38,7 +38,7 @@ class StateMachine():
         from app.engine import (base, chapter_title, debug_mode, dialog_log,
                                 feat_choice, game_over, general_states,
                                 level_up, minimap, objective_menu,
-                                player_choice, prep, promotion,
+                                player_choice, prep, prep_gba, promotion,
                                 settings, status_upkeep, text_entry,
                                 title_screen, trade, transitions, turnwheel,
                                 victory_screen, party_transfer, credit_state)
@@ -138,6 +138,8 @@ class StateMachine():
              'prep_restock': prep.PrepRestockState,
              'prep_use': prep.PrepUseState,
              'prep_market': prep.PrepMarketState,
+             'prep_gba_main': prep_gba.PrepGBAMainState,
+             'prep_gba_map': prep_gba.PrepGBAMapState,
              'base_main': base.BaseMainState,
              'base_market_select': base.BaseMarketSelectState,
              'base_bexp_select': base.BaseBEXPSelectState,
