@@ -34,6 +34,7 @@ class ComponentType(Enum):
     Affinity = 23  # Stored as Nid
     Terrain = 24  # stored as Nid
     Lore = 25 # Lore entry stored as an NID
+    Shape = 26 #List of lists of [x,y] coordinates
     Event = 80
     List = 100  # List containing Items
     Dict = 101  # List of Tuples of [Item, integer]

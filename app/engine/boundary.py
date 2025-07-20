@@ -5,7 +5,7 @@ from app.constants import TILEWIDTH, TILEHEIGHT
 
 from app.data.database.database import DB
 from app.engine.sprites import SPRITES
-from app.engine import engine, equations, image_mods, aura_funcs, line_of_sight
+from app.engine import engine, equations, image_mods, aura_funcs, line_of_sight, skill_system
 from app.engine.game_state import game
 
 from app.utilities import utils
@@ -229,11 +229,17 @@ class BoundaryInterface():
         if not self.aura_surf:
             self.aura_surf = engine.create_surface(full_size, transparent=True)
             # draw permanent auras
-            for aura_origin, aura_radius, aura_color in self.registered_auras.values():
-                tiles_to_color = game.target_system.find_manhattan_spheres(set(range(1, aura_radius + 1)), *aura_origin)
-                if DB.constants.value('aura_los'):
-                    tiles_to_color = set(line_of_sight.line_of_sight({aura_origin}, tiles_to_color, aura_radius))
+            for k, v in self.registered_auras.items():
+                unit_nid, skill_nid = k
+                sk = game.get_unit(unit_nid).get_skill(skill_nid)
+                aura_origin, aura_radius, aura_color = v
+                tiles_to_color = game.board.get_aura_positions(sk.subskill)
                 tiles_to_color.add(aura_origin)
+                if DB.constants.value('aura_los'):
+                    aura_range = skill_system.get_max_shape_range(sk)
+                    if aura_range is None: #Use default behavior
+                        aura_range = sk.aura_range.value
+                    tiles_to_color = set(line_of_sight.line_of_sight({aura_origin}, tiles_to_color, aura_range))
                 for x, y in tiles_to_color:
                     image = self.get_color_square(aura_color)
                     self.aura_surf.blit(image, (x * TILEWIDTH, y * TILEHEIGHT))
