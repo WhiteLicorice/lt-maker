@@ -402,5 +402,25 @@
     {
         "nid": "Transfer_desc",
         "text": "Give paired unit to adjacent ally."
+    },
+    {
+        "nid": "prep_gba_pick_units_desc",
+        "text": "Select which units to field this battle. The number is restricted."
+    },
+    {
+        "nid": "prep_gba_items_desc",
+        "text": "Manage your units' items."
+    },
+    {
+        "nid": "prep_gba_support_desc",
+        "text": "Check the compatibility of your units."
+    },
+    {
+        "nid": "prep_gba_check_map_desc",
+        "text": "View the map. Check the number and type of enemies. Also, check for shops and change your allies' starting positions."
+    },
+    {
+        "nid": "prep_gba_save_desc",
+        "text": "Save any changes. Choose Restart Chapter to restart this chapter. You can't return to the world map after saving."
     }
 ]

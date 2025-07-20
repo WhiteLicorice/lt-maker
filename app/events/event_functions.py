@@ -2815,7 +2815,8 @@ def arrange_formation(self: Event, flags=None):
             action.execute(action.Reset(unit))
 
 def prep(self: Event, pick_units_enabled: bool = False, music: SongPrefab | SongObject | NID = None, other_options: List[str] = None,
-         other_options_enabled: List[Optional[bool]] = None, other_options_on_select: List[Optional[bool]] = None, flags=None):
+         other_options_enabled: List[Optional[bool]] = None, other_options_on_select: List[Optional[str]] = None, 
+         other_options_description: List[Optional[str]] = None, flags=None):
     action.do(action.SetLevelVar('_prep_pick', pick_units_enabled))
     music_nid = self._resolve_nid(music)
     if music_nid:
@@ -2825,9 +2826,10 @@ def prep(self: Event, pick_units_enabled: bool = False, music: SongPrefab | Song
         options_list = other_options or []
         options_enabled = other_options_enabled or []
         options_events = other_options_on_select or []
+        options_descs = other_options_description or []
 
         if len(options_enabled) <= len(options_list):
-            options_enabled += [False] * (len(options_list) - len(options_events))
+            options_enabled += [False] * (len(options_list) - len(options_enabled))
             action.do(action.SetGameVar('_prep_options_enabled', options_enabled))
         else:
             self.logger.error("prep: too many bools in option enabled list: ", other_options_enabled)
@@ -2840,12 +2842,23 @@ def prep(self: Event, pick_units_enabled: bool = False, music: SongPrefab | Song
             self.logger.error("prep: too many events in option event list: ", other_options_on_select)
             return
         action.do(action.SetGameVar('_prep_additional_options', options_list))
+
+        if len(options_descs) <= len(options_list):
+            options_descs += [''] * (len(options_list) - len(options_descs))
+            action.do(action.SetGameVar('_prep_options_info_descs', options_descs))
+        else:
+            self.logger.error("prep: too many strs in option description list: ", other_options_description)
+            return
     else:
         action.do(action.SetGameVar('_prep_options_enabled', []))
         action.do(action.SetGameVar('_prep_options_events', []))
+        action.do(action.SetGameVar('_prep_options_info_descs', []))
         action.do(action.SetGameVar('_prep_additional_options', []))
 
-    self.game.state.change('prep_main')
+    if 'gba' in flags:
+        self.game.state.change('prep_gba_main')
+    else:
+        self.game.state.change('prep_main')
     self.state = 'paused'  # So that the message will leave the update loop
 
 def base(self: Event, background: str, music: SongPrefab | SongObject | NID = None, other_options: List[str] = None,
