@@ -401,6 +401,9 @@ class Dialog:
             self.speed = 0
         elif command == "{starting_speed}":
             self.speed = self.starting_speed
+        elif re.fullmatch(r"\{speed:(\d+(?:\.\d+)?)\}", command):
+            val = float(command[7:-1])  # Slice out the number part directly
+            self.speed = int(val) if val.is_integer() else val
         elif command == " ":  # Check to see if we should move to next line
             next_word = self._get_next_word(self.text_index)
             start, stop = self.text_indices[-1]
