@@ -3,7 +3,7 @@ from app.data.database.database import DB
 from app.events.regions import RegionType
 
 from app.engine.sprites import SPRITES
-from app.engine import engine, line_of_sight
+from app.engine import engine, line_of_sight, aura_funcs, skill_system
 from app.engine.game_state import game
 
 import logging
@@ -102,8 +102,10 @@ class HighlightController():
         for skill in unit.skills:
             if skill.aura and not skill.hide_aura:
                 positions = game.board.get_aura_positions(skill.subskill)
-                aura_range = skill.aura_range.value
                 if DB.constants.value('aura_los'):
+                    aura_range = skill_system.get_max_shape_range(skill)
+                    if aura_range is None: #Use default behavior
+                        aura_range = skill.aura_range.value
                     positions = line_of_sight.line_of_sight({unit.position}, positions, aura_range)
                 self.add_highlights(set(positions), 'aura', allow_overlap=True)
 

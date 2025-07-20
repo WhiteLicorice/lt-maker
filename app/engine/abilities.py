@@ -148,6 +148,7 @@ class RescueAbility(Ability):
             game.state.change('move')
             action.do(action.SetMovementLeft(unit, skill_system.canto_movement(unit, u)))
             game.cursor.place_arrows()
+            game.cursor.set_pos(unit.position)
             # Actually Rescuing needs to be after the state changes above, so that if rescuing causes
             # a state change, such as an event, that event will actually fire.
             action.do(action.Rescue(unit, u))  

@@ -34,6 +34,7 @@ from app.extensions.list_widgets import (AppendMultiListWidget,
                                          BasicMultiListWidget)
 from app.extensions.frame_layout import FrameLayout
 from app.extensions.widget_list import WidgetList
+from app.extensions.shape_dialog import ShapeIcon, ShapeDialog
 from app.utilities import utils
 
 from app.editor.auto_resizing_text_edit import AutoResizingTextEdit
@@ -593,6 +594,18 @@ class StatItemComponent(BoolItemComponent):
     def on_value_changed(self):
         val = self.editor.currentText()
         self._data.value = val
+        
+class ShapeItemComponent(BoolItemComponent):
+    def create_editor(self, hbox):
+        if not self._data.value:
+            self._data.value = []
+        shape = self._data.value.copy()
+        self.shape = ShapeIcon(self, shape, 32)
+        self.shape.shapeChanged.connect(self.on_value_changed)
+        hbox.addWidget(self.shape)
+
+    def on_value_changed(self):
+        self._data.value = self.shape.shape()
 
 
 class EventItemComponent(BoolItemComponent):
@@ -714,6 +727,8 @@ def get_display_widget(component, parent):
         c = AIItemComponent(component, parent)
     elif component.expose == ComponentType.Stat:
         c = StatItemComponent(component, parent)
+    elif component.expose == ComponentType.Shape:
+        c = ShapeItemComponent(component, parent)
     elif component.expose == ComponentType.Event:
         c = EventItemComponent(component, parent)
     elif component.expose == ComponentType.MovementType:

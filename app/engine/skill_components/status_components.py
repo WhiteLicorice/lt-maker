@@ -51,6 +51,29 @@ class HideAura(SkillComponent):
     desc = 'Aura\'s highlight will never appear on the map'
     tag = SkillTags.STATUS
     paired_with = ('aura', 'aura_range', 'aura_target')
+    
+class AuraShape(SkillComponent):
+    nid = 'aura_shape'
+    desc = """Aura affects tiles in a specified shape around the user. 
+    The pattern will be extended according to the aura's range.
+    Set an aura range of 1 to use the drawn pattern with no extension."""
+    tag = SkillTags.STATUS
+    expose = ComponentType.Shape
+    value = []
+    
+    def get_shape(self, unit, skill):
+        value_list = set()
+        coords = self.value
+        for i in range(1, skill.aura_range.value + 1):
+            for coord in coords:
+                value_list.add((unit.position[0] + i * coord[0], unit.position[1] + i * coord[1]))
+        return value_list
+        
+    def get_max_shape_range(self, skill):
+        if len(self.value) > 0:
+            return max([abs(pos[0]) + abs(pos[1]) for pos in self.value]) * skill.aura_range.value
+        else:
+            return 0
 
 class PairUpBonus(SkillComponent):
     nid = 'pairup_bonus'

@@ -105,7 +105,7 @@ class DatabaseValidatorEngine():
 
         # native types, don't really need to check these
         for ctype in (CType.Bool, CType.Int, CType.Float, CType.String,
-                      CType.Color3, CType.Color4, CType.StringDict, CType.MultipleOptions):
+                      CType.Color3, CType.Color4, CType.StringDict, CType.MultipleOptions, CType.Shape):
             def _trivial_type(val):
                 return True
             self._vmap[ctype] = _trivial_type
