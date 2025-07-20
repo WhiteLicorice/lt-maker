@@ -262,7 +262,7 @@ class TileSprite(Prefab):
         return new_tile_sprite
 
 class TileSetCatalog(ManifestCatalog[TileSet]):
-    manifest = 'tileset.json'
+    manifest = 'tilesets.json'
     title = 'tilesets'
     datatype = TileSet
 

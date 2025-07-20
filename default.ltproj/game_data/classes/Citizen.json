@@ -80,7 +80,7 @@
         "learned_skills": [],
         "wexp_gain": {
             "Sword": [
-                0,
+                false,
                 0,
                 251
             ],

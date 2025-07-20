@@ -85,7 +85,7 @@
         ],
         "wexp_gain": {
             "Sword": [
-                2,
+                true,
                 40,
                 251
             ],

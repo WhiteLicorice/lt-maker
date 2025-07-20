@@ -52,7 +52,7 @@
             "add_unit;Saar;9,7;immediate",
             "load_unit;Cormag;enemy",
             "add_unit;Cormag;8,10;immediate",
-            "make_generic;Glen;Wyvern Lord;1;enemy",
+            "make_generic;Glen;Wyvern_Lord;1;enemy",
             "add_unit;Glen;9,9;immediate",
             "transition;Open",
             "flicker_cursor;Glen",
