@@ -364,7 +364,21 @@ def get_show_skill_icon(unit, skill) -> bool:
                 component.show_skill_icon(unit):
             return True
     return False
-
+    
+def get_shape(unit, skill) -> set[tuple]:
+    #Get a set of all tiles this skill should affect
+    for component in skill.components:
+        if component.defines('get_shape'):
+            return component.get_shape(unit, skill)
+    return None
+    
+def get_max_shape_range(skill) -> int:
+    #Get the maximum manhattan distance to tiles skill affects
+    for component in skill.components:
+        if component.defines('get_max_shape_range'):
+            return component.get_max_shape_range(skill)
+    return None
+    
 def trigger_charge(unit, skill):
     for component in skill.components:
         if component.defines('trigger_charge'):
