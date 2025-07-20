@@ -18,6 +18,9 @@ class EventPortrait():
 
     halfblink = (width - 32, 48, 32, 16)
     fullblink = (width - 32, 64, 32, 16)
+    
+    leftwink = (width - 32, 64, 16, 16)
+    rightwink = (width - 16, 64, 16, 16)
 
     openmouth = (0, height - 16, 32, 16)
     halfmouth = (32, height - 16, 32, 16)
@@ -198,11 +201,17 @@ class EventPortrait():
             elif self.talk_state == 2:
                 mouth_image = engine.subsurface(self.portrait.image, self.openmouth)
 
+        wink_offset = 0 # For right-winking purposes.
         # For blink image
         if "CloseEyes" in self.expressions:
             blink_image = engine.subsurface(self.portrait.image, self.fullblink)
         elif "HalfCloseEyes" in self.expressions:
             blink_image = engine.subsurface(self.portrait.image, self.halfblink)
+        elif "LeftWink" in self.expressions:
+            blink_image = engine.subsurface(self.portrait.image, self.leftwink)
+        elif "RightWink" in self.expressions:
+            blink_image = engine.subsurface(self.portrait.image, self.rightwink)
+            wink_offset = 16
         elif "OpenEyes" in self.expressions:
             blink_image = None
         else:
@@ -215,7 +224,7 @@ class EventPortrait():
 
         # Piece together image
         if blink_image:
-            main_image.blit(blink_image, self.portrait.blinking_offset)
+            main_image.blit(blink_image, [self.portrait.blinking_offset[0] + wink_offset, self.portrait.blinking_offset[1]])
         main_image.blit(mouth_image, self.portrait.smiling_offset)
         return main_image
 
