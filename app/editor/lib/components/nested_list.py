@@ -516,6 +516,7 @@ class LTNestedList(QWidget):
         new_item.setData(0, IsCategoryRole, is_category)
         if not is_category:
             new_item.setFlags(new_item.flags() & ~QtCore.Qt.ItemIsDropEnabled)
-        else:
+
+        if is_category or self.allow_rename:
             new_item.setFlags(new_item.flags() | QtCore.Qt.ItemIsEditable)
         return new_item

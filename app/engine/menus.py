@@ -12,7 +12,7 @@ from app.data.database import lore
 from app.engine.sprites import SPRITES
 from app.engine.fonts import FONT
 from app.engine.input_manager import get_input_manager
-from app.engine import engine, image_mods, icons, help_menu, item_system, gui, item_funcs
+from app.engine import engine, image_mods, icons, help_menu, item_system, gui, item_funcs, text_funcs, dialog
 from app.engine.gui import ScrollBar
 from app.engine.base_surf import create_base_surf
 from app.engine.objects.item import ItemObject
@@ -2027,3 +2027,102 @@ class KeyboardMenu(Table):
         top = 17 + size[1]
         underscore = SPRITES.get('Underscore')
         surf.blit(underscore, (left, top))
+
+class PrepGBA(Choice):
+    def __init__(self, options, info=None, objective=None):
+        super().__init__(None, options, None, None, info)
+
+        self.topleft = (18, 52)
+        self.background = SPRITES.get("prep_window")
+        self.title_surf = SPRITES.get("prep_title")
+        self.limit = 5
+        self.info = info
+
+        self.dlg = None
+        self.obj_surf = self.create_objective_surf(objective)
+
+    def move_up(self, first_push=True):
+        if super().move_up(first_push):
+            self._update_info_desc()
+
+    def move_down(self, first_push=True):
+        if super().move_down(first_push):
+            self._update_info_desc()
+
+    def get_menu_width(self):
+        return 64
+
+    def _update_info_desc(self):       
+        desc = self.info[self.current_index] or ''
+        desc = desc.replace('{comma}', ',')    # temporary until someone add {comma} to text formatting commands
+
+        self.dlg = dialog.Dialog(desc, font_type='text', num_lines=5, draw_cursor=False, speed=0)
+        self.dlg.position = utils.tuple_add(self.topleft, (72, -4))
+        self.dlg.text_width = 120
+
+    def draw(self, surf):
+        topleft = self.get_topleft()
+
+        surf.blit(self.background, (0, 0))
+        surf.blit(self.title_surf, (0, 0))
+
+        draw_scroll_bar = False
+        if len(self.options) > self.limit:
+            draw_scroll_bar = True
+            self.draw_scroll_bar(surf, topleft)
+
+        start_index = self.scroll
+        end_index = self.scroll + self.limit
+        choices = self.options[start_index:end_index]
+        running_height = self.y_offset
+        menu_width = self.get_menu_width()
+        if choices:
+            for idx, choice in enumerate(choices):
+                top = topleft[1] + 4 + running_height
+                left = topleft[0]
+
+                if idx + self.scroll == self.current_index:
+                    choice.draw_highlight(surf, left, top, menu_width - 8 if draw_scroll_bar else menu_width)
+                else:
+                    choice.draw(surf, left, top)
+                if idx + self.scroll == self.fake_cursor_idx:
+                    self.stationary_cursor.draw(surf, left, top)
+                if idx + self.scroll == self.current_index and self.takes_input and self.draw_cursor:
+                    self.cursor.draw(surf, left, top)
+
+                running_height += choice.height()
+        else:
+            FONT['text-grey'].blit("Nothing", surf, (self.topleft[0] + 16, self.topleft[1] + 4))
+
+        if not self.dlg:
+            self._update_info_desc()
+        self.dlg.update()
+        self.dlg.draw(surf)
+
+        if self.obj_surf:
+            surf.blit(self.obj_surf, (0, 16))
+
+        return surf
+
+    def create_objective_surf(self, objective):
+        if not objective:
+            return None
+
+        bg = "menu_bg_base"
+        font = 'text'
+        width = FONT[font].width(objective) + 32
+        height = 24
+        shimmer = 1
+        x_offset = WINWIDTH - 9 - width
+
+        bg_surf = engine.create_surface((WINWIDTH, height + 4), transparent=True)
+        bg_surf.blit(create_base_surf(width, height, bg), (x_offset + 2, 4))
+        bg_surf.blit(SPRITES.get('menu_gem_small'), (x_offset, 0))
+
+        if shimmer != 0:
+            sprite = SPRITES.get('menu_shimmer%d' % shimmer)
+            bg_surf.blit(sprite, (x_offset + width - sprite.get_width() - 5, height - sprite.get_height() - 1))
+
+        FONT[font].blit(objective, bg_surf, (x_offset + 14, 8))
+
+        return bg_surf

@@ -18,6 +18,15 @@ from app.engine.sprites import SPRITES
 from app.engine.state import MapState, State
 from app.events import triggers
 
+def setup_units():
+    # Force place any required units
+    for unit in game.get_units_in_party():
+        possible_position = game.get_next_formation_spot()
+        if 'Required' in unit.tags and possible_position and not unit.position:
+            action.ArriveOnMap(unit, possible_position).do()
+
+    # Force reset all units
+    action.do(action.ResetAll([unit for unit in game.units if not unit.dead]))
 
 class PrepMainState(MapState):
     name = 'prep_main'
@@ -51,7 +60,7 @@ class PrepMainState(MapState):
         events = events[:option_idx] + additional_events + events[option_idx:]
         return options, ignore, events
 
-    def start(self):
+    def _prep_start(self):
         prep_music = game.game_vars.get('_prep_music')
         if prep_music:
             get_sound_thread().fade_in(prep_music)
@@ -69,18 +78,12 @@ class PrepMainState(MapState):
         self.menu.set_limit(max_num_options)
         self.menu.set_ignore(ignore)
 
-        # Force place any required units
-        for unit in game.get_units_in_party():
-            possible_position = game.get_next_formation_spot()
-            if 'Required' in unit.tags and possible_position and not unit.position:
-                action.ArriveOnMap(unit, possible_position).do()
-
-        # Force reset all units
-        action.do(action.ResetAll([unit for unit in game.units if not unit.dead]))
-
         self.fade_out = False
         self.last_update = 0
 
+    def start(self):
+        setup_units()
+        self._prep_start()
         game.events.trigger(triggers.OnPrepStart())
 
     def begin(self):

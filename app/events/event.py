@@ -29,6 +29,7 @@ from app.events.event_version import EventVersion
 from app.events.python_eventing.errors import EventError
 from app.events.python_eventing.python_event_processor import PythonEventProcessor
 from app.events.python_eventing.utils import SAVE_COMMAND_NIDS
+from app.events.python_eventing.python_proxy import PythonProxy
 from app.events.speak_style import SpeakStyle
 from app.events.utils import TableRows
 from app.utilities import str_utils, utils, static_random
@@ -61,6 +62,7 @@ class Event():
         if 'unit2' in event_args:
             event_args['target'] = event_args['unit2']
         self.created_unit = None
+        event_args['created_unit'] = PythonProxy('created_unit', self.nid)
         self.position = event_args.get('position', None)
         self.local_args = event_args or {}
         if game:

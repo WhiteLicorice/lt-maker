@@ -9,6 +9,7 @@ from PyQt5.QtGui import QColor, QPen, QPixmap, QImage, QPainter, qRgb
 from typing import List, Tuple
 
 from app.constants import WINWIDTH, WINHEIGHT
+from app.data.resources import map_sprites
 from app.data.resources.resources import RESOURCES
 
 from app.editor.settings import MainSettingsController
@@ -19,6 +20,7 @@ from app.extensions.custom_gui import PropertyBox, ComboBox, Dialog
 from app.editor.combat_animation_editor.frame_selector import FrameSelector
 from app.editor.combat_animation_editor import combat_animation_model, new_combat_effect_properties, new_combat_animation_properties, palette_model
 from app.editor.combat_animation_editor.color_editor import ColorEditorWidget
+from app.editor.map_sprite_editor import new_map_sprite_properties, map_sprite_model
 from app.editor.lib.components.validated_line_edit import NidLineEdit
 from app.data.resources.combat_anims import Frame
 from app.data.resources.combat_palettes import Palette
@@ -459,6 +461,38 @@ class EffectSelection(Dialog):
                 return combat_effect.nid
         return None
 
+class MapSpriteSelection(Dialog):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.window = parent
+
+        main_layout = QVBoxLayout()
+        self.setLayout(main_layout)
+
+        self.effect_box = PropertyBox("Map Sprites", ComboBox, self)
+        if RESOURCES.map_sprites:
+            self.effect_box.edit.addItems(RESOURCES.map_sprites.keys())
+
+        main_layout.addWidget(self.effect_box)
+        main_layout.addWidget(self.buttonbox)
+
+    @classmethod
+    def get(cls, parent) -> tuple:
+        dlg = cls(parent)
+        result = dlg.exec_()
+        if result == QDialog.Accepted:
+            return dlg.effect_box.edit.currentText()
+        else:
+            return None
+
+    @classmethod
+    def autoget(cls, current_palette: Palette) -> tuple:
+        for map_sprite in RESOURCES.map_sprites:
+            palette_nids = [nid for name, nid in map_sprite.palettes]
+            if current_palette.nid in palette_nids:
+                return map_sprite.nid
+        return None
+
 class NewPaletteProperties(QWidget):
     title = "Palette"
 
@@ -520,6 +554,12 @@ class NewPaletteProperties(QWidget):
         self.select_effect_frame_button = QPushButton("Select Effect Frame...", self)
         self.select_effect_frame_button.clicked.connect(self.select_effect_frame)
 
+        self.autoselect_map_sprite_frame_button = QPushButton("Autoselect Map Sprite Frame", self)
+        self.autoselect_map_sprite_frame_button.clicked.connect(self.autoselect_map_sprite_frame)
+
+        self.select_map_sprite_frame_button = QPushButton("Select Map Sprite Frame...", self)
+        self.select_map_sprite_frame_button.clicked.connect(self.select_map_sprite_frame)
+
         self.easel_widget = EaselWidget(self)
         self.color_editor_widget = ColorEditorWidget(self)
 
@@ -537,9 +577,13 @@ class NewPaletteProperties(QWidget):
         effect_button_layout = QHBoxLayout()
         effect_button_layout.addWidget(self.autoselect_effect_frame_button)
         effect_button_layout.addWidget(self.select_effect_frame_button)
+        sprite_button_layout = QHBoxLayout()
+        sprite_button_layout.addWidget(self.autoselect_map_sprite_frame_button)
+        sprite_button_layout.addWidget(self.select_map_sprite_frame_button)
         combined_button_layout = QVBoxLayout()
         combined_button_layout.addLayout(anim_button_layout)
         combined_button_layout.addLayout(effect_button_layout)
+        combined_button_layout.addLayout(sprite_button_layout)
         view_layout.addLayout(combined_button_layout)
         top_layout.addLayout(view_layout)
         main_layout.addLayout(top_layout)
@@ -612,6 +656,19 @@ class NewPaletteProperties(QWidget):
             self.easel_widget.set_current(self.current_palette, self.current_frame)
             self.draw_frame()
 
+    def select_map_sprite_frame(self):
+        sprite_nid = MapSpriteSelection.get(self)
+        sprite_anim = RESOURCES.map_sprites.get(sprite_nid)
+        if not sprite_anim:
+            return
+        new_map_sprite_properties.populate_map_sprite_pixmaps(sprite_anim)
+        frame, ok = FrameSelector.get(sprite_anim, sprite_anim, self)
+        if frame and ok:
+            self.current_frame_set = sprite_anim
+            self.current_frame = frame
+            self.easel_widget.set_current(self.current_palette, self.current_frame)
+            self.draw_frame()
+
     def autoselect_frame(self):
         if not self.current_palette:
             return
@@ -654,6 +711,25 @@ class NewPaletteProperties(QWidget):
             self.easel_widget.set_current(self.current_palette, self.current_frame)
             self.draw_frame()
 
+    def autoselect_map_sprite_frame(self):
+        if not self.current_palette:
+            return
+        map_sprite_nid = MapSpriteSelection.autoget(self.current_palette)
+        map_sprite_anim = RESOURCES.map_sprites.get(map_sprite_nid)
+        if not map_sprite_anim:
+            QMessageBox.critical(self, "Autoselect Error", 'Could not find a good frame. Try using manual "Select".')
+            return
+        if not map_sprite_anim.frames:
+            QMessageBox.critical(self, "Autoselect Error", 'Could not find a good frame. Try using manual "Select".')
+            return
+        new_map_sprite_properties.populate_effect_pixmaps(map_sprite_anim)
+        frame = map_sprite_anim.frames[0]
+        if frame:
+            self.current_frame_set = map_sprite_anim
+            self.current_frame = frame
+            self.easel_widget.set_current(self.current_palette, self.current_frame)
+            self.draw_frame()
+
     def easel_selection_changed(self, current_color):
         if current_color:
             self.painting_color = QColor(*current_color)
@@ -669,7 +745,10 @@ class NewPaletteProperties(QWidget):
 
     def draw_frame(self):
         if self.current_frame and self.current_palette:
-            im = combat_animation_model.palette_swap(self.current_frame.pixmap, self.get_current_palette())
+            if isinstance(self.current_frame_set, map_sprites.MapSprite):
+                im = map_sprite_model.palette_swap(self.current_frame.pixmap, self.get_current_palette())
+            else:
+                im = combat_animation_model.palette_swap(self.current_frame.pixmap, self.get_current_palette())
             base_image = QImage(WINWIDTH, WINHEIGHT, QImage.Format_ARGB32)
             base_image.fill(editor_utilities.qCOLORKEY)
             painter = QPainter()
