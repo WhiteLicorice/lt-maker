@@ -80,7 +80,7 @@
         "learned_skills": [],
         "wexp_gain": {
             "Sword": [
-                2,
+                true,
                 40,
                 251
             ],
@@ -90,7 +90,7 @@
                 251
             ],
             "Axe": [
-                2,
+                true,
                 31,
                 251
             ],
