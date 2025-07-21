@@ -1,3 +1,4 @@
+from typing import List
 from dataclasses import dataclass
 
 from app.engine import engine, help_menu, menus
@@ -12,6 +13,36 @@ class BoundingBox():
     state: str = None
     first: bool = False
 
+def find_closest(current_bb: BoundingBox, boxes: List[BoundingBox], horiz: bool) -> BoundingBox:
+    center_point = (current_bb.aabb[0] + current_bb.aabb[2]/2,
+                    current_bb.aabb[1] + current_bb.aabb[3]/2)
+    closest_box = None
+    max_distance = 1e6
+    # First try to find a close box by moving in the right direction
+    if horiz:
+        horiz_penalty, vert_penalty = 1, 10
+    else:
+        horiz_penalty, vert_penalty = 10, 1
+
+    for bb in boxes:
+        curr_topleft = current_bb.aabb[:2]
+        other_topleft = bb.aabb[:2]
+        distance = horiz_penalty * (curr_topleft[0] - other_topleft[0])**2 \
+            + vert_penalty * (curr_topleft[1] - other_topleft[1])**2
+        if distance < max_distance:
+            max_distance = distance
+            closest_box = bb
+
+    # Find the closest box from boxes by comparing center points
+    if not closest_box:
+        for bb in boxes:
+            bb_center = (bb.aabb[0] + bb.aabb[2]/2, bb.aabb[1] + bb.aabb[3]/2)
+            distance = (center_point[0] - bb_center[0])**2 + (center_point[1] - bb_center[1])**2
+            if distance < max_distance:
+                max_distance = distance
+                closest_box = bb
+    return closest_box
+
 class InfoGraph():
     draw_all_bbs: bool = False
 
@@ -22,7 +53,6 @@ class InfoGraph():
         self.last_bb = None
         self.current_state = None
         self.cursor = menus.Cursor()
-        self.first_bb = None
 
     def clear(self, keep_last_aabb=False):
         self.registry = {state: [] for state in info_states}
@@ -30,7 +60,6 @@ class InfoGraph():
         self.last_bb_aabb = self.last_bb.aabb if keep_last_aabb and self.last_bb else None
         self.current_bb = None
         self.last_bb = None
-        self.first_bb = None
 
     def set_current_state(self, state):
         self.current_state = state
@@ -92,36 +121,11 @@ class InfoGraph():
             return False
         if not self.current_bb:
             return False
-        if self.current_bb:
-            center_point = (self.current_bb.aabb[0] + self.current_bb.aabb[2]/2,
-                            self.current_bb.aabb[1] + self.current_bb.aabb[3]/2)
-            closest_box = None
-            max_distance = 1e6
-            # First try to find a close box by moving in the right direction
-            horiz_penalty, vert_penalty = 1, 1
-            if horiz:
-                vert_penalty = 10
-            else:
-                horiz_penalty = 10
-            for bb in boxes:
-                curr_topleft = self.current_bb.aabb[:2]
-                other_topleft = bb.aabb[:2]
-                distance = horiz_penalty * (curr_topleft[0] - other_topleft[0])**2 + vert_penalty * (curr_topleft[1] - other_topleft[1])**2
-                if distance < max_distance:
-                    max_distance = distance
-                    closest_box = bb
-            # Find the closest box from boxes by comparing center points
-            if not closest_box:
-                for bb in boxes:
-                    bb_center = (bb.aabb[0] + bb.aabb[2]/2, bb.aabb[1] + bb.aabb[3]/2)
-                    distance = (center_point[0] - bb_center[0])**2 + (center_point[1] - bb_center[1])**2
-                    if distance < max_distance:
-                        max_distance = distance
-                        closest_box = bb
-            if closest_box == self.current_bb:
-                return False
-            self.current_bb = closest_box
-            return True
+        closest_box = find_closest(self.current_bb, boxes, horiz)
+        if closest_box == self.current_bb:
+            return False
+        self.current_bb = closest_box
+        return True
 
     def move_left(self) -> bool:
         boxes = [bb for bb in self.registry[self.current_state] if bb.aabb[0] < self.current_bb.aabb[0]]
