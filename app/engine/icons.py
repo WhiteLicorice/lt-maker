@@ -244,7 +244,7 @@ def draw_growth(surf, stat_nid, unit, topright, compact=False):
         elif bonus < 0:
             FONT['small-red'].blit(str(bonus), surf, topright)
 
-def draw_glow(surf, font, text, topright, align: HAlignment = HAlignment.LEFT):
+def draw_glow(surf, font, text, topright, align: HAlignment = HAlignment.LEFT, color=None):
     interval = 800   # ms
     progress = engine.get_time() % (interval*2)  # Between 0 and 1600
     white = math.sin(progress / interval * math.pi)  # Returns between -1 and 1
@@ -260,7 +260,9 @@ def draw_glow(surf, font, text, topright, align: HAlignment = HAlignment.LEFT):
     else:
         font.blit(text, stat_surf, topright)
 
-    palette = font.font_info.palettes[font.default_color]
+    if not color:
+        color = font.default_color
+    palette = font.font_info.palettes[color]
     conv_dict = {}
     for idx, color in enumerate(palette):
         if idx == 1:
