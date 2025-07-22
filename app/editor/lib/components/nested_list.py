@@ -145,7 +145,7 @@ class LTNestedList(QWidget):
         self.disturbed_category = item
 
     def on_double_click(self, item):
-        if item and not item.data(0, IsCategoryRole):
+        if self.allow_rename and item and not item.data(0, IsCategoryRole):
             self.on_begin_rename_item(item)
 
     def on_filter_list_click(self, e):
@@ -276,7 +276,8 @@ class LTNestedList(QWidget):
 
     def rename(self, item: QTreeWidgetItem):
         self.tree_widget.editItem(item)
-        self.on_begin_rename_item(item)
+        if self.allow_rename and item and not item.data(0, IsCategoryRole):
+            self.on_begin_rename_item(item)
 
     def can_delete(self, index, item: QTreeWidgetItem):
         if not index or not item:
@@ -371,7 +372,8 @@ class LTNestedList(QWidget):
 
     def done_editing(self, nid:Optional[str]):
         item = self.find_item_by_nid(nid)
-        self.on_begin_rename_item(item, False)
+        if self.allow_rename and item and not item.data(0, IsCategoryRole):
+            self.on_begin_rename_item(item, False)
 
     def find_item_by_nid(self, nid) -> Optional[QTreeWidgetItem]:
         list_entries, list_categories = self.get_list_and_category_structure()
