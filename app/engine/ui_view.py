@@ -362,6 +362,8 @@ class UIView():
         grandmaster = game.rng_mode == RNGOption.GRANDMASTER
         if grandmaster:  # Grandmaster takes precedence
             crit_flag = False
+        # Only if either units is paired up
+        guard_flag = DB.constants.value('pairup') and (attacker.traveler or defender.traveler)
 
         # Choose attack info background
         prefix = 'attack_info_'
@@ -373,8 +375,8 @@ class UIView():
             infix = ''
 
         color = DB.teams.get(defender.team).combat_color
-        final = prefix + infix + ('_' if infix else '') + color
-        fallback_final = prefix + infix + ('_' if infix else '') + 'red'
+        final = prefix + infix + ('_' if infix else '') + ('guard_' if guard_flag else '') + color
+        fallback_final = prefix + infix + ('_' if infix else '') + ('guard_' if guard_flag else '') + 'red'
         surf = SPRITES.get(final, fallback_final).copy()
 
         if DB.constants.value('pairup') and \
@@ -445,6 +447,8 @@ class UIView():
             y_pos -= 16
         if grandmaster:
             y_pos -= 16
+        if guard_flag:
+            y_pos += 16
         position = 50 - text_width('text', defender.name)//2, y_pos
         render_text(surf, ['text'], [defender.name], ['white'], position)
         # Enemy Weapon
@@ -455,26 +459,15 @@ class UIView():
                 y_pos -= 16
             if grandmaster:
                 y_pos -= 16
+            if guard_flag:
+                y_pos += 16
             position = 56 - width//2, y_pos
             render_text(surf, ['text'], [defender.get_weapon().name], ['white'], position)
-        # Self HP
-        blit_num(surf, attacker.get_hp(), 88, 19)
-        # Enemy HP
-        blit_num(surf, defender.get_hp(), 44, 19)
-        # Self MT
+        
         mt = combat_calcs.compute_damage(attacker, defender, weapon, resolve_weapon(defender), 'attack', (0, 0))
-        if grandmaster:
-            hit = utils.clamp(combat_calcs.compute_hit(attacker, defender, weapon, resolve_weapon(defender), 'attack', (0, 0)), 0, 100)
-            blit_num(surf, int(mt * float(hit) / 100), 88, 35)
-        else:
-            blit_num(surf, mt, 88, 35)
-            hit = combat_calcs.compute_hit(attacker, defender, weapon, resolve_weapon(defender), 'attack', (0, 0))
-            blit_num(surf, hit, 88, 51)
-            # Blit crit if applicable
-            if crit_flag:
-                c = combat_calcs.compute_crit(attacker, defender, weapon, resolve_weapon(defender), 'attack', (0, 0))
-                blit_num(surf, c, 88, 67)
-        # Enemy Hit and Mt
+        hit = combat_calcs.compute_hit(attacker, defender, weapon, resolve_weapon(defender), 'attack', (0, 0))
+        crit = combat_calcs.compute_crit(attacker, defender, weapon, resolve_weapon(defender), 'attack', (0, 0))
+
         if defender.get_weapon() and \
                 combat_calcs.can_counterattack(attacker, weapon, defender, defender.get_weapon()):
             e_mt = combat_calcs.compute_damage(defender, attacker, resolve_weapon(defender), weapon, 'defense', (0, 0))
@@ -488,16 +481,34 @@ class UIView():
             e_hit = '--'
             e_crit = '--'
 
+        stat = [attacker.get_hp()]
+        e_stat = [defender.get_hp()]
+
         if grandmaster:
+            stat.append(int(mt * float(utils.clamp(hit, 0, 100)) / 100))
             if e_mt == '--' or e_hit == '--':
-                blit_num(surf, e_mt, 44, 35)
+                e_stat.append(e_mt)
             else:
-                blit_num(surf, int(e_mt * float(e_hit) / 100), 44, 35)
+                e_stat.append(int(e_mt * float(utils.clamp(e_hit, 0, 100)) / 100))
         else:
-            blit_num(surf, e_mt, 44, 35)
-            blit_num(surf, e_hit, 44, 51)
+            stat.append(mt)
+            e_stat.append(e_mt)
+
+            stat.append(hit)
+            e_stat.append(e_hit)
+
             if crit_flag:
-                blit_num(surf, e_crit, 44, 67)
+                stat.append(crit)
+                e_stat.append(e_crit)
+
+        if guard_flag:
+            # If unit is not paired up, no point in displaying guard gauge
+            stat.append(attacker.get_guard_gauge() if attacker.traveler else '--')
+            e_stat.append(defender.get_guard_gauge() if defender.traveler else '--')
+
+        for idx in range(len(stat)):
+            blit_num(surf, stat[idx], 88, 19 + 16*idx)
+            blit_num(surf, e_stat[idx], 44, 19 + 16*idx)
 
         return surf
 
@@ -547,6 +558,8 @@ class UIView():
         grandmaster = game.rng_mode == RNGOption.GRANDMASTER
         if grandmaster:  # Grandmaster takes precedence
             crit_flag = False
+        # Only if either units is paired up
+        guard_flag = DB.constants.value('pairup') and (attacker.traveler or defender.traveler)
 
         if game.cursor.position[0] > TILEX // 2 + game.camera.get_x() - 1:
             if has_defender_strike_partner():
@@ -580,6 +593,8 @@ class UIView():
                     y_pos -= 16
                 if grandmaster:
                     y_pos -= 16
+                if guard_flag:
+                    y_pos += 16
                 surf.blit(icon, (topleft[0] + 74, y_pos))
 
         # Advantage arrows
@@ -591,6 +606,8 @@ class UIView():
                 y_pos -= 16
             if grandmaster:
                 y_pos -= 16
+            if guard_flag:
+                y_pos += 16
 
             self.draw_adv_arrows(surf, defender, attacker, resolve_weapon(defender), weapon, (topleft[0] + 85, y_pos))
 
