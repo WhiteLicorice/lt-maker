@@ -125,6 +125,76 @@ class AllyEquationBlastAOE(AllyBlastAOE, EquationBlastAOE):
 
     expose = ComponentType.Equation  # Radius
     value = None
+    
+class ShapeBlastAOE(ItemComponent):
+    nid = 'shape_blast_aoe'
+    desc = """Affects an area around the target according to the specified shape.
+    Target: Which units are affected by the AOE.
+    Range: How far the AOE is extended.  Use range 1 to only include the drawn shape."""
+    tag = ItemTags.AOE
+    
+    expose = ComponentType.NewMultipleOptions
+    options = {
+        'shape': ComponentType.Shape,
+        'target': (ComponentType.MultipleChoice, ("ally", "enemy", "all")),
+        'range': ComponentType.Int
+    }
+
+    def __init__(self, value=None):
+        self.value = {
+            'shape': [],
+            'target': 'ally',
+            'range': 1
+        }
+        if value:
+            self.value.update(value)
+            
+    def _get_power(self, unit) -> int:
+        empowered_splash = skill_system.empower_splash(unit)
+        return self.value['range'] + 1 + empowered_splash
+            
+    def _get_shape(self, position, rng) -> set:
+        value_list = set()
+        coords = self.value['shape']
+        for i in range(1, rng):
+            for coord in coords:
+                value_list.add((position[0] + i * coord[0], position[1] + i * coord[1]))
+        return value_list
+
+    def splash(self, unit, item, position) -> tuple:
+        rng = self._get_power(unit)
+        splash = self._get_shape(position, rng)
+        splash = {pos for pos in splash if game.tilemap.check_bounds(pos)}
+        from app.engine import item_system
+        if item_system.is_spell(unit, item):
+            # spell blast
+            splash = [game.board.get_unit(s) for s in splash]
+            if self.value['target'] == 'ally':
+                splash = [s.position for s in splash if s and skill_system.check_ally(unit, s)]
+            elif self.value['target'] == 'enemy':
+                splash = [s.position for s in splash if s and skill_system.check_enemy(unit, s)]
+            else:
+                splash = [s.position for s in splash if s]
+            return None, splash
+        else:
+            # regular blast
+            splash = [game.board.get_unit(s) for s in splash if s != position]
+            if self.value['target'] == 'ally':
+                splash = [s.position for s in splash if s and skill_system.check_ally(unit, s)]
+            elif self.value['target'] == 'enemy':
+                splash = [s.position for s in splash if s and skill_system.check_enemy(unit, s)]
+            else:
+                splash = [s.position for s in splash if s]
+            return position if game.board.get_unit(position) else None, splash
+
+    def splash_positions(self, unit, item, position) -> set:
+        rng = self._get_power(unit)
+        splash = self._get_shape(position, rng)
+        splash = {pos for pos in splash if game.tilemap.check_bounds(pos)}
+        return splash
+        
+    def unsplashable(self, unit, item):
+        return True
 
 class EnemyCleaveAOE(ItemComponent):
     nid = 'enemy_cleave_aoe'
