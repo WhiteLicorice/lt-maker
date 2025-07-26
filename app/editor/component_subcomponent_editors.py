@@ -28,6 +28,7 @@ from app.editor.auto_resizing_text_edit import AutoResizingTextEdit
 
 from app.extensions.custom_gui import ComboBox
 from app.extensions.list_widgets import AppendSingleListWidget
+from app.extensions.shape_dialog import ShapeIcon
 from app.utilities import str_utils, utils
 
 
@@ -233,6 +234,20 @@ class SoundSubcomponentEditor(BaseSubcomponentEditor):
 
     def on_value_changed(self, val):
         self.option_dict[self.field_name] = val
+        
+        
+class ShapeSubcomponentEditor(BaseSubcomponentEditor):
+    @override
+    def _create_editor(self, hbox):
+        if not self.option_dict.get(self.field_name):
+            self.option_dict[self.field_name] = []
+        shape = self.option_dict[self.field_name].copy()
+        self.editor = ShapeIcon(self, shape, 32, True)
+        self.editor.shapeChanged.connect(self.on_value_changed)
+        hbox.addWidget(self.editor)
+
+    def on_value_changed(self):
+        self.option_dict[self.field_name] = self.editor.shape()
 
 
 class BaseContainerSubcomponentEditor(BaseSubcomponentEditor):
@@ -280,7 +295,8 @@ EDITOR_MAP: Dict[ComponentType, BaseSubcomponentEditor] = {
     ComponentType.Item: ItemSubcomponentEditor,
     ComponentType.Event: EventSubcomponentEditor,
     ComponentType.Sound: SoundSubcomponentEditor,
-    ComponentType.Affinity: AffinitySubcomponentEditor
+    ComponentType.Affinity: AffinitySubcomponentEditor,
+    ComponentType.Shape: ShapeSubcomponentEditor
 }
 
 CONTAINER_EDITOR_MAP: Dict[ComponentType, BaseContainerSubcomponentEditor] = {
