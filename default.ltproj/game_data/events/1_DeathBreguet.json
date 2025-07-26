@@ -1,7 +1,7 @@
 [
     {
         "name": "DeathBreguet",
-        "trigger": "unit_death",
+        "trigger": "combat_death",
         "level_nid": "1",
         "condition": "unit.nid == \"Breguet\"",
         "commands": [],

@@ -6,7 +6,7 @@
         "condition": "game.check_dead(\"Saar\")",
         "commands": [],
         "only_once": false,
-        "priority": 20,
+        "priority": 19,
         "_source": [
             "win_game"
         ],
