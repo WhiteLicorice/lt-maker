@@ -94,7 +94,7 @@ class MapSprite():
         self.end_cast = SingleMapSprite.create_anim_sprite([frame for frame in reversed(active_frames)], [22, 4, 22])
 
     def _get_team_palette(self):
-        team_obj = DB.teams.get(self.team)
+        team_obj = game.teams.get(self.team)
         palette_nid = team_obj.map_sprite_palette
         palette = RESOURCES.combat_palettes.get(palette_nid)
         if not palette:
@@ -712,7 +712,7 @@ class UnitSprite():
             elif 'Elite' in self.unit.tags:
                 icon = SPRITES.get('elite_icon')
             elif 'Protect' in self.unit.tags:
-                team_color = DB.teams.get(self.unit.team).combat_color
+                team_color = game.teams.get(self.unit.team).combat_color
                 icon = SPRITES.get('protect_%s_icon' % team_color, 'protect_icon')
             if icon:
                 surf.blit(icon, (left - 8, top - 8))
@@ -720,7 +720,7 @@ class UnitSprite():
         if self.unit.traveler and self.transition_state == 'normal' and \
                 not self.unit.is_dying and not DB.constants.value('pairup'):
             traveler_team = game.get_unit(self.unit.traveler).team
-            team_color = DB.teams.get(traveler_team).combat_color
+            team_color = game.teams.get(traveler_team).combat_color
             rescue_icon = SPRITES.get('rescue_icon_%s' % team_color, 'rescue_icon_green')
             topleft = (left - 8, top - 8)
             surf.blit(rescue_icon, topleft)

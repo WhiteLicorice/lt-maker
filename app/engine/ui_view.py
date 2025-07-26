@@ -374,7 +374,7 @@ class UIView():
         else:
             infix = ''
 
-        color = DB.teams.get(defender.team).combat_color
+        color = game.teams.get(defender.team).combat_color
         final = prefix + infix + ('_' if infix else '') + ('guard_' if guard_flag else '') + color
         fallback_final = prefix + infix + ('_' if infix else '') + ('guard_' if guard_flag else '') + 'red'
         surf = SPRITES.get(final, fallback_final).copy()
@@ -390,7 +390,7 @@ class UIView():
                     infix = 'crit'
                 else:
                     infix = ''
-                color = DB.teams.get(attacker.team).combat_color
+                color = game.teams.get(attacker.team).combat_color
                 final = prefix + infix + ('_' if infix else '') + color
                 fallback_final = prefix + infix + ('_' if infix else '') + 'red'
                 surf.blit(SPRITES.get(final, fallback_final).copy(), (92, 35))
@@ -418,7 +418,7 @@ class UIView():
                     infix = 'crit'
                 else:
                     infix = ''
-                color = DB.teams.get(defender.team).combat_color
+                color = game.teams.get(defender.team).combat_color
                 final = prefix + infix + ('_' if infix else '') + color
                 fallback_final = prefix + infix + ('_' if infix else '') + 'red'
                 surf.blit(SPRITES.get(final, fallback_final).copy(), (1, 35))
