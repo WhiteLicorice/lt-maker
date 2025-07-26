@@ -2,6 +2,7 @@ import math
 
 from app.utilities import utils
 from app.utilities.enums import HAlignment
+import app.utilities.algorithms.interpolation as interp
 
 from app.constants import COLORKEY
 from app.data.resources.resources import RESOURCES
@@ -244,7 +245,7 @@ def draw_growth(surf, stat_nid, unit, topright, compact=False):
         elif bonus < 0:
             FONT['small-red'].blit(str(bonus), surf, topright)
 
-def draw_glow(surf, font, text, topright, align: HAlignment = HAlignment.LEFT):
+def draw_glow(surf, font_obj, text, topright, align: HAlignment = HAlignment.LEFT, color: str = None):
     interval = 800   # ms
     progress = engine.get_time() % (interval*2)  # Between 0 and 1600
     white = math.sin(progress / interval * math.pi)  # Returns between -1 and 1
@@ -254,19 +255,23 @@ def draw_glow(surf, font, text, topright, align: HAlignment = HAlignment.LEFT):
     stat_surf = engine.create_surface(surf.get_size(), True)
 
     if align == HAlignment.RIGHT:
-        font.blit_right(text, stat_surf, topright)
+        font_obj.blit_right(text, stat_surf, topright)
     elif align == HAlignment.CENTER:
-        font.blit_center(text, stat_surf, topright)
+        font_obj.blit_center(text, stat_surf, topright)
     else:
-        font.blit(text, stat_surf, topright)
+        font_obj.blit(text, stat_surf, topright)
 
-    palette = font.font_info.palettes[font.default_color]
+    if not color:
+        color = font_obj.default_color
+    new_palette = font_obj.font_info.palettes[color]
+    default_palette = font_obj.font_info.palettes[font_obj.default_color]
     conv_dict = {}
-    for idx, color in enumerate(palette):
+    for idx, default_color in enumerate(default_palette):
         if idx == 1:
             continue
-        new_color = [min(max(255 * white + rgb, 0), 255) for rgb in color[:3]] + [255]
-        conv_dict[tuple(color)] = tuple(new_color)
+        other_color = new_palette[idx]
+        new_color = [utils.clamp(interp.lerp(rgb, 255, white), 0, 255) for rgb in other_color[:3]] + [255]
+        conv_dict[tuple(default_color)] = tuple(new_color)
 
     image_mods.color_convert_alpha(stat_surf, conv_dict)
     surf.blit(stat_surf, (0, 0))
