@@ -3859,6 +3859,17 @@ def party_transfer(self: Event, party1, party2, fixed_units = None, party1_name 
     self.game.state.change('party_transfer')
     self.state = 'paused'
 
+def change_team_palette(self: Event, team, map_sprite_palette = None, combat_variant_palette = None, combat_color = None, flags=None):
+    if not self.game.teams.get(team):
+        self.logger.error("change_team_palette: %s is not a valid team nid" % team)
+        return
+
+    if map_sprite_palette and not RESOURCES.combat_palettes.get(map_sprite_palette):
+        self.logger.error("change_team_palette: %s is not a valid combat palette nid" % map_sprite_palette)
+        return
+
+    action.do(action.ChangeTeamPalette(team, (map_sprite_palette, combat_variant_palette, combat_color)))
+
 def dump_vars(self: Event, flags:Optional[set[str]]=None):
     def is_json_serializable(obj: Any) -> bool:
         """

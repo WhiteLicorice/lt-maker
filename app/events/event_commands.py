@@ -3613,6 +3613,25 @@ The *Party* entries are existing parties (the second can be empty but still must
     optional_keywords = ["FixedUnits","Party1Name","Party2Name","Party1Limit","Party2Limit"]
     keyword_types = ["Party","Party","Expression","String","String","PositiveInteger","PositiveInteger"]
 
+class ChangeTeamPalette(EventCommand):
+    nid = 'change_team_palette'
+    tag = Tags.MISCELLANEOUS
+
+    desc = \
+        """
+Change the palettes of the given team.
+
+*MapSpritePalette* is the nid of combat palette for map sprites.
+*CombatVariantPalette* is the suffix for nid of combat palette for battle animation.
+*CombatColor* is the color for miscellaneous team-based assets, such as rescue icon, menu, combat display. 
+
+Example: change_team_palette;player;map_sprite_green;GenericGreen;green
+        """
+
+    keywords = ["Team"]
+    optional_keywords = ['MapSpritePalette', 'CombatVariantPalette', 'CombatColor']
+    keyword_types = ['Team', 'Nid', 'String', 'String']
+
 def get_commands():
     return EventCommand.__subclasses__()
 
