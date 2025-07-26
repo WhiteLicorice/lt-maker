@@ -27,7 +27,15 @@ class TextEvaluator():
     @created_unit.setter
     def created_unit(self, created):
         self.local_args['created_unit'] = created
-
+        
+    @property
+    def it(self):
+        return self.local_args.get('it', None)
+    
+    @it.setter
+    def it(self, it):
+        self.local_args['it'] = it
+        
     def _object_to_str(self, obj) -> str:
         if hasattr(obj, 'uid'):
             return str(obj.uid)

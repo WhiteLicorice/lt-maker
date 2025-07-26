@@ -3,6 +3,7 @@ from __future__ import annotations
 import ast
 import json
 import random
+from copy import deepcopy
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
 
 from app.constants import WINHEIGHT, WINWIDTH
@@ -604,6 +605,36 @@ def inc_game_var(self: Event, nid, expression=None, flags=None):
     else:
         action.do(action.SetGameVar(nid, self.game.game_vars.get(nid, 0) + 1))
 
+def modify_game_var(self: Event, nid: NID, expression: str, flags:Optional[set[str]]=None):
+    """Does not work in #pyev1."""
+    flags = flags or set()
+    if nid not in self.game.game_vars:
+        self.logger.error(f"modify_game_var: {nid} does not exist as a game_var!")
+        return
+    
+    # Refer to the copy as `it` and (assume) the expression mutates the copy.
+    new_val = deepcopy(self.game.game_vars[nid])
+    self.it = new_val
+    self.text_evaluator.it = new_val
+    try:
+        maybe_result = self._eval_expr(expression, 'from_python' in flags)
+        if maybe_result is not None:
+            self.logger.warning(f"modify_game_var: {expression} has a return value of {maybe_result}: this value will be discarded. Perhaps you meant to use the `game_var` command instead?")
+    except:
+        self.logger.error(f"modify_game_var: cannot evaluate {expression}!")
+        self.it = None
+        self.text_evaluator.it = None
+        return
+    
+    if is_primitive_or_primitive_collection(new_val):
+        action.do(action.SetGameVar(nid, new_val))
+    else:
+        # If the new_val is invalid, simply do nothing - no turnwheel breakage!
+        self.logger.error(f"modify_game_var: {new_val} is not a valid variable!")
+    
+    self.it = None
+    self.text_evaluator.it = None
+    
 def level_var(self: Event, nid, expression, flags=None):
     val = self._eval_expr(expression, 'from_python' in flags)
     if is_primitive_or_primitive_collection(val):
@@ -620,6 +651,36 @@ def inc_level_var(self: Event, nid, expression=None, flags=None):
             self.logger.error("inc_level_var: %s is not a valid variable", val)
     else:
         action.do(action.SetLevelVar(nid, self.game.level_vars.get(nid, 0) + 1))
+
+def modify_level_var(self: Event, nid: NID, expression: str, flags:Optional[set[str]]=None):
+    """Does not work in #pyev1."""
+    flags = flags or set()
+    if nid not in self.game.level_vars:
+        self.logger.error(f"modify_level_var: {nid} does not exist as a level_var!")
+        return
+    
+    # Refer to the copy as `it` and (assume) the expression mutates the copy.
+    new_val = deepcopy(self.game.level_vars[nid])
+    self.it = new_val
+    self.text_evaluator.it = new_val
+    try:
+        maybe_result = self._eval_expr(expression, 'from_python' in flags)
+        if maybe_result is not None:
+            self.logger.warning(f"modify_level_var: {expression} has a return value of {maybe_result}: this value will be discarded. Perhaps you meant to use the `level_var` command instead?")
+    except:
+        self.logger.error(f"modify_level_var: cannot evaluate {expression}!")
+        self.it = None
+        self.text_evaluator.it = None
+        return
+    
+    if is_primitive_or_primitive_collection(new_val):
+        action.do(action.SetLevelVar(nid, new_val))
+    else:
+        # If the new_val is invalid, simply do nothing - no turnwheel breakage!
+        self.logger.error(f"modify_level_var: {new_val} is not a valid variable!")
+        
+    self.it = None
+    self.text_evaluator.it = None
 
 def set_next_chapter(self: Event, chapter, flags=None):
     if chapter not in DB.levels:
@@ -3935,7 +3996,6 @@ def dump_vars(self: Event, flags:Optional[set[str]]=None):
     try:
         app_data_fman = file_manager_utils.get_app_data_fman()
 
-        from copy import deepcopy
         local_level_vars = deepcopy(self.game.level_vars)
         local_game_vars = deepcopy(self.game.game_vars)
 
