@@ -63,6 +63,7 @@ class Event():
             event_args['target'] = event_args['unit2']
         self.created_unit = None
         event_args['created_unit'] = PythonProxy('created_unit', self.nid)
+        self.it = None # Can't be used in #pyev1 due to architectural caveats.
         self.position = event_args.get('position', None)
         self.local_args = event_args or {}
         if game:
