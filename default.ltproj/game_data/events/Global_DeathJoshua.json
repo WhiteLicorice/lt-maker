@@ -1,7 +1,7 @@
 [
     {
         "name": "DeathJoshua",
-        "trigger": "unit_death",
+        "trigger": "combat_death",
         "level_nid": null,
         "condition": "unit.nid == 'Joshua'",
         "commands": [],

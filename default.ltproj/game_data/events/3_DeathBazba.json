@@ -1,7 +1,7 @@
 [
     {
         "name": "DeathBazba",
-        "trigger": "unit_death",
+        "trigger": "combat_death",
         "level_nid": "3",
         "condition": "unit.nid == \"Bazba\"",
         "commands": [],

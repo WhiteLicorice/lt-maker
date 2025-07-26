@@ -208,24 +208,27 @@ class AutotileMaker():
         closest_series = None
         closest_frame = None
         closest_book = None
-        min_sim = 4
 
+        has_matched: bool = False
         for book_idx, book in enumerate(self.books):
+            if has_matched:
+                continue
             for series_idx, series in enumerate(book):
                 if not self.series_has_changes(series):
                     continue  # Don't bother checking if it doesn't have changes
                 for frame_idx, frame in enumerate(series):
-                    similarity = self.similar_func(frame.palette, tile_palette.palette)
-                    if similarity < min_sim:
-                        min_sim = similarity
+                    is_same = check_hashes(frame, tile_palette)
+                    if is_same:
                         closest_series = series
                         closest_frame = frame
                         closest_book = book
                         num_tiles_x = self.num_tiles_x_list[book_idx]
-                        pos_x = series_idx%num_tiles_x
-                        pos_y = series_idx//num_tiles_x
-                        print("Similarity met for position %s using template: %s at template pos (%d, %d), frame %d" % 
+                        pos_x = series_idx % num_tiles_x
+                        pos_y = series_idx // num_tiles_x
+                        print("Match at position %s using template: %s at template pos (%d, %d), frame %d" % 
                               (pos, self.autotile_templates[book_idx], pos_x, pos_y, frame_idx))
+                        has_matched = True
+                        break
 
         if closest_series:
             if closest_series in self.recognized_series:
@@ -301,7 +304,7 @@ class AutotileMaker():
         self.companion_autotile_im = new_im
 
     def series_has_changes(self, series: list) -> bool:
-        no_changes = all(frame.palette == series[0].palette for frame in series)
+        no_changes = all(frame.hash_id == series[0].hash_id and frame.colors == series[0].colors for frame in series)
         return not no_changes
 
 AUTOTILEMAKER = None

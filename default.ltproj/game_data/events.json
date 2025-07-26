@@ -69,7 +69,7 @@
     },
     {
         "name": "DeathONeill",
-        "trigger": "unit_death",
+        "trigger": "combat_death",
         "level_nid": "0",
         "condition": "unit.nid == \"O'Neill\"",
         "commands": [],
@@ -85,7 +85,7 @@
     },
     {
         "name": "DeathSaar",
-        "trigger": "unit_death",
+        "trigger": "combat_death",
         "level_nid": "5",
         "condition": "unit.nid == \"Saar\"",
         "commands": [],
@@ -101,7 +101,7 @@
     },
     {
         "name": "DeathBreguet",
-        "trigger": "unit_death",
+        "trigger": "combat_death",
         "level_nid": "1",
         "condition": "unit.nid == \"Breguet\"",
         "commands": [],
@@ -161,7 +161,7 @@
         "condition": "game.check_dead(\"O'Neill\")",
         "commands": [],
         "only_once": false,
-        "priority": 20,
+        "priority": 19,
         "_source": [
             "win_game"
         ],
@@ -174,7 +174,7 @@
         "condition": "game.check_dead(\"Saar\")",
         "commands": [],
         "only_once": false,
-        "priority": 20,
+        "priority": 19,
         "_source": [
             "win_game"
         ],
@@ -1308,7 +1308,7 @@
     },
     {
         "name": "DeathBone",
-        "trigger": "unit_death",
+        "trigger": "combat_death",
         "level_nid": "2",
         "condition": "unit.nid == \"Bone\"",
         "commands": [],
@@ -1323,7 +1323,7 @@
     },
     {
         "name": "DeathBazba",
-        "trigger": "unit_death",
+        "trigger": "combat_death",
         "level_nid": "3",
         "condition": "unit.nid == \"Bazba\"",
         "commands": [],
@@ -2968,7 +2968,7 @@
     },
     {
         "name": "DeathArtur",
-        "trigger": "unit_death",
+        "trigger": "combat_death",
         "level_nid": null,
         "condition": "unit.nid == 'Artur'",
         "commands": [],
@@ -2984,7 +2984,7 @@
     },
     {
         "name": "DeathColm",
-        "trigger": "unit_death",
+        "trigger": "combat_death",
         "level_nid": null,
         "condition": "unit.nid == 'Colm'",
         "commands": [],
@@ -3000,7 +3000,7 @@
     },
     {
         "name": "DeathEirika",
-        "trigger": "unit_death",
+        "trigger": "combat_death",
         "level_nid": null,
         "condition": "unit.nid == 'Eirika'",
         "commands": [],
@@ -3018,7 +3018,7 @@
     },
     {
         "name": "DeathFranz",
-        "trigger": "unit_death",
+        "trigger": "combat_death",
         "level_nid": null,
         "condition": "unit.nid == 'Franz'",
         "commands": [],
@@ -3034,7 +3034,7 @@
     },
     {
         "name": "DeathGarcia",
-        "trigger": "unit_death",
+        "trigger": "combat_death",
         "level_nid": null,
         "condition": "unit.nid == 'Garcia'",
         "commands": [],
@@ -3050,7 +3050,7 @@
     },
     {
         "name": "DeathGilliam",
-        "trigger": "unit_death",
+        "trigger": "combat_death",
         "level_nid": null,
         "condition": "unit.nid == 'Gilliam'",
         "commands": [],
@@ -3066,7 +3066,7 @@
     },
     {
         "name": "DeathJoshua",
-        "trigger": "unit_death",
+        "trigger": "combat_death",
         "level_nid": null,
         "condition": "unit.nid == 'Joshua'",
         "commands": [],
@@ -3082,7 +3082,7 @@
     },
     {
         "name": "DeathLute",
-        "trigger": "unit_death",
+        "trigger": "combat_death",
         "level_nid": null,
         "condition": "unit.nid == 'Lute'",
         "commands": [],
@@ -3098,7 +3098,7 @@
     },
     {
         "name": "DeathMoulder",
-        "trigger": "unit_death",
+        "trigger": "combat_death",
         "level_nid": null,
         "condition": "unit.nid == 'Moulder'",
         "commands": [],
@@ -3114,7 +3114,7 @@
     },
     {
         "name": "DeathNatasha",
-        "trigger": "unit_death",
+        "trigger": "combat_death",
         "level_nid": null,
         "condition": "unit.nid == 'Natasha'",
         "commands": [],
@@ -3134,7 +3134,7 @@
     },
     {
         "name": "DeathNeimi",
-        "trigger": "unit_death",
+        "trigger": "combat_death",
         "level_nid": null,
         "condition": "unit.nid == 'Neimi'",
         "commands": [],
@@ -3150,7 +3150,7 @@
     },
     {
         "name": "DeathRoss",
-        "trigger": "unit_death",
+        "trigger": "combat_death",
         "level_nid": null,
         "condition": "unit.nid == 'Ross'",
         "commands": [],
@@ -3166,7 +3166,7 @@
     },
     {
         "name": "DeathSeth",
-        "trigger": "unit_death",
+        "trigger": "combat_death",
         "level_nid": null,
         "condition": "unit.nid == 'Seth'",
         "commands": [],
@@ -3182,7 +3182,7 @@
     },
     {
         "name": "DeathVanessa",
-        "trigger": "unit_death",
+        "trigger": "combat_death",
         "level_nid": null,
         "condition": "unit.nid == 'Vanessa'",
         "commands": [],

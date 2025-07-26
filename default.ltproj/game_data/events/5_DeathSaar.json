@@ -1,7 +1,7 @@
 [
     {
         "name": "DeathSaar",
-        "trigger": "unit_death",
+        "trigger": "combat_death",
         "level_nid": "5",
         "condition": "unit.nid == \"Saar\"",
         "commands": [],

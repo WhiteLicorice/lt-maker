@@ -255,7 +255,7 @@ class PromotionState(State, MockCombat):
                 get_sound_thread().fade_in(DB.constants.value(music), fade_in=50)
 
         self.unit = game.memory['current_unit']
-        color = DB.teams.get(self.unit.team).combat_color
+        color = game.teams.get(self.unit.team).combat_color
 
         # Old Right Animation
         self.right_battle_anim = battle_animation.get_battle_anim(self.unit, None)

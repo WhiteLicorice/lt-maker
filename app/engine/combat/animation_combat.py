@@ -811,7 +811,7 @@ class AnimationCombat(BaseCombat, MockCombat):
         return self.right.team
 
     def get_color(self, team: NID) -> str:
-        return DB.teams.get(team).combat_color
+        return game.teams.get(team).combat_color
 
     def _set_stats(self, playback: List[PlaybackBrush]):
         a_hit = combat_calcs.compute_hit(self.attacker, self.defender, self.main_item, self.def_item, 'attack', self.state_machine.get_attack_info())
