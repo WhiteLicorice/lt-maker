@@ -1,7 +1,7 @@
 [
     {
         "name": "DeathNeimi",
-        "trigger": "unit_death",
+        "trigger": "combat_death",
         "level_nid": null,
         "condition": "unit.nid == 'Neimi'",
         "commands": [],
