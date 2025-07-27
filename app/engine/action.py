@@ -3660,6 +3660,40 @@ class RemoveSkill(Action):
             skill_system.after_add(self.unit, skill)
         self.reset_action.reverse()
 
+class ChangeTeamPalette(Action):
+    def __init__(self, team, palettes):
+        self.team = team
+        self.new_palettes = palettes
+
+        team_obj = game.teams.get(team)
+        self.old_palettes = (team_obj.map_sprite_palette, 
+                             team_obj.combat_variant_palette, 
+                             team_obj.combat_color)
+
+    def do(self):
+        team_obj = game.teams.get(self.team)
+        team_obj.change_palettes(*self.new_palettes)
+
+        # Update map sprites
+        for key in game.map_sprite_registry.keys():
+            if key.split('_')[-1] == self.team:
+                game.map_sprite_registry[key] = None
+
+        for unit in game.get_team_units(self.team):
+            unit.sprite.load_sprites()
+
+    def reverse(self):
+        team_obj = game.teams.get(self.team)
+        team_obj.change_palettes(*self.old_palettes)
+
+        # Update map sprites
+        for key in game.map_sprite_registry.keys():
+            if key.split('_')[-1] == self.team:
+                game.map_sprite_registry[key] = None
+
+        for unit in game.get_team_units(self.team):
+            unit.sprite.load_sprites()
+
 
 # === Master Functions for adding to the action log ===
 def do(action):

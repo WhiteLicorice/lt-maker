@@ -1134,7 +1134,8 @@ class MenuState(MapState):
         # setup for callbacks for extra abilities in AbilitySubmenuChoiceState if it ends up being used
         def on_extra_ability_begin(cur_unit: UnitObject):
             pass
-        def on_extra_ability_select(cur_unit: UnitObject, ability):
+
+        def on_extra_ability_select(cur_unit: UnitObject, ability: ItemObject):
             item = ability
             targets = game.target_system.get_valid_targets(cur_unit, item)
             game.memory['targets'] = targets
@@ -1143,7 +1144,7 @@ class MenuState(MapState):
             # Handle abilities that are multi-items, you sick fuck (rain's words not mine)
             if item.multi_item:
                 all_weapons = [subitem for subitem in item.subitems if item_funcs.is_weapon_recursive(cur_unit, subitem) and
-                                game.target_system.get_valid_targets_recursive_with_availability_check(cur_unit, subitem)]
+                               game.target_system.get_valid_targets_recursive_with_availability_check(cur_unit, subitem)]
                 if all_weapons:
                     if item.multi_item_hides_unavailable:
                         game.memory['valid_weapons'] = [subitem for subitem in all_weapons if item_funcs.available(cur_unit, subitem)]
@@ -1152,7 +1153,7 @@ class MenuState(MapState):
                     game.state.change('weapon_choice')
                 else:  # multi item of spells?
                     all_spells = [subitem for subitem in item.subitems if item_funcs.is_spell_recursive(cur_unit, subitem) and
-                                    game.target_system.get_valid_targets_recursive_with_availability_check(cur_unit, subitem)]
+                                  game.target_system.get_valid_targets_recursive_with_availability_check(cur_unit, subitem)]
                     if item.multi_item_hides_unavailable:
                         game.memory['valid_spells'] = [subitem for subitem in all_spells if item_funcs.available(cur_unit, subitem)]
                     else:
@@ -1170,11 +1171,14 @@ class MenuState(MapState):
         if selection in self.extra_abilities.get('_uncategorized', {}):
             # handle directly
             on_extra_ability_select(self.cur_unit, self.extra_abilities['_uncategorized'][selection])
-        elif selection in self.extra_abilities:
+        elif selection in self.extra_abilities:  # Category in self.extra_abilities
             # need submenu; construct args to dispatch to AbilitySubmenuChoiceState
             abilities = self.extra_abilities[selection]
-            options = [ability_name for ability_name in abilities]
-            info_desc = [abilities[ability_name].desc for ability_name in abilities]
+            abilities = {ability_name: ability for ability_name, ability in abilities.items() 
+                         if game.target_system.get_valid_targets_recursive_with_availability_check(self.cur_unit, ability)}
+            options = [ability for ability in abilities.values()]
+            info_desc = [text_funcs.translate_and_text_evaluate(abilities[ability_name].desc, self=self.cur_unit, unit=self.cur_unit) 
+                         for ability_name in abilities]
             game.memory['ability_submenu_choice'] = (abilities,
                                                      options, info_desc,
                                                      on_extra_ability_begin,
@@ -1185,6 +1189,7 @@ class MenuState(MapState):
         # setup for callbacks for combat arts in AbilitySubmenuChoiceState if it ends up being used
         def on_combat_art_begin(cur_unit: UnitObject):
             skill_system.deactivate_all_combat_arts(cur_unit)
+
         def on_combat_art_select(cur_unit: UnitObject, ability):
             skill = ability[0]
             game.memory['ability'] = 'Combat Art'
@@ -1937,9 +1942,9 @@ class AbilitySubmenuChoiceState(MapState):
             game.state.back()
 
         elif event == 'SELECT':
-            selection = self.menu.get_current()
+            idx = self.menu.get_current_index()
             get_sound_thread().play_sfx('Select 1')
-            self.select_callback(self.cur_unit, self.abilities[selection])
+            self.select_callback(self.cur_unit, self.options[idx])
 
         elif event == 'INFO':
             if self.menu.info_flag:

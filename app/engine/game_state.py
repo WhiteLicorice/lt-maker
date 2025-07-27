@@ -30,6 +30,7 @@ if TYPE_CHECKING:
     from app.engine.objects.region import RegionObject
     from app.engine.objects.ai_group import AIGroupObject
     from app.engine.objects.tilemap import TileMapObject
+    from app.engine.objects.team import TeamObject
     from app.data.database.klass import Klass
     from app.engine.dialog_log import DialogLog
     from app.events.event_manager import EventManager
@@ -71,6 +72,7 @@ class GameState():
         - region_registry (Dict[NID, RegionObject]): A dictionary mapping region NIDs to RegionObjects.
         - overworld_registry (Dict[NID, OverworldObject]): A dictionary mapping overworld NIDs to OverworldObjects.
         - parties (Dict[NID, PartyObject]): A dictionary mapping party NIDs to PartyObjects.
+        - teams (Dict[NID, TeamObject]): A dictionary mapping team NIDs to TeamObjects.
         - unlocked_lore (List[NID]): A list of unlocked lore entries.
         - market_items (Dict[NID, int]): A dictionary mapping item NIDs to their stock quantity.
         - supports (supports.SupportController): The support controller.
@@ -107,6 +109,7 @@ class GameState():
         self.region_registry: Dict[NID, RegionObject] = {}
         self.overworld_registry: Dict[NID, OverworldObject] = {}
         self.parties: Dict[NID, PartyObject] = {}
+        self.teams: Dict[NID, TeamObject] = {}
         self.unlocked_lore: List[NID] = []
         self.dialog_log: DialogLog = None
         self.already_triggered_events: List[NID] = []
@@ -216,6 +219,11 @@ class GameState():
         for party_prefab in DB.parties.values():
             nid, name, leader = party_prefab.nid, party_prefab.name, party_prefab.leader
             self.parties[nid] = PartyObject(nid, name, leader)
+
+        # initialize all teams
+        from app.engine.objects.team import TeamObject
+        for team in DB.teams.values():
+            self.teams[team.nid] = TeamObject.from_prefab(team)
 
         # Initialize all overworlds and enter them into the registry
         from app.engine.objects.overworld import OverworldObject
@@ -399,6 +407,7 @@ class GameState():
                   'game_vars': self.game_vars,
                   'level_vars': self.level_vars,
                   'current_mode': self.current_mode.save(),
+                  'teams': [team.save() for team in self.teams.values()],
                   'parties': [party.save() for party in self.parties.values()],
                   'current_party': self.current_party,
                   'state': self.state.save(),
@@ -448,6 +457,7 @@ class GameState():
         from app.engine.objects.skill import SkillObject
         from app.engine.objects.unit import UnitObject
         from app.engine.objects.region import RegionObject
+        from app.engine.objects.team import TeamObject
         from app.events import event_manager, speak_style
 
         logging.info("Loading Game...")
@@ -501,6 +511,12 @@ class GameState():
         self.talk_options = s_dict.get('talk_options', [])
         self.talk_hidden = s_dict.get('talk_hidden', set())
         self.base_convos = s_dict.get('base_convos', {})
+
+        # load team objects, make sure it compatible with non-updated game saves
+        if s_dict.get('teams'):
+            self.teams = {team['nid']: TeamObject.restore(team) for team in s_dict['teams']}
+        else:
+            self.teams = {team.nid : TeamObject.from_prefab(team) for team in DB.teams.values()}
 
         # load all overworlds, or initialize them
         if 'overworlds' in s_dict:

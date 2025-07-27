@@ -1,7 +1,7 @@
 [
     {
         "name": "DeathEirika",
-        "trigger": "unit_death",
+        "trigger": "combat_death",
         "level_nid": null,
         "condition": "unit.nid == 'Eirika'",
         "commands": [],

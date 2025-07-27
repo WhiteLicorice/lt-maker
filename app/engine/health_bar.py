@@ -231,7 +231,7 @@ class MapCombatInfo():
         self.skill_icons.clear()
 
         # Handle surfaces
-        team = DB.teams.get(unit.team)
+        team = game.teams.get(unit.team)
 
         self.stats_surf = None
         self.bg_surf = SPRITES.get('health_' + team.combat_color).convert_alpha()
