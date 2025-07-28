@@ -1340,6 +1340,18 @@ class OverworldEntity(Validator):
         valids = [(party.name, party.nid) for party in self._db.parties.values()]
         return valids
 
+class Palette(Validator):
+    desc = 'accepts the NID of any palette in the project.'
+
+    def validate(self, text: NID, level: NID):
+        if text in RESOURCES.combat_palettes:
+            return text
+        return None
+
+    def valid_entries(self, level: Optional[NID] = None, text: Optional[str] = None) -> List[Tuple[Optional[str], NID]]:
+        valids = [(combat_palette.nid, combat_palette.nid) for combat_palette in RESOURCES.combat_palettes]
+        return valids
+
 class Sprite(Validator):
     desc = 'accepts the filename of any sprite resource in the project.'
 
