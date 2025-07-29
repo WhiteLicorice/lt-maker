@@ -2789,5 +2789,34 @@
                 ]
             ]
         }
+    },
+    {
+        "nid": "short",
+        "fallback_ttf": null,
+        "fallback_size": 16,
+        "default_color": "brown",
+        "outline_font": false,
+        "palettes": {
+            "brown": [
+                [
+                    80,
+                    56,
+                    32,
+                    255
+                ],
+                [
+                    184,
+                    168,
+                    144,
+                    255
+                ],
+                [
+                    216,
+                    208,
+                    192,
+                    255
+                ]
+            ]
+        }
     }
 ]
