@@ -2857,6 +2857,8 @@ def prep(self: Event, pick_units_enabled: bool = False, music: SongPrefab | Song
 
     if 'gba' in flags:
         self.game.state.change('prep_gba_main')
+        self.game.memory['prep_gba_disp'] = ['' if 'no_obj_disp' in flags else self.game.level.objective['simple'],
+                                             '' if 'no_chap_disp' in flags else self.game.level.name]
     else:
         self.game.state.change('prep_main')
     self.state = 'paused'  # So that the message will leave the update loop

@@ -2758,11 +2758,13 @@ Optional args:
 
 Flags:
 * *gba* uses gba prep screen layout instead.
+* *no_chap_disp* removes chapter display when using gba mode
+* *no_obj_disp* removes objective display when using gba mode
         """
 
     optional_keywords = ['PickUnitsEnabled', 'Music', 'OtherOptions', 'OtherOptionsEnabled', 'OtherOptionsOnSelect', 'OtherOptionsDescription']
     keyword_types = ["Bool", "Music", "StringList", "BoolList", "StringList", "StringList"]
-    _flags = ["gba"]
+    _flags = ["gba", "no_chap_disp", "no_obj_disp"]
 
 
 class Base(EventCommand):

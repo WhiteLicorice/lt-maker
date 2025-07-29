@@ -52,19 +52,28 @@ class PrepGBAMainState(State):
 
         return options, ignore, events, info_descs
 
-    def create_button_surf(self):
+    def create_button_surfs(self):
         sprite = SPRITES.get('buttons')
-        button = sprite.subsurface(0, 165, 37, 9)
+        b_size = [(37, 9), (18, 13)]
+        buttons = [sprite.subsurface(0, 165, *b_size[0]), sprite.subsurface(0, 82, *b_size[1])]
 
         font = FONT['text']
-        command = text_funcs.translate('Fight')
+        commands = ['Fight!', 'Menu']
+        commands = [text_funcs.translate(c) for c in commands]
 
-        size = (44 + font.width(command), 16)
-        surf = engine.create_surface(size, transparent=True)
-        surf.blit(button, (0, (16 - 9) // 2 + 1))
-        font.blit(command, surf, (40, 0))
+        surfs = []
+        for i in range(len(buttons)):
+            pad_top = (16 - b_size[i][1]) // 2 + 1
+            pad_left = b_size[i][0] + 4
 
-        return surf
+            size = (pad_left + font.width(commands[i]) + 4, 16)
+            surf = engine.create_surface(size, transparent=True)
+
+            surf.blit(buttons[i], (0, pad_top))
+            font.blit(commands[i], surf, (pad_left, 0))
+
+            surfs.append(surf)
+        return surfs
 
     def start(self):
         self.fluid = FluidScroll()
@@ -76,10 +85,10 @@ class PrepGBAMainState(State):
         options, ignore, events_on_options, info_descs = self.populate_options()
         self.events_on_option_select = events_on_options
 
-        self.menu = menus.PrepGBA(options, info_descs, game.level.objective['simple'])
+        self.menu = menus.PrepGBA(options, info_descs, *game.memory.get('prep_gba_disp'))
         self.menu.set_ignore(ignore)
 
-        self.button_surf = self.create_button_surf()
+        self.button_surfs = self.create_button_surfs()
 
         self.bg = background.create_background('rune_background')
         game.memory['prep_bg'] = self.bg
@@ -96,10 +105,13 @@ class PrepGBAMainState(State):
         prep_music = game.game_vars.get('_prep_music')
         if prep_music:
             get_sound_thread().fade_in(prep_music)
+        self.button_pressed = None
 
     def take_input(self, event):
         if self.last_update > 0:
             return
+
+        self.button_pressed = event
 
         first_push = self.fluid.update()
         directions = self.fluid.get_directions()
@@ -140,6 +152,9 @@ class PrepGBAMainState(State):
                     for event_prefab in valid_events:
                         game.events.trigger_specific_event(event_prefab.nid)
 
+        elif event == 'BACK':
+            self.last_update = engine.get_time()
+
         elif event == 'START':
             if game.level_vars.get('_minimum_deployment', 0) > 0:
                 if sum(bool(unit.position) for unit in game.get_units_in_party()) \
@@ -165,24 +180,39 @@ class PrepGBAMainState(State):
 
     def update(self):
         self.menu.update()
-        if self.last_update and engine.get_time() - self.last_update > 800:
-            game.state.change('transition_pop')
+        if self.last_update:
+            if self.button_pressed == 'START' and engine.get_time() - self.last_update > 800:
+                game.state.change('transition_pop')
+
+            elif self.button_pressed == 'BACK' and engine.get_time() - self.last_update > 300:
+                game.memory['next_state'] = 'prep_gba_map'
+                game.state.change('transition_to')
+                self.last_update = 0
 
     def draw(self, surf):
         if self.bg:
             self.bg.draw(surf)
         self.menu.draw(surf)
 
-        disp = self.button_surf
+        disp = self.button_surfs.copy()
         if self.last_update > 0:
+            if self.button_pressed == 'START':
+                idx = 0
+            elif self.button_pressed == 'BACK':
+                idx = 1
+            else:
+                return surf
+
             interval = 300   # ms
             progress = engine.get_time() % (interval*2)  # Between 0 and 600
             white = math.sin(progress / interval * math.pi)  # Returns between -1 and 1
             # Rescale to be between 0 and 1
             white = (white + 1) / 2
             
-            disp = image_mods.make_white(disp, white)
-        surf.blit(disp, (16, WINHEIGHT - 18))
+            disp[idx] = image_mods.make_white(disp[idx], white)
+
+        for idx in range(len(disp)):
+            surf.blit(disp[idx], (16 + 80 * idx, WINHEIGHT - 18))
 
         return surf    
 
