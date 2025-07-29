@@ -757,7 +757,7 @@ def activate_turnwheel(self: Event, force: bool = True, flags=None):
 def battle_save(self: Event, save_name: Optional[str] = None, flags=None):
     flags = flags or set()
     if save_name:
-        self.game.memory['save_name'] = save_name
+        self.game.game_vars['_save_name'] = save_name
     if 'immediately' in flags:
         self.state = 'paused'
         self.game.memory['save_kind'] = 'battle'
@@ -2918,6 +2918,8 @@ def prep(self: Event, pick_units_enabled: bool = False, music: SongPrefab | Song
 
     if 'gba' in flags:
         self.game.state.change('prep_gba_main')
+        self.game.memory['prep_gba_disp'] = ['' if 'no_obj_disp' in flags else self.game.level.objective['simple'],
+                                             '' if 'no_chap_disp' in flags else self.game.level.name]
     else:
         self.game.state.change('prep_main')
     self.state = 'paused'  # So that the message will leave the update loop
