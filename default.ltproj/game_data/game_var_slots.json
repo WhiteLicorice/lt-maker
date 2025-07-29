@@ -70,5 +70,9 @@
     {
         "nid": "_last_choice",
         "desc": "Holds the most recent choice made by the player using choice event."
+    },
+    {
+        "nid": "_save_name",
+        "desc": "Display name of the save slot. Leave as empty string if you want to display chapter name."
     }
 ]
