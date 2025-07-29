@@ -3697,7 +3697,7 @@ Example: change_team_palette;player;map_sprite_green;GenericGreen;green
 
     keywords = ["Team"]
     optional_keywords = ['MapSpritePalette', 'CombatVariantPalette', 'CombatColor']
-    keyword_types = ['Team', 'Nid', 'String', 'String']
+    keyword_types = ['Team', 'Palette', 'String', 'String']
 
 def get_commands():
     return EventCommand.__subclasses__()
