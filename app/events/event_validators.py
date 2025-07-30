@@ -567,8 +567,8 @@ class Orientation(OptionValidator):
         return o.VERTICAL
 
 class ExpressionList(SequenceValidator):
-    valid_expressions = ["NoSmile", "Smile", "NormalBlink", "CloseEyes", "HalfCloseEyes", "LeftWink", "RightWink", "OpenEyes", "OpenMouth"]
-    desc = "expects a comma-delimited list of expressions. Valid expressions are: (`NoSmile`, `Smile`, `NormalBlink`, `CloseEyes`, `HalfCloseEyes`, `LeftWink`, `RightWink`, `OpenEyes`, `OpenMouth`). Example: `Smile,CloseEyes`"
+    valid_expressions = ["NoSmile", "Smile", "NormalBlink", "CloseEyes", "HalfCloseEyes", "LeftWink", "RightWink", "FarWink", "NearWink", "OpenEyes", "OpenMouth"]
+    desc = "expects a comma-delimited list of expressions. Valid expressions are: (`NoSmile`, `Smile`, `NormalBlink`, `CloseEyes`, `HalfCloseEyes`, `LeftWink`, `RightWink`, `FarWink`, `NearWink`, `OpenEyes`, `OpenMouth`). Example: `Smile,CloseEyes`"
 
     def validate(self, text, level):
         text = text.split(',')
