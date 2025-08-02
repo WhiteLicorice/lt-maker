@@ -625,7 +625,9 @@ class NewPaletteProperties(QWidget):
             self.draw_frame()
 
     def get_current_palette(self):
-        return self.current_palette.nid
+        if self.current_palette:
+            return self.current_palette.nid
+        return None
 
     def select_frame(self):
         combat_anim_nid, weapon_anim_nid = WeaponAnimSelection.get(self)
@@ -781,7 +783,8 @@ class NewPaletteProperties(QWidget):
                     did_import = True
             if did_import:
                 # Move view
-                palette_model.move_to_bottom()
+                self.window.reset()
+                self.window.tree_list.select_item(new_palette.nid)
 
     def import_palette_from_image_with_base(self):
         """
@@ -834,4 +837,5 @@ class NewPaletteProperties(QWidget):
                     new_palette.colors = colors
                     RESOURCES.combat_palettes.append(new_palette)
                     # Move view
-                    palette_model.move_to_bottom()
+                    self.window.reset()
+                    self.window.tree_list.select_item(new_palette.nid)
