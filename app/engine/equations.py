@@ -94,6 +94,12 @@ class Parser():
         else:
             return 10
 
+    def get_xcom_movement(self, unit):
+        if hasattr(self, 'xcom_movement'):
+            return self.xcom_movement(unit)
+        else:
+            return 0
+
 PARSER = Parser()
 
 def __getattr__(name):

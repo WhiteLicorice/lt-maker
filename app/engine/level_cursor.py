@@ -7,7 +7,7 @@ from app.engine.objects.unit import UnitObject
 from app.constants import TILEHEIGHT, TILEWIDTH
 from app.counters import GenericAnimCounter
 from app.data.database.database import DB
-from app.engine import engine, image_mods, skill_system
+from app.engine import engine, image_mods, skill_system, equations
 from app.engine.cursor import BaseCursor
 from app.engine.game_state import GameState
 from app.engine.input_manager import get_input_manager
@@ -96,7 +96,12 @@ class LevelCursor(BaseCursor):
             return self.path
 
         if self.path:
-            if self._last_valid_position in self.path:
+            # Check to see if we have passed from move to xcom move and back again
+            # If so, just create a new path
+            if self.game.highlight.check_in_move(self._last_valid_position) \
+                    and any(self.game.highlight.check_in_xcom_move(pos) for pos in self.path):
+                pass
+            elif self._last_valid_position in self.path:
                 idx = self.path.index(self._last_valid_position)
                 self.path = self.path[idx:]
                 return self.path
@@ -105,13 +110,17 @@ class LevelCursor(BaseCursor):
                 if self.game.path_system.check_path(self.cur_unit, self.path):
                     return self.path
 
-        self.path = self.game.path_system.get_path(self.cur_unit, self._last_valid_position, use_limit=True)
+        if not self.cur_unit.has_traded:
+            limit = self.cur_unit.movement_left + self.cur_unit.get_xcom_movement()
+        else:
+            limit = self.cur_unit.movement_left
+        self.path = self.game.path_system.get_path(self.cur_unit, self._last_valid_position, use_limit=limit)
         return self.path
 
     def move(self, dx, dy, mouse=False, sound=True):
         super().move(dx, dy, mouse, sound)
 
-        if self.game.highlight.check_in_move(self.position):
+        if self.game.highlight.check_in_all_move(self.position):
             self._last_valid_position = self.position
 
         if self._display_arrows:
@@ -203,17 +212,17 @@ class LevelCursor(BaseCursor):
         else:
             directions = self.fluid.get_directions(double_speed=self.speed_state)
 
-        if self.game.highlight.check_in_move(self.position):
+        if self.game.highlight.check_in_all_move(self.position):
             if directions:
                 # If we would move off the current move
                 if ('LEFT' in directions and not get_input_manager().just_pressed('LEFT') and
-                        not self.game.highlight.check_in_move((self.position[0] - 1, self.position[1]))) or \
+                        not self.game.highlight.check_in_all_move((self.position[0] - 1, self.position[1]))) or \
                         ('RIGHT' in directions and not get_input_manager().just_pressed('RIGHT') and
-                         not self.game.highlight.check_in_move((self.position[0] + 1, self.position[1]))) or \
+                         not self.game.highlight.check_in_all_move((self.position[0] + 1, self.position[1]))) or \
                         ('UP' in directions and not get_input_manager().just_pressed('UP') and
-                         not self.game.highlight.check_in_move((self.position[0], self.position[1] - 1))) or \
+                         not self.game.highlight.check_in_all_move((self.position[0], self.position[1] - 1))) or \
                         ('DOWN' in directions and not get_input_manager().just_pressed('DOWN') and
-                         not self.game.highlight.check_in_move((self.position[0], self.position[1] + 1))):
+                         not self.game.highlight.check_in_all_move((self.position[0], self.position[1] + 1))):
                     # Then we can just keep going
                     if self.stopped_at_move_border:
                         self.stopped_at_move_border = False
@@ -248,7 +257,7 @@ class LevelCursor(BaseCursor):
 
     def format_sprite(self, sprite):
         self.passive_sprite = engine.subsurface(sprite, (0, 0, 128, 32))
-        self.red_sprite = engine.subsurface(sprite, (0, 32 , 128, 32))
+        self.red_sprite = engine.subsurface(sprite, (0, 32, 128, 32))
         self.active_sprite = engine.subsurface(sprite, (0, 64, 32, 32))
         self.formation_sprite = engine.subsurface(sprite, (64, 64, 64, 32))
         self.green_sprite = engine.subsurface(sprite, (0, 96, 128, 32))

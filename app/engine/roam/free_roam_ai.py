@@ -192,8 +192,8 @@ class RoamAI:
         target_positions = ai_controller.get_targets(self.unit, self.behaviour)
 
         zero_move = item_funcs.get_max_range(self.unit)
-        single_move = zero_move + equations.parser.movement(self.unit)
-        double_move = single_move + equations.parser.movement(self.unit)
+        single_move = zero_move + self.unit.get_movement()
+        double_move = single_move + self.unit.get_movement()
 
         target_positions = [(pos, utils.calculate_distance(self.unit.position, pos)) for pos in target_positions]
 

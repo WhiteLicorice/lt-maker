@@ -76,7 +76,7 @@ class PathSystemTests(unittest.TestCase):
             self.assertEqual(path[-1], (1, 1), 'Did not start at the beginning')
 
             # Test Limit
-            path = self.path_system.get_path(self.player_unit, goal, use_limit=True)
+            path = self.path_system.get_path(self.player_unit, goal, use_limit=self.player_unit.movement_left)
             self.assertEqual(len(path), 0, 'path is not empty')
 
             # Test ThetaStar

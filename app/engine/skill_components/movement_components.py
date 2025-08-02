@@ -43,7 +43,7 @@ class CantoSharp(SkillComponent):
         return unit.movement_left
 
     def has_canto(self, unit, unit2) -> bool:
-        return not unit.has_attacked or unit.movement_left >= equations.parser.movement(unit)
+        return not unit.has_attacked or unit.movement_left >= unit.get_movement()
 
 class Canter(SkillComponent):
     nid = 'canter'
