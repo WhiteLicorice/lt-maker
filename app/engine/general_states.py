@@ -690,9 +690,10 @@ class MoveState(MapState):
 
         if cur_unit.has_traded:
             self.valid_moves = game.path_system.get_valid_moves(cur_unit)
+            self.valid_xcom_moves = set()
             game.highlight.display_moves(self.valid_moves, light=False)
         else:
-            self.valid_moves = game.highlight.display_highlights(cur_unit)
+            self.valid_moves, self.valid_xcom_moves = game.highlight.display_highlights(cur_unit)
 
         # Fade in phase music if the unit has canto
         if cur_unit.has_attacked or cur_unit.has_traded:
@@ -758,6 +759,17 @@ class MoveState(MapState):
                         game.state.change('menu')
                     game.state.change('movement')
                     action.do(cur_unit.current_move)
+
+            elif game.cursor.position in self.valid_xcom_moves:
+                if game.board.in_vision(game.cursor.position) and game.board.get_unit(game.cursor.position):
+                    get_sound_thread().play_sfx('Error')
+                else:
+                    action.do(action.MarkActionGroupStart(cur_unit, 'free'))
+                    cur_unit.current_move = action.XCOMMove(cur_unit, game.cursor.position)
+                    game.state.change('canto_wait')
+                    game.state.change('movement')
+                    action.do(cur_unit.current_move)
+
             else:
                 get_sound_thread().play_sfx('Error')
 
@@ -863,6 +875,8 @@ class CantoWaitState(MapState):
                 game.action_log.reverse_move_to_action_group_start(self.cur_unit.current_move)
                 self.cur_unit.current_move = None
                 game.cursor.set_pos(self.cur_unit.position)
+                game.cursor.path.clear()
+                game.cursor.remove_arrows()
             game.state.back()
 
     def update(self):

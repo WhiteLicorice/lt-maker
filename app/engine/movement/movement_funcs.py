@@ -38,14 +38,14 @@ def check_traversable(unit_to_move: UnitObject, pos: Tuple[int, int]) -> bool:
     if not game.board.check_bounds(pos):
         return False
     mcost = get_mcost(unit_to_move, pos)
-    movement = equations.parser.movement(unit_to_move)
+    movement = unit_to_move.get_movement()
     return mcost <= movement
 
 def check_weakly_traversable(unit_to_move: UnitObject, pos: Tuple[int, int]) -> bool:
     if not game.board.check_bounds(pos):
         return False
     mcost = get_mcost(unit_to_move, pos)
-    movement = equations.parser.movement(unit_to_move)
+    movement = unit_to_move.get_movement()
     return mcost <= 5 or mcost <= movement
 
 def check_simple_traversable(pos: Tuple[int, int]) -> bool:

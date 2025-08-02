@@ -111,6 +111,9 @@ class UnitPathMovementComponent(MovementComponent):
             self.unit.sprite.change_state('normal')
             self.unit.sprite.reset()
             self.unit.sprite.add_animation('MapSurprise', loop=False)
+            # Necessary so that turnwheeling backwards and then forwards 
+            # doesn't put you in the position you tried to go to originally
+            action.do(action.SetPosition(self.unit, self.unit.position))  
             action.do(action.HasAttacked(self.unit))
             if self.unit.team == 'player':
                 game.state.clear()

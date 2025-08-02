@@ -239,7 +239,7 @@ class UnitObject(Prefab):
         self.current_hp = self.get_max_hp()
         self.current_mana = self.get_max_mana()
         self.current_fatigue = 0
-        self._movement_left = equations.parser.movement(self)
+        self._movement_left = self.get_movement()
         self.current_guard_gauge = 0
 
         # Handle items
@@ -391,6 +391,12 @@ class UnitObject(Prefab):
 
     def get_gauge_inc(self):
         return equations.parser.get_gauge_inc(self)
+
+    def get_movement(self):
+        return equations.parser.movement(self)
+
+    def get_xcom_movement(self):
+        return equations.parser.get_xcom_movement(self) + skill_system.xcom_movement(self)
 
     def get_field(self, key: str, default: str = None) -> str:
         if key in self._fields:
@@ -641,7 +647,7 @@ class UnitObject(Prefab):
     @property
     def movement_left(self) -> int:
         if not self.has_moved:
-            return equations.parser.movement(self)
+            return self.get_movement()
         else:
             return self._movement_left
 
@@ -978,7 +984,7 @@ class UnitObject(Prefab):
         self.current_hp = s_dict['current_hp']
         self.current_mana = s_dict['current_mana']
         self.current_fatigue = s_dict['current_fatigue']
-        self._movement_left = equations.parser.movement(self)
+        self._movement_left = self.get_movement()
         self.current_guard_gauge = s_dict.get('current_guard_gauge', 0)
 
         self.traveler = s_dict['traveler']

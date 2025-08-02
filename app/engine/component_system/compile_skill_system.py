@@ -47,6 +47,7 @@ SKILL_HOOKS: Dict[str, HookInfo] = {
     'witch_warp':                           HookInfo(['unit'], ResolvePolicy.UNIQUE, has_default_value=True, is_cached=True),
     # numeric accum (adds together all values. 0 if no values are defined)
     'sight_range':                          HookInfo(['unit'], ResolvePolicy.NUMERIC_ACCUM, has_default_value=True),
+    'xcom_movement':                        HookInfo(['unit'], ResolvePolicy.NUMERIC_ACCUM, has_default_value=True),
     # formula (as exclusive)
     'damage_formula':                       HookInfo(['unit'], ResolvePolicy.UNIQUE),
     'resist_formula':                       HookInfo(['unit'], ResolvePolicy.UNIQUE),

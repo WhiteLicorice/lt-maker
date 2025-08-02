@@ -208,6 +208,22 @@ class Move(Action):
 class CantoMove(Move):
     pass
 
+class XCOMMove(Move):
+    def __init__(self, unit, new_pos, path=None, event=False, follow=True, speed=0):
+        super().__init__(unit, new_pos, path, event, follow, speed)
+        self.has_attacked = HasAttacked(unit)
+
+    def do(self):
+        super().do()
+        self.has_attacked.execute()
+
+    def execute(self):
+        super().execute()
+        self.has_attacked.execute()
+
+    def reverse(self):
+        super().reverse()
+        self.has_attacked.reverse()
 
 class SimpleMove(Move):
     """
@@ -639,6 +655,17 @@ class ResetUnitVars(Action):
         self.unit.set_hp(self.old_current_hp)
         self.unit.set_mana(self.old_current_mana)
 
+class SetPosition(Action):
+    def __init__(self, unit: UnitObject, pos: Pos):
+        self.unit = unit
+        self.pos = pos
+        self.old_pos = self.unit.position
+
+    def do(self):
+        self.unit.position = self.pos
+
+    def reverse(self):
+        self.unit.position = self.old_pos
 
 class SetPreviousPosition(Action):
     def __init__(self, unit):
@@ -670,7 +697,7 @@ class Reset(Action):
 
     def do(self):
         self.unit.reset()
-        self.unit.movement_left = equations.parser.movement(self.unit)
+        self.unit.movement_left = self.unit.get_movement()
 
     def reverse(self):
         self.unit.set_action_state(self.action_state)

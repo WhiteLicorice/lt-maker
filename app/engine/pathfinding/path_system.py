@@ -40,7 +40,7 @@ class PathSystem():
         grid: BoundedGrid[Node] = self.game.board.get_movement_grid(mtype)
         start_pos = unit.position
         pathfinder = pathfinding.Djikstra(start_pos, grid)
-        movement_left = equations.parser.movement(unit) if force else unit.movement_left
+        movement_left = unit.get_movement() if force else unit.movement_left
 
         if skill_system.pass_through(unit):
             can_move_through = lambda adj: True
@@ -54,15 +54,42 @@ class PathSystem():
             valid_moves |= witch_warp
         return valid_moves
 
+    def get_valid_xcom_moves(self, unit: UnitObject) -> Set[Pos]:
+        """Given a unit, finds all positions on the map they can move to with their xcom move as well
+        Assumes unit is on the map.
+        
+        Args:
+            unit (UnitObject): The unit to find valid moves for
+        
+        Returns:
+            Set[Pos]: Set of valid positions the unit can move to using xcom movement
+        """
+        if unit.finished:
+            return set()
+        mtype = movement_funcs.get_movement_group(unit)
+        grid: BoundedGrid[Node] = self.game.board.get_movement_grid(mtype)
+        start_pos = unit.position
+        pathfinder = pathfinding.Djikstra(start_pos, grid)
+        movement_left = unit.get_movement() + unit.get_xcom_movement()
+
+        if skill_system.pass_through(unit):
+            can_move_through = lambda adj: True
+        else:
+            # Feed the unit's team into the function
+            can_move_through = functools.partial(self.game.board.can_move_through, unit.team)
+
+        valid_moves = pathfinder.process(can_move_through, movement_left)
+        return valid_moves
+
     def get_path(self, unit: UnitObject, position: Pos, ally_block: bool = False, 
-                 use_limit: bool = False, free_movement: bool = False) -> List[Pos]:
+                 use_limit: int = None, free_movement: bool = False) -> List[Pos]:
         """Given a unit and a goal position, find the best path for the unit to get to that goal position
         
         Args:
             unit (UnitObject): The unit to get the path for
             position (Pos): The goal position
             ally_block (bool, optional): Normally allies don't block your path. Set ally_block to true to make them block your path.
-            use_limit (bool, optional): If set, will use the unit's movement left as a limit
+            use_limit (int, optional): If set, will use a limit on movement for the pathfinder
             free_movement (bool, optional): If set (usually for free roam), will use ThetaStar pathfinding instead of AStar
         
         Returns:
@@ -86,8 +113,7 @@ class PathSystem():
         else:
             pathfinder = pathfinding.AStar(start_pos, position, grid)
 
-        limit = unit.movement_left if use_limit else None
-        path = pathfinder.process(can_move_through, limit=limit)
+        path = pathfinder.process(can_move_through, limit=use_limit)
         if path is None:
             return []
         return path
@@ -102,7 +128,10 @@ class PathSystem():
         Returns:
             bool: True if path is possible, False otherwise
         """
-        movement = unit.movement_left
+        if unit.has_traded:
+            movement = unit.movement_left
+        else:
+            movement = unit.movement_left + unit.get_xcom_movement()
         prev_pos = None
         for pos in path[:-1]:  # Don't need to count the starting position
             if prev_pos and pos not in self.game.target_system.get_adjacent_positions(prev_pos):

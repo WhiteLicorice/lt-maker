@@ -193,7 +193,7 @@ class Shove(ItemComponent):
         mcost = movement_funcs.get_mcost(unit_to_move, new_position)
         if game.board.check_bounds(new_position) and \
                 not game.board.get_unit(new_position) and \
-                mcost <= equations.parser.movement(unit_to_move):
+                mcost <= unit_to_move.get_movement():
             return new_position
         return False
 
@@ -286,7 +286,7 @@ class Pivot(ItemComponent):
         mcost = movement_funcs.get_mcost(unit_to_move, new_position)
         if game.board.check_bounds(new_position) and \
                 not game.board.get_unit(new_position) and \
-                mcost <= equations.parser.movement(unit_to_move):
+                mcost <= unit_to_move.get_movement():
             return new_position
         return False
 
@@ -347,7 +347,7 @@ class DrawBack(ItemComponent):
 
         if game.board.check_bounds(new_position_user) and \
                 not game.board.get_unit(new_position_user) and \
-                mcost_user <= equations.parser.movement(user) and mcost_target <= equations.parser.movement(target):
+                mcost_user <= user.get_movement() and mcost_target <= target.get_movement():
             return new_position_user, new_position_target
         return None, None
 
