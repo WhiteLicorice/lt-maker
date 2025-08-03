@@ -513,7 +513,7 @@ class UnitStatAveragesModel(ClassStatAveragesModel):
             growth_bonus = klass.growth_bonus.get(stat_nid, 0)
             if idx > 0:
                 promotion_bonus = klass.promotion.get(stat_nid, 0)
-                if promotion_bonus in (-99, -98):
+                if promotion_bonus in (-99, -98, -97):
                     prev_klass = classes[idx - 1]
                     promotion_bonus = klass.bases.get(stat_nid, 0) \
                         - DB.classes.get(prev_klass).bases.get(stat_nid, 0)
