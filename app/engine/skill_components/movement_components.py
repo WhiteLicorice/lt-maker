@@ -193,13 +193,8 @@ class Galeforce(SkillComponent):
         mark_playbacks = [p for p in playback if p.nid in ('mark_miss', 'mark_hit', 'mark_crit')]
         if target and target.get_hp() <= 0 and \
                 any(p.main_attacker is unit for p in mark_playbacks):  # Unit is overall attacker
-            self._did_something = True
-            action.do(action.TriggerCharge(unit, self.skill))
-
-    def on_wait(self, unit, actively_chosen):
-        if self._did_something:
             action.do(action.Reset(unit))
-        self._did_something = False
+            action.do(action.TriggerCharge(unit, self.skill))
 
 
 class SimpleGaleforce(SkillComponent):
