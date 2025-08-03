@@ -232,3 +232,36 @@ class ModernGaleforce(SkillComponent):
             action.do(action.Reset(unit))
             action.do(action.TriggerCharge(unit, self.skill))
             self._should_refresh = False
+
+class XCOMMovement(SkillComponent):
+    nid = 'xcom_movement'
+    desc = "Unit can forfeit other actions to move a number of tiles beyond regular movement."
+    tag = SkillTags.MOVEMENT
+    
+    author = 'Eretein'
+    
+    expose = ComponentType.Int
+    value: int = 1
+    
+    def xcom_movement(self, unit: UnitObject) -> int:
+        return self.value
+
+class EvalXCOMMovement(SkillComponent):
+    nid = 'eval_xcom_movement'
+    desc = "Unit can forfeit other actions to move an evaluated number of tiles beyond regular movement."
+    tag = SkillTags.MOVEMENT
+    
+    author = 'Eretein'
+
+    expose = ComponentType.String
+    value: str = "1"
+    
+    def xcom_movement(self, unit: UnitObject) -> int:
+        from app.engine.evaluate import evaluate
+        try:
+            local_args = {'skill': self.skill}
+            movement: int = int(evaluate(self.value, unit, local_args=local_args))
+            return movement
+        except Exception as e:
+            logging.error(f"Could not evaluate {self.value}, ({e})")
+            return 0
