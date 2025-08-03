@@ -70,7 +70,7 @@ class Palette(Prefab, WithResources):
 
 class PaletteCatalog(ManifestCatalog[Palette], CategorizedCatalog[Palette]):
     datatype = Palette
-    manifest = 'palettes.json'
+    manifest = 'combat_palettes.json'
     title = 'palettes'
 
     def __init__(self, vals: List[Palette] | None = None):
