@@ -10,6 +10,7 @@ from app.engine.objects.unit import UnitObject
 from app.events.regions import RegionType
 from app.events import triggers, event_commands
 from app.engine.objects.item import ItemObject
+from app.engine.objects.skill import SkillObject
 
 from app.engine.sprites import SPRITES
 from app.engine.fonts import FONT
@@ -1187,12 +1188,13 @@ class MenuState(MapState):
             on_extra_ability_select(self.cur_unit, self.extra_abilities['_uncategorized'][selection])
         elif selection in self.extra_abilities:  # Category in self.extra_abilities
             # need submenu; construct args to dispatch to AbilitySubmenuChoiceState
-            abilities = self.extra_abilities[selection]
-            abilities = {ability_name: ability for ability_name, ability in abilities.items() 
-                         if game.target_system.get_valid_targets_recursive_with_availability_check(self.cur_unit, ability)}
-            options = [ability for ability in abilities.values()]
-            info_desc = [text_funcs.translate_and_text_evaluate(abilities[ability_name].desc, self=self.cur_unit, unit=self.cur_unit) 
-                         for ability_name in abilities]
+            ability_dict = self.extra_abilities[selection]
+            ability_dict = {ability_name: ability for ability_name, ability in ability_dict.items() 
+                            if game.target_system.get_valid_targets_recursive_with_availability_check(self.cur_unit, ability)}
+            abilities: List[ItemObject] = list(ability_dict.values())
+            options = abilities
+            info_desc = [text_funcs.translate_and_text_evaluate(option.desc, self=self.cur_unit, unit=self.cur_unit) 
+                         for option in options]
             game.memory['ability_submenu_choice'] = (abilities,
                                                      options, info_desc,
                                                      on_extra_ability_begin,
@@ -1204,7 +1206,7 @@ class MenuState(MapState):
         def on_combat_art_begin(cur_unit: UnitObject):
             skill_system.deactivate_all_combat_arts(cur_unit)
 
-        def on_combat_art_select(cur_unit: UnitObject, ability):
+        def on_combat_art_select(cur_unit: UnitObject, ability: Tuple[SkillObject, List[ItemObject]]):
             skill = ability[0]
             game.memory['ability'] = 'Combat Art'
             game.memory['valid_weapons'] = ability[1]
@@ -1215,9 +1217,10 @@ class MenuState(MapState):
         if selection == 'Combat Arts':
             # need submenu; construct args to dispatch to AbilitySubmenuChoiceState
             # since combat arts category is checked, self.combat_arts is uncategorized
-            options = [ability_name for ability_name in self.combat_arts]
-            info_desc = [self.combat_arts[ability_name][0].desc for ability_name in self.combat_arts]
-            game.memory['ability_submenu_choice'] = (self.combat_arts,
+            combat_arts: List[Tuple[SkillObject, List[ItemObject]]] = list(self.combat_arts.values())
+            options = [combat_art[0] for combat_art in combat_arts]
+            info_desc = [option.desc for option in options]
+            game.memory['ability_submenu_choice'] = (combat_arts,
                                                      options, info_desc,
                                                      on_combat_art_begin,
                                                      on_combat_art_select)
@@ -1228,9 +1231,10 @@ class MenuState(MapState):
         elif selection in self.combat_arts:
             # need submenu; construct args to dispatch to AbilitySubmenuChoiceState
             # since combat arts category is unchecked, self.combat_arts is categorized
-            combat_arts = self.combat_arts[selection] # get combat arts in category
-            options = [ability_name for ability_name in combat_arts]
-            info_desc = [combat_arts[ability_name][0].desc for ability_name in combat_arts]
+            combat_art_dict = self.combat_arts[selection]  # get combat arts in category
+            combat_arts: List[Tuple[SkillObject, List[ItemObject]]] = list(combat_art_dict.values())
+            options = [combat_art[0] for combat_art in combat_arts]
+            info_desc = [option.desc for option in options]
             game.memory['ability_submenu_choice'] = (combat_arts,
                                                      options, info_desc,
                                                      on_combat_art_begin,
@@ -1919,6 +1923,8 @@ class AbilitySubmenuChoiceState(MapState):
     def start(self):
         # taking a page out of mag's book
         if 'ability_submenu_choice' in game.memory:
+            # Abilities is what gets passed to the select_callback
+            # Options is what gets passed to the menu itself
             self.abilities, self.options, self.info_desc, self.begin_callback, self.select_callback = \
                 game.memory['ability_submenu_choice']
             game.memory['ability_submenu_choice'] = None
@@ -1958,7 +1964,7 @@ class AbilitySubmenuChoiceState(MapState):
         elif event == 'SELECT':
             idx = self.menu.get_current_index()
             get_sound_thread().play_sfx('Select 1')
-            self.select_callback(self.cur_unit, self.options[idx])
+            self.select_callback(self.cur_unit, self.abilities[idx])
 
         elif event == 'INFO':
             if self.menu.info_flag:

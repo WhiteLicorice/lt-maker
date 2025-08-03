@@ -633,3 +633,42 @@ class LoreOption(BasicOption):
         if width > 78:
             main_font = 'narrow'
         render_text(surf, [main_font], s, [main_color], (x + 6, y))
+
+class SkillOption(BasicOption):
+    def __init__(self, idx, skill):
+        self.idx = idx
+        self.skill = skill
+        self.help_box = None
+        self.font = 'text'
+        self.color = 'blue'
+        self.ignore = False
+
+    def get(self):
+        return self.skill
+
+    def set_text(self, text):
+        pass
+
+    def width(self):
+        return 104
+
+    def height(self):
+        return 16
+
+    def get_help_box(self):
+        text = text_funcs.translate_and_text_evaluate(
+               self.skill.desc,
+               unit=game.get_unit(self.skill.owner_nid),
+               self=self.skill)
+        return help_menu.HelpDialog(text, name=self.skill.name)
+
+    def draw(self, surf, x, y):
+        icon = icons.get_icon(self.skill)
+        if icon:
+            surf.blit(icon, (x + 2, y))
+        main_font = self.font
+        if text_width(main_font, self.skill.name) > 60:
+            main_font = 'narrow'
+        render_text(surf, [main_font], [self.skill.name], [self.color], (x + 20, y))
+        # left = x + 99
+        # render_text(surf, [uses_font], [uses_string], [uses_color], (left, y), HAlignment.RIGHT)

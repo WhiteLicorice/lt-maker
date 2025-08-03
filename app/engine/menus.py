@@ -14,6 +14,7 @@ from app.engine import engine, image_mods, icons, help_menu, item_system, gui, i
 from app.engine.gui import ScrollBar
 from app.engine.base_surf import create_base_surf
 from app.engine.objects.item import ItemObject
+from app.engine.objects.skill import SkillObject
 from app.engine.objects.unit import UnitObject
 from app.engine.game_state import game
 from app.engine.game_menus import menu_options
@@ -414,6 +415,9 @@ class Choice(Simple):
                     else:
                         option = menu_options.ItemOption(idx, option)
                     option.help_box = option.get_help_box()
+                    self.options.append(option)
+                elif isinstance(option, SkillObject):
+                    option = menu_options.SkillOption(idx, option)
                     self.options.append(option)
                 elif isinstance(option, lore.Lore):
                     option = menu_options.LoreOption(idx, option)
