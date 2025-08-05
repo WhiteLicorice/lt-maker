@@ -439,7 +439,8 @@ class CombatPhaseSolver():
             item = attacker.get_weapon()
 
         unclamped_hit = combat_calcs.compute_hit(attacker, defender, item, def_item, mode, attack_info, clamp_hit=False)
-        if game.rng_mode == RNGOption.FATES_HIT:
+        rng_mode = game.rng_mode
+        if rng_mode == RNGOption.FATES_HIT:
             to_hit = self.calculate_fates_hit(utils.clamp(unclamped_hit, 0, 100))
             # Recalculate unclamped hit so it matches fates to_hit
             # Otherwise, unclamped hit could be 75 when fates to_hit is 85, which ruins
@@ -452,6 +453,19 @@ class CombatPhaseSolver():
             roll = -1
         elif self.current_command.lower() in ('miss1', 'miss2'):
             roll = 100
+        elif rng_mode == RNGOption.LUCKY:
+            # ally attacking enemy should hit
+            if DB.teams.is_allied(attacker.team, 'player') and not DB.teams.is_allied(defender.team, 'player'):
+                roll = 0
+            # ally infighting should miss
+            elif DB.teams.is_allied(attacker.team, 'player'):
+                roll = 99
+            # enemy attacking ally should miss
+            elif DB.teams.is_allied(defender.team, 'player'):
+                roll = 99
+            # enemy infighting should hit
+            else:
+                roll = 0
         else:
             roll = self.generate_roll()
 
@@ -471,9 +485,18 @@ class CombatPhaseSolver():
                 elif self.current_command.lower() in ('hit1', 'hit2', 'miss1', 'miss2'):
                     crit = False
                 elif to_crit is not None:
-                    crit_roll = self.generate_crit_roll()
-                    if crit_roll < to_crit:
-                        crit = True
+                    if rng_mode == RNGOption.LUCKY:
+                        if DB.teams.is_allied(attacker.team, 'player') and not DB.teams.is_allied(defender.team, 'player'):
+                            crit_roll = 0
+                        elif DB.teams.is_allied(attacker.team, 'player'):
+                            crit_roll = 99
+                        elif DB.teams.is_allied(defender.team, 'player'):
+                            crit_roll = 99
+                        else:
+                            crit_roll = 0
+                    else:
+                        crit_roll = self.generate_crit_roll()
+                    crit = crit_roll < to_crit
 
             if crit and not guard_hit:
                 skill_system.before_crit(actions, playback, attacker, item, defender, resolve_weapon(defender), mode, attack_info)

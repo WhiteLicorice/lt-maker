@@ -13,6 +13,7 @@ class GrowthOption(str, Enum):
     RANDOM = 'Random'
     FIXED = 'Fixed'
     DYNAMIC = 'Dynamic'
+    LUCKY = 'Lucky'
 
 class RNGOption(str, Enum):
     CLASSIC = 'Classic'
@@ -20,6 +21,8 @@ class RNGOption(str, Enum):
     TRUE_HIT_PLUS = 'True Hit Plus'
     FATES_HIT = 'Fates Hit'
     GRANDMASTER = 'Grandmaster'
+    LUCKY = 'Lucky'
+    
 
 @dataclass
 class DifficultyModePrefab(Prefab):

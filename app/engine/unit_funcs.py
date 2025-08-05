@@ -178,6 +178,25 @@ def _dynamic_levelup(unit, level) -> dict:
                 unit.growth_points[nid] += new_growth / variance
 
     return stat_changes
+    
+def _lucky_levelup(unit, level) -> dict:
+    rng = static_random.get_levelup(unit.nid, level)
+    stat_changes = {nid: 0 for nid in DB.stats.keys()}
+
+    for nid in DB.stats.keys():
+        growth = growth_rate(unit, nid)
+        counter = 0
+        if growth > 0:
+            while growth > 0:
+                counter += 1
+                growth -= 100
+        elif growth < 0 and DB.constants.value('negative_growths'):
+            growth = -growth
+            while growth > 0:
+                counter -= 1 if growth >= 100 else 0
+                growth -= 100
+        stat_changes[nid] += counter
+    return stat_changes
 
 def _rd_bexp_levelup(unit, level):
     """
@@ -237,6 +256,8 @@ def get_next_level_up(unit: UnitObject, level: int, custom_method: Optional[str]
         stat_changes = _random_levelup(unit, level)
     elif method == GrowthOption.DYNAMIC:
         stat_changes = _dynamic_levelup(unit, level)
+    elif method == GrowthOption.LUCKY:
+        stat_changes = _lucky_levelup(unit, level)
     else:
         logging.error("Could not find level_up method matching %s", method)
 
