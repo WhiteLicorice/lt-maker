@@ -98,7 +98,7 @@ class TeamCatalog(Data[Team]):
         if team1 == team2:
             return True
         pair1 = (team1, team2)
-        pair2 = (team2, team2)
+        pair2 = (team2, team1)
         if pair1 in self.alliance_pairs:
             return True
         elif pair2 in self.alliance_pairs:
