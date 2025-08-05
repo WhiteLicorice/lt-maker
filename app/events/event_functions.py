@@ -1539,6 +1539,7 @@ def give_item(self: Event, global_unit_or_convoy, item, party=None, flags=None):
                 action.do(action.GiveItem(unit, item))
                 self.game.memory['item_discard_current_unit'] = unit
                 self.game.memory['item_discard_new_item'] = item
+                self.game.memory['item_discard_force_give'] = True if 'force_give' in flags else False
                 self.game.state.change('item_discard')
                 self.state = 'paused'
                 if banner_flag:

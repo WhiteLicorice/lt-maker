@@ -1692,15 +1692,16 @@ class GiveItem(EventCommand):
 Gives a new copy of *Item* to *GlobalUnitOrConvoy*.
 If `convoy` is chosen as the recipient, may optionally specify a specific *Party*'s convoy.
 
- If the *no_banner* flag is set, there will not be a banner announcing that "X unit got a Y item!".
+If the *no_banner* flag is set, there will not be a banner announcing that "X unit got a Y item!".
 If the unit's inventory is full, the player will be given the option of which item to send to the convoy.
 If the *no_choice* flag is set, the new item will be automatically sent to the convoy in this case without prompting the player.
+If the *force_give* flag is set, the new item will be forced into the inventory and another must be discarded instead. *no_choice* takes priority over *force_give*.
 The *droppable* flag determines whether the item is set as a "droppable" item (generally only given to enemy units).
         """
 
     keywords = ["GlobalUnitOrConvoy", "Item"]
     optional_keywords = ["Party"]
-    _flags = ['no_banner', 'no_choice', 'droppable']
+    _flags = ['no_banner', 'no_choice', 'force_give', 'droppable']
 
 class EquipItem(EventCommand):
     nid = 'equip_item'
