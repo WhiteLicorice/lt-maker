@@ -567,8 +567,8 @@ class Orientation(OptionValidator):
         return o.VERTICAL
 
 class ExpressionList(SequenceValidator):
-    valid_expressions = ["NoSmile", "Smile", "NormalBlink", "CloseEyes", "HalfCloseEyes", "LeftWink", "RightWink", "OpenEyes", "OpenMouth"]
-    desc = "expects a comma-delimited list of expressions. Valid expressions are: (`NoSmile`, `Smile`, `NormalBlink`, `CloseEyes`, `HalfCloseEyes`, `LeftWink`, `RightWink`, `OpenEyes`, `OpenMouth`). Example: `Smile,CloseEyes`"
+    valid_expressions = ["NoSmile", "Smile", "NormalBlink", "CloseEyes", "HalfCloseEyes", "LeftWink", "RightWink", "FarWink", "NearWink", "OpenEyes", "OpenMouth"]
+    desc = "expects a comma-delimited list of expressions. Valid expressions are: (`NoSmile`, `Smile`, `NormalBlink`, `CloseEyes`, `HalfCloseEyes`, `LeftWink`, `RightWink`, `FarWink`, `NearWink`, `OpenEyes`, `OpenMouth`). Example: `Smile,CloseEyes`"
 
     def validate(self, text, level):
         text = text.split(',')
@@ -1338,6 +1338,18 @@ class OverworldEntity(Validator):
 
     def valid_entries(self, level: Optional[NID] = None, text: Optional[str] = None) -> List[Tuple[Optional[str], NID]]:
         valids = [(party.name, party.nid) for party in self._db.parties.values()]
+        return valids
+
+class Palette(Validator):
+    desc = 'accepts the NID of any palette in the project.'
+
+    def validate(self, text: NID, level: NID):
+        if text in RESOURCES.combat_palettes:
+            return text
+        return None
+
+    def valid_entries(self, level: Optional[NID] = None, text: Optional[str] = None) -> List[Tuple[Optional[str], NID]]:
+        valids = [(combat_palette.nid, combat_palette.nid) for combat_palette in RESOURCES.combat_palettes]
         return valids
 
 class Sprite(Validator):

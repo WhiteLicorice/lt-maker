@@ -1692,15 +1692,16 @@ class GiveItem(EventCommand):
 Gives a new copy of *Item* to *GlobalUnitOrConvoy*.
 If `convoy` is chosen as the recipient, may optionally specify a specific *Party*'s convoy.
 
- If the *no_banner* flag is set, there will not be a banner announcing that "X unit got a Y item!".
+If the *no_banner* flag is set, there will not be a banner announcing that "X unit got a Y item!".
 If the unit's inventory is full, the player will be given the option of which item to send to the convoy.
 If the *no_choice* flag is set, the new item will be automatically sent to the convoy in this case without prompting the player.
+If the *force_give* flag is set, the new item will be forced into the inventory and another must be discarded instead. *no_choice* takes priority over *force_give*.
 The *droppable* flag determines whether the item is set as a "droppable" item (generally only given to enemy units).
         """
 
     keywords = ["GlobalUnitOrConvoy", "Item"]
     optional_keywords = ["Party"]
-    _flags = ['no_banner', 'no_choice', 'droppable']
+    _flags = ['no_banner', 'no_choice', 'force_give', 'droppable']
 
 class EquipItem(EventCommand):
     nid = 'equip_item'
@@ -2823,11 +2824,13 @@ Optional args:
 
 Flags:
 * *gba* uses gba prep screen layout instead.
+* *no_chap_disp* removes chapter display when using gba mode
+* *no_obj_disp* removes objective display when using gba mode
         """
 
     optional_keywords = ['PickUnitsEnabled', 'Music', 'OtherOptions', 'OtherOptionsEnabled', 'OtherOptionsOnSelect', 'OtherOptionsDescription']
     keyword_types = ["Bool", "Music", "StringList", "BoolList", "StringList", "StringList"]
-    _flags = ["gba"]
+    _flags = ["gba", "no_chap_disp", "no_obj_disp"]
 
 
 class Base(EventCommand):
@@ -3695,7 +3698,7 @@ Example: change_team_palette;player;map_sprite_green;GenericGreen;green
 
     keywords = ["Team"]
     optional_keywords = ['MapSpritePalette', 'CombatVariantPalette', 'CombatColor']
-    keyword_types = ['Team', 'Nid', 'String', 'String']
+    keyword_types = ['Team', 'Palette', 'String', 'String']
 
 def get_commands():
     return EventCommand.__subclasses__()

@@ -142,7 +142,7 @@ class BoundaryInterface():
         self._set(valid_attacks, 'attack', unit.nid)
         self._set(valid_spells, 'spell', unit.nid)
 
-        area_of_influence = game.target_system.find_manhattan_spheres(set(range(1, equations.parser.movement(unit) + 1)), *unit.position)
+        area_of_influence = game.target_system.find_manhattan_spheres(set(range(1, unit.get_movement() + 1)), *unit.position)
         area_of_influence = {pos for pos in area_of_influence if game.board.check_bounds(pos)}
         self._set(area_of_influence, 'movement', unit.nid)
 

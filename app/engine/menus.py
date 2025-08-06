@@ -4,11 +4,9 @@ from typing import List
 import math, string
 
 from app.constants import TILEX, WINWIDTH, WINHEIGHT
-from app.data.database.database import DB
-from app.engine.game_menus import menu_options
-from app.utilities import utils
-
 from app.data.database import lore
+from app.data.database.database import DB
+
 from app.engine.sprites import SPRITES
 from app.engine.fonts import FONT
 from app.engine.input_manager import get_input_manager
@@ -16,10 +14,18 @@ from app.engine import engine, image_mods, icons, help_menu, item_system, gui, i
 from app.engine.gui import ScrollBar
 from app.engine.base_surf import create_base_surf
 from app.engine.objects.item import ItemObject
+from app.engine.objects.skill import SkillObject
 from app.engine.objects.unit import UnitObject
 from app.engine.game_state import game
+from app.engine.game_menus import menu_options
 from app.engine.achievements import Achievement
+from app.engine.graphics.text.text_renderer import fix_tags
+from app.engine.text_evaluator import TextEvaluator
+
+from app.utilities import utils
 from app.utilities.enums import CharacterSet
+
+import logging
 
 def draw_unit_top(surf, topleft, unit):
     x, y = topleft
@@ -409,6 +415,9 @@ class Choice(Simple):
                     else:
                         option = menu_options.ItemOption(idx, option)
                     option.help_box = option.get_help_box()
+                    self.options.append(option)
+                elif isinstance(option, SkillObject):
+                    option = menu_options.SkillOption(idx, option)
                     self.options.append(option)
                 elif isinstance(option, lore.Lore):
                     option = menu_options.LoreOption(idx, option)
@@ -2029,7 +2038,7 @@ class KeyboardMenu(Table):
         surf.blit(underscore, (left, top))
 
 class PrepGBA(Choice):
-    def __init__(self, options, info=None, objective=None):
+    def __init__(self, options, info=None, objective=None, chapter=None):
         super().__init__(None, options, None, None, info)
 
         self.topleft = (18, 52)
@@ -2039,7 +2048,7 @@ class PrepGBA(Choice):
         self.info = info
 
         self.dlg = None
-        self.obj_surf = self.create_objective_surf(objective)
+        self.obj_surf = self.create_objective_surf(objective, chapter)
 
     def move_up(self, first_push=True):
         if super().move_up(first_push):
@@ -2100,29 +2109,49 @@ class PrepGBA(Choice):
         self.dlg.draw(surf)
 
         if self.obj_surf:
-            surf.blit(self.obj_surf, (0, 16))
+            surf.blit(self.obj_surf, (0, 6))
 
         return surf
 
-    def create_objective_surf(self, objective):
-        if not objective:
-            return None
+    def create_objective_surf(self, objective, chapter):
+        text_parser = TextEvaluator(logging.getLogger(), game)
+        obj = text_parser._evaluate_all(objective).split(',')[0]
+        obj = obj.replace('{comma}', ',')
+        obj = fix_tags(obj)
 
-        bg = "menu_bg_base"
-        font = 'text'
-        width = FONT[font].width(objective) + 32
-        height = 24
-        shimmer = 1
-        x_offset = WINWIDTH - 9 - width
+        chp_bg = "prep_chapter_bg"
+        chp_font = 'short'
+        chp_width = FONT[chp_font].width(chapter) + 16
+        chp_width = chp_width - (chp_width % 8)
+        chp_height = FONT[chp_font].height + 6
+        chp_height = chp_height - (chp_height % 8)
 
-        bg_surf = engine.create_surface((WINWIDTH, height + 4), transparent=True)
-        bg_surf.blit(create_base_surf(width, height, bg), (x_offset + 2, 4))
-        bg_surf.blit(SPRITES.get('menu_gem_small'), (x_offset, 0))
+        obj_bg = "menu_bg_base"
+        obj_font = 'text'
+        obj_width = FONT[obj_font].width(obj) + 32
+        obj_width = obj_width - (obj_width % 8)
+        obj_width = max(obj_width, chp_width + 24)
+        obj_height = FONT[obj_font].height + 8
 
-        if shimmer != 0:
-            sprite = SPRITES.get('menu_shimmer%d' % shimmer)
-            bg_surf.blit(sprite, (x_offset + width - sprite.get_width() - 5, height - sprite.get_height() - 1))
+        x_offset = WINWIDTH - obj_width - 9
+        y_offset = chp_height - 4
+        surf = engine.create_surface((WINWIDTH, obj_height + y_offset), transparent=True)
 
-        FONT[font].blit(objective, bg_surf, (x_offset + 14, 8))
+        # Objective Display
+        if objective:
+            surf.blit(create_base_surf(obj_width, obj_height, obj_bg), (x_offset + 2, y_offset))
 
-        return bg_surf
+            sprite = SPRITES.get('menu_shimmer1')
+            surf.blit(sprite, (x_offset + 1 + obj_width - sprite.get_width(), obj_height - sprite.get_height() + y_offset - 5))
+            surf.blit(SPRITES.get('menu_gem_small'), (x_offset, y_offset - 4))
+
+            FONT[obj_font].blit(obj, surf, (x_offset + 2 + (obj_width - FONT[obj_font].width(obj)) // 2, y_offset + 4))
+
+            y_offset = 0    # if objective display exists, move up chapter display
+
+        # Chapter Display
+        if chapter:
+            surf.blit(create_base_surf(chp_width, chp_height, chp_bg), (x_offset + 16, y_offset))
+            FONT[chp_font].blit(chapter, surf, (x_offset + 20, y_offset + chp_height - FONT[chp_font].height - 1))
+
+        return surf

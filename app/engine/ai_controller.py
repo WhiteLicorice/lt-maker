@@ -197,8 +197,8 @@ class AIController():
         target_positions = get_targets(self.unit, self.behaviour)
 
         zero_move = item_funcs.get_max_range(self.unit)
-        single_move = zero_move + equations.parser.movement(self.unit)
-        double_move = single_move + equations.parser.movement(self.unit)
+        single_move = zero_move + self.unit.get_movement()
+        double_move = single_move + self.unit.get_movement()
 
         targets_and_dist = {(pos, utils.calculate_distance(self.unit.position, pos)) for pos in target_positions}
 
@@ -617,7 +617,7 @@ class PrimaryAI():
 
         # Only here to break ties
         # Tries to minimize how far the unit should move
-        max_distance = equations.parser.movement(self.unit)
+        max_distance = self.unit.get_movement()
         if max_distance > 0:
             distance_term = (max_distance - utils.calculate_distance(move, self.orig_pos)) / float(max_distance)
         else:
@@ -712,8 +712,8 @@ class SecondaryAI():
         self.all_targets = get_targets(self.unit, behaviour)
 
         self.zero_move = item_funcs.get_max_range(self.unit)
-        self.single_move = self.zero_move + equations.parser.movement(self.unit)
-        self.double_move = self.single_move + equations.parser.movement(self.unit)
+        self.single_move = self.zero_move + self.unit.get_movement()
+        self.double_move = self.single_move + self.unit.get_movement()
 
         movement_group = movement_funcs.get_movement_group(self.unit)
         self.grid = game.board.get_movement_grid(movement_group)
@@ -799,7 +799,7 @@ class SecondaryAI():
             can_move_through = lambda adj: True
         else:
             can_move_through = functools.partial(game.board.can_move_through, self.unit.team)
-        max_movement_limit = equations.parser.movement(self.unit)
+        max_movement_limit = self.unit.get_movement()
         path = self.pathfinder.process(can_move_through, adj_good_enough=adj_good_enough, limit=limit, max_movement_limit=max_movement_limit)
         self.pathfinder.reset()
         return path

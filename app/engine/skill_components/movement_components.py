@@ -43,7 +43,7 @@ class CantoSharp(SkillComponent):
         return unit.movement_left
 
     def has_canto(self, unit, unit2) -> bool:
-        return not unit.has_attacked or unit.movement_left >= equations.parser.movement(unit)
+        return not unit.has_attacked or unit.movement_left >= unit.get_movement()
 
 class Canter(SkillComponent):
     nid = 'canter'
@@ -193,13 +193,8 @@ class Galeforce(SkillComponent):
         mark_playbacks = [p for p in playback if p.nid in ('mark_miss', 'mark_hit', 'mark_crit')]
         if target and target.get_hp() <= 0 and \
                 any(p.main_attacker is unit for p in mark_playbacks):  # Unit is overall attacker
-            self._did_something = True
-            action.do(action.TriggerCharge(unit, self.skill))
-
-    def on_wait(self, unit, actively_chosen):
-        if self._did_something:
             action.do(action.Reset(unit))
-        self._did_something = False
+            action.do(action.TriggerCharge(unit, self.skill))
 
 
 class SimpleGaleforce(SkillComponent):
@@ -232,3 +227,36 @@ class ModernGaleforce(SkillComponent):
             action.do(action.Reset(unit))
             action.do(action.TriggerCharge(unit, self.skill))
             self._should_refresh = False
+
+class XCOMMovement(SkillComponent):
+    nid = 'xcom_movement'
+    desc = "Unit can forfeit other actions to move a number of tiles beyond regular movement."
+    tag = SkillTags.MOVEMENT
+    
+    author = 'Eretein'
+    
+    expose = ComponentType.Int
+    value: int = 1
+    
+    def xcom_movement(self, unit: UnitObject) -> int:
+        return self.value
+
+class EvalXCOMMovement(SkillComponent):
+    nid = 'eval_xcom_movement'
+    desc = "Unit can forfeit other actions to move an evaluated number of tiles beyond regular movement."
+    tag = SkillTags.MOVEMENT
+    
+    author = 'Eretein'
+
+    expose = ComponentType.String
+    value: str = "1"
+    
+    def xcom_movement(self, unit: UnitObject) -> int:
+        from app.engine.evaluate import evaluate
+        try:
+            local_args = {'skill': self.skill}
+            movement: int = int(evaluate(self.value, unit, local_args=local_args))
+            return movement
+        except Exception as e:
+            logging.error(f"Could not evaluate {self.value}, ({e})")
+            return 0

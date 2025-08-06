@@ -757,7 +757,7 @@ def activate_turnwheel(self: Event, force: bool = True, flags=None):
 def battle_save(self: Event, save_name: Optional[str] = None, flags=None):
     flags = flags or set()
     if save_name:
-        self.game.memory['save_name'] = save_name
+        self.game.game_vars['_save_name'] = save_name
     if 'immediately' in flags:
         self.state = 'paused'
         self.game.memory['save_kind'] = 'battle'
@@ -1539,6 +1539,7 @@ def give_item(self: Event, global_unit_or_convoy, item, party=None, flags=None):
                 action.do(action.GiveItem(unit, item))
                 self.game.memory['item_discard_current_unit'] = unit
                 self.game.memory['item_discard_new_item'] = item
+                self.game.memory['item_discard_force_give'] = True if 'force_give' in flags else False
                 self.game.state.change('item_discard')
                 self.state = 'paused'
                 if banner_flag:
@@ -2918,6 +2919,8 @@ def prep(self: Event, pick_units_enabled: bool = False, music: SongPrefab | Song
 
     if 'gba' in flags:
         self.game.state.change('prep_gba_main')
+        self.game.memory['prep_gba_disp'] = ['' if 'no_obj_disp' in flags else self.game.level.objective['simple'],
+                                             '' if 'no_chap_disp' in flags else self.game.level.name]
     else:
         self.game.state.change('prep_main')
     self.state = 'paused'  # So that the message will leave the update loop
@@ -3230,6 +3233,7 @@ def remove_table(self: Event, nid, flags=None):
 
 def text_entry(self: Event, nid: NID, string: str, positive_integer:int=16, illegal_character_list: Optional[List[str]]=None, default_string: Optional[str]=None, flags:Optional[set[str]]=None):
     flags = flags or set()
+    illegal_character_list = illegal_character_list or list()
 
     header = string
     limit = positive_integer
