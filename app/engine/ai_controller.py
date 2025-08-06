@@ -1,7 +1,7 @@
 import logging
 import functools
 import math
-from typing import Collection, List
+from typing import List, Set
 
 from app.constants import FRAMERATE
 from app.data.database.database import DB
@@ -219,7 +219,7 @@ class AIController():
         else:
             return False
 
-    def get_true_valid_moves(self) -> Collection[Point]:
+    def get_true_valid_moves(self) -> Set[Pos]:
         # Guard AI
         if self.behaviour and self.behaviour.view_range == -1 and not game.ai_group_active(self.unit.ai_group):
             return {self.unit.position}
@@ -348,7 +348,7 @@ class AIController():
         return SecondaryAI(self.unit, self.behaviour)
 
 class PrimaryAI():
-    def __init__(self, unit: UnitObject, valid_moves, behaviour):
+    def __init__(self, unit: UnitObject, valid_moves: Set[Pos], behaviour):
         self.max_tp = 0
 
         self.unit: UnitObject = unit
@@ -359,11 +359,12 @@ class PrimaryAI():
         if self.behaviour.action == "Attack":
             self.items = [item for item in item_funcs.get_all_items(self.unit) if
                           item_funcs.available(self.unit, item)]
-            self.items = self.items + [item_system.extra_command(self.unit, item) for item in item_funcs.get_all_items(self.unit) if
-                                       item_system.extra_command(self.unit, item) and item_funcs.available(self.unit, item_system.extra_command(self.unit, item))]
+            self.items += [item_system.extra_command(self.unit, item) for item in item_funcs.get_all_items(self.unit) if
+                           item_system.extra_command(self.unit, item) and item_funcs.available(self.unit, item_system.extra_command(self.unit, item))]
             self.extra_abilities = skill_system.get_extra_abilities(self.unit)
             for ability in self.extra_abilities.values():
                 self.items.append(ability)
+
         elif self.behaviour.action == 'Support':
             self.items = [item for item in item_funcs.get_all_items(self.unit) if
                           item_funcs.available(self.unit, item)]
@@ -372,6 +373,7 @@ class PrimaryAI():
             self.extra_abilities = skill_system.get_extra_abilities(self.unit)
             for ability in self.extra_abilities.values():
                 self.items.append(ability)
+                
         elif self.behaviour.action == 'Steal':
             self.items = []
             self.extra_abilities = skill_system.get_extra_abilities(self.unit)

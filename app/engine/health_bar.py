@@ -234,10 +234,10 @@ class MapCombatInfo():
         team = game.teams.get(unit.team)
 
         self.stats_surf = None
-        self.bg_surf = SPRITES.get('health_' + team.combat_color).convert_alpha()
-        self.hit_and_mt_surf = SPRITES.get('combat_stats_' + team.combat_color).convert_alpha()
-        self.guard_surf = SPRITES.get('combat_stats_guard_' + team.combat_color).convert_alpha()
-        self.gem = SPRITES.get('combat_gem_' + team.combat_color).convert_alpha()
+        self.bg_surf = SPRITES.get('health_' + team.combat_color, 'health_blue').convert_alpha()
+        self.hit_and_mt_surf = SPRITES.get('combat_stats_' + team.combat_color, 'combat_stats_blue').convert_alpha()
+        self.guard_surf = SPRITES.get('combat_stats_guard_' + team.combat_color, 'combat_stats_guard_blue').convert_alpha()
+        self.gem = SPRITES.get('combat_gem_' + team.combat_color, 'combat_gem_blue').convert_alpha()
 
     def reset(self):
         self.draw_method = None

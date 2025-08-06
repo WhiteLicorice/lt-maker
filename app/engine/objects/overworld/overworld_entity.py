@@ -19,6 +19,7 @@ class OverworldEntityTypes(Enum):
     PARTY = 'party'
     ENCOUNTER = 'encounter'
     UNIT = 'unit'
+    UNIT_OBJ = 'unit_obj'
 
 class OverworldEntityObject():
     def __init__(self):
@@ -78,8 +79,31 @@ class OverworldEntityObject():
         if not unit:
             logging.error("OverworldEntityObject cannot find unit %s, using default unit %s", unit_nid, DB.units.values()[0].nid)
             unit = DB.units.values()[0]
+
         entity.sprite = OverworldUnitSprite(unit, entity, team)
 
+        entity.display_position = initial_position
+
+        from app.engine import unit_sound
+        entity.sound = unit_sound.UnitSound(unit)
+        return entity
+
+    @classmethod
+    def from_unit_object(cls, nid: NID, initial_position: Point, unit_nid: NID, unit_registry: Dict[NID, UnitObject]):
+        if unit_nid in unit_registry:
+            unit = unit_registry[unit_nid]
+        else:
+            logging.error("OverworldEntityObject cannot find unit %s, trying prefab...", unit_nid)
+            return cls.from_unit_prefab(nid, initial_position, unit_nid, 'player')
+
+        entity = cls()
+        entity.nid = nid
+        entity.dnid = unit.nid
+        entity.dtype = OverworldEntityTypes.UNIT_OBJ
+        entity.team = unit.team
+
+        entity.sprite = OverworldUnitSprite(unit, entity, team)
+        
         entity.display_position = initial_position
 
         from app.engine import unit_sound
@@ -111,6 +135,10 @@ class OverworldEntityObject():
             entity_position = s_dict['position']
             entity_object = OverworldEntityObject.from_unit_prefab(entity_nid, entity_position, prefab_nid, s_dict['team'])
             return entity_object
+        elif entity_dtype == OverworldEntityTypes.UNIT_OBJ:
+            entity_position = s_dict['position']
+            entity_object = OverworldEntityObject.from_unit_object(entity_nid, entity_position, prefab_nid, game.unit_registry)
+            return entity_object
         else:
             raise TypeError("Unknown OverworldEntityType")
 
@@ -136,7 +164,7 @@ class OverworldEntityObject():
     def prefab(self):
         if self.dtype == OverworldEntityTypes.PARTY:
             return DB.parties.get(self.dnid)
-        elif self.dtype == OverworldEntityTypes.UNIT:
+        elif self.dtype in (OverworldEntityTypes.UNIT, OverworldEntityTypes.UNIT_OBJ):
             return DB.units.get(self.dnid)
         else:
             raise TypeError("Unknown OverworldEntityType")

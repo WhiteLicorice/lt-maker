@@ -132,7 +132,7 @@ class EventPortrait():
             distance -= change
         return utils.frames2ms(counter)
 
-    def talk(self):
+    def start_talking(self):
         self.talk_on = True
 
     def stop_talking(self):

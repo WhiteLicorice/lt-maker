@@ -4,7 +4,7 @@ from app.engine.sprites import SPRITES
 from app.engine.fonts import FONT
 from app.engine.state import MapState
 
-from app.engine import menus, action, base_surf, engine
+from app.engine import menus, action, base_surf, engine, banner
 from app.engine.game_state import game
 
 class TextEntryState(MapState):
@@ -13,7 +13,9 @@ class TextEntryState(MapState):
     keyboard_mode_sprite = SPRITES.get('focus_fade')
 
     def start(self):
-        self.constant_id, self.header, self.character_limit, illegal_characters, self.force_entry, self.default_string = game.memory['text_entry']
+        self.constant_id, self.header, self.character_limit, illegal_characters, \
+            self.force_entry, self.default_string, self.minimum_character_limit \
+            = game.memory['text_entry']
         self.menu = menus.KeyboardMenu(self.header, self.character_limit, illegal_characters)
         self.bg_surf, self.topleft = self.create_bg_surf()
         self.keyboard_mode = False
@@ -97,9 +99,15 @@ class TextEntryState(MapState):
                     self._add(selection)
 
             elif event == 'START':
-                game.memory['text_entry_menu'] = (self.constant_id, self.menu.name)
-                game.state.change('text_confirm')
-                get_sound_thread().play_sfx('Select 2')
+                if len(self.menu.name) < self.minimum_character_limit:
+                    get_sound_thread().play_sfx('Error')
+                    alert = banner.Custom(f"Enter at least {self.minimum_character_limit} characters!")
+                    game.alerts.append(alert)
+                    game.state.change('alert')
+                else:
+                    get_sound_thread().play_sfx('Select 2')
+                    game.memory['text_entry_menu'] = (self.constant_id, self.menu.name)
+                    game.state.change('text_confirm')
 
             #Exits text entry without saving a value. Dev must dictate whether this is available by setting the flag in the event.
             elif event == 'AUX' and not self.force_entry:

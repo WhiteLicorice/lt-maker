@@ -3,7 +3,7 @@ from typing import Dict, List, Optional, Tuple
 
 import app.engine.config as cf
 from app.engine import engine
-from app.engine.objects.overworld import OverworldEntityObject
+from app.engine.objects.overworld_entity import OverworldEntityObject
 from .overworld_manager import OverworldManager
 from app.engine.sound import get_sound_thread
 from app.utilities import utils

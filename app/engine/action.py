@@ -534,7 +534,10 @@ class SetGameVar(Action):
     def __init__(self, nid, val):
         self.nid = nid
         self.val = val
-        self.old_val = game.game_vars[self.nid]
+        if self.nid in game.game_vars:
+            self.old_val = game.game_vars[self.nid]
+        else:
+            self.old_val = None
 
     def do(self):
         game.game_vars[self.nid] = self.val
@@ -549,7 +552,10 @@ class SetLevelVar(Action):
     def __init__(self, nid, val):
         self.nid = nid
         self.val = val
-        self.old_val = game.level_vars[self.nid]
+        if sef.nid in game.level_vars:
+            self.old_val = game.level_vars[self.nid]
+        else:
+            self.old_val = None
 
     def _update_fog_of_war(self):
         if self.nid in self.fog_nids:

@@ -3231,12 +3231,13 @@ def table(self: Event, nid: NID, table_data: str, title: str = None,
 def remove_table(self: Event, nid, flags=None):
     self.other_boxes = [(bnid, box) for (bnid, box) in self.other_boxes if bnid != nid]
 
-def text_entry(self: Event, nid: NID, string: str, positive_integer:int=16, illegal_character_list: Optional[List[str]]=None, default_string: Optional[str]=None, flags:Optional[set[str]]=None):
+def text_entry(self: Event, nid: NID, string: str, character_limit: int = 16, 
+               illegal_character_list: Optional[List[str]] = None, default_string: Optional[str] = None, 
+               minimum_character_limit: int = 1, flags: Optional[set[str]] = None):
     flags = flags or set()
     illegal_character_list = illegal_character_list or list()
 
     header = string
-    limit = positive_integer
     force_entry = 'force_entry' in flags
     
     # Check if the dev is violating their own established ruleset lmao
@@ -3248,7 +3249,7 @@ def text_entry(self: Event, nid: NID, string: str, positive_integer:int=16, ille
             self.logger.error(f"text_entry: default_string {default_string} violates established restrictions!")
             default_string = None
 
-    self.game.memory['text_entry'] = (nid, header, limit, illegal_character_list or [], force_entry, default_string)
+    self.game.memory['text_entry'] = (nid, header, character_limit, illegal_character_list or [], force_entry, default_string, minimum_character_limit)
     self.game.state.change('text_entry')
     self.state = 'paused'
 

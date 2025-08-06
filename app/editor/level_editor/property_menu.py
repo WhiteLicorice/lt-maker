@@ -50,7 +50,7 @@ class MusicDialog(SimpleDialog):
     def set_current(self, current):
         self.current = current
         for key, value in self.current.music.items():
-            if value:
+            if key in self.boxes and value:
                 self.boxes[key].edit.setText(value)
 
     def access_music_resources(self, key):

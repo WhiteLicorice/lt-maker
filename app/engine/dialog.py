@@ -363,11 +363,6 @@ class Dialog:
             self.y_offset = 16
         else:
             self.state = DialogState.PROCESS
-            if self.portrait:
-                if self.should_move_mouth:
-                    self.portrait.talk()
-                else:
-                    self.portrait.stop_talking()
         self._add_text_indices(whitespace)
 
     def _done_processing(self):
@@ -377,6 +372,10 @@ class Dialog:
         if self._done_processing():
             self.pause_before_wait()
             return
+
+        if self.portrait:
+            self.portrait.stop_talking()  # We will turn this back on if we reach a spoken character
+
         command = self.text_commands[self.text_index]
         if command in ("{br}", "{break}", "{sub_break}"):
             self._next_line()
@@ -390,11 +389,6 @@ class Dialog:
             self.command_pause()
         elif command == "{tgm}":
             self.should_move_mouth = not self.should_move_mouth
-            if self.portrait:
-                if self.should_move_mouth:
-                    self.portrait.talk()
-                else:
-                    self.portrait.stop_talking()
         elif command == "{tgs}":
             self.should_speak_sound = not self.should_speak_sound
         elif command == "{max_speed}":
@@ -414,6 +408,8 @@ class Dialog:
                 self._next_line(True)
             else:
                 self._increment_text_indices()
+                if self.should_speak_sound and self.portrait:
+                    self.portrait.start_talking()
                 if sound:
                     self.play_talk_boop(self.boop_sound)
         elif command in (".", ",", ";", "!", "?"):
@@ -421,6 +417,8 @@ class Dialog:
             self.pause()
         else:
             self._increment_text_indices()
+            if self.should_speak_sound and self.portrait:
+                self.portrait.start_talking()
             if sound:
                 self.play_talk_boop(self.boop_sound)
         self.text_index += 1
@@ -481,8 +479,6 @@ class Dialog:
     def command_unpause(self):
         if self.state == DialogState.COMMAND_PAUSE:
             self.state = DialogState.PROCESS
-            if self.portrait and self.should_move_mouth:
-                self.portrait.talk()
 
     def start_processing(self):
         if self.state == DialogState.TRANSITION_IN:
@@ -501,11 +497,6 @@ class Dialog:
                 self.state = DialogState.DONE
             else:
                 self.state = DialogState.PROCESS
-                if self.portrait:
-                    if self.should_move_mouth:
-                        self.portrait.talk()
-                    else:
-                        self.portrait.stop_talking()
 
     def play_talk_boop(self, boop=None):
         if (cf.SETTINGS["talk_boop"]
@@ -553,22 +544,12 @@ class Dialog:
         elif self.state == DialogState.PAUSE:  # Regular pause for periods
             if current_time - self.last_update > self.pause_time:
                 self.state = DialogState.PROCESS
-                if self.portrait:
-                    if self.should_move_mouth:
-                        self.portrait.talk()
-                    else:
-                        self.portrait.stop_talking()
 
         elif self.state == DialogState.NEW_LINE:
             # Update y_offset
             self.y_offset = max(0, self.y_offset - 2)
             if self.y_offset == 0:
                 self.state = DialogState.PROCESS
-                if self.portrait:
-                    if self.should_move_mouth:
-                        self.portrait.talk()
-                    else:
-                        self.portrait.stop_talking()
 
         self.cursor_offset_index = (self.cursor_offset_index + 1) % len(
             self.cursor_offset)

@@ -2027,6 +2027,7 @@ class KeyboardMenu(Table):
             FONT['text-grey'].blit("Nothing", surf, (self.topleft[0] + 16, self.topleft[1] + 4))
 
         FONT['text'].blit(self.name, surf, (6, 20))
+
         if len(self.name) < self.character_limit:
             self.draw_underscore(surf)
 

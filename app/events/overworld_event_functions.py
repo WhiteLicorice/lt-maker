@@ -222,12 +222,18 @@ def create_overworld_entity(self: Event, nid, unit=None, team=None, flags=None):
         self.logger.error('%s: Entity with nid %s already exists', 'create_overworld_entity', nid)
         return
     if unit:
-        if unit not in DB.units:
+        if unit in game.unit_registry:
+            new_entity = OverworldEntityObject.from_unit_object(nid, None, unit, game.unit_registry)
+
+        elif unit in DB.units:
+            if team not in DB.teams:
+                team = 'player'
+            new_entity = OverworldEntityObject.from_unit_prefab(nid, None, unit, team)
+
+        else:
             self.logger.error('%s: No such unit with nid %s', 'create_overworld_entity', unit)
             return
-        if team not in DB.teams:
-            team = 'player'
-        new_entity = OverworldEntityObject.from_unit_prefab(nid, None, unit, team)
+
         game.overworld_controller.add_entity(new_entity)
 
 def disable_overworld_entity(self: Event, nid, flags=None):
