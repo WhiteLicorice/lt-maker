@@ -80,12 +80,18 @@ class ActionLog():
         self.hard_remove(action)
         # When the player reverses their Move action by pressing B in the Menu State
         # you also need to remove the hanging MarkActionGroupStart action
-        top_action = self.actions[-1]
-        if isinstance(top_action, Action.MarkActionGroupStart):
-            top_action.reverse()
-            self.actions.remove(top_action)
-            self.action_index -= 1
-            logging.debug("New Action Index: %d after removing the action group start marker", self.action_index)
+        counter = -1
+        top_action = self.actions[counter]
+        while isinstance(top_action, Action.MarkActionGroupStart) or top_action.persist_through_menu_cancel:
+            if isinstance(top_action, Action.MarkActionGroupStart):
+                top_action.reverse()
+                self.actions.remove(top_action)
+                self.action_index -= 1
+                logging.debug("New Action Index: %d after removing the action group start marker", self.action_index)
+                break
+            else:  # Handle persisting actions that are still on top after the hard remove
+                counter -= 1
+                top_action = self.actions[counter]
 
     def run_action_backward(self):
         action = self.actions[self.action_index]
@@ -157,8 +163,6 @@ class ActionLog():
 
         for action_index in range(max(0, first_free_action), len(actions)):
             action = actions[action_index]
-            # Only regular moves, not CantoMove or other nonsense gets counted
-            # Event moves aren't considered a real move
             if isinstance(action, Action.MarkActionGroupStart):
                 if current_move:
                     finalize(current_move)
