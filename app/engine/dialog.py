@@ -408,7 +408,7 @@ class Dialog:
                 self._next_line(True)
             else:
                 self._increment_text_indices()
-                if self.should_speak_sound and self.portrait:
+                if self.should_move_mouth and self.portrait:
                     self.portrait.start_talking()
                 if sound:
                     self.play_talk_boop(self.boop_sound)
@@ -417,7 +417,7 @@ class Dialog:
             self.pause()
         else:
             self._increment_text_indices()
-            if self.should_speak_sound and self.portrait:
+            if self.should_move_mouth and self.portrait:
                 self.portrait.start_talking()
             if sound:
                 self.play_talk_boop(self.boop_sound)

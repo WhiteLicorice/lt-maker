@@ -102,7 +102,7 @@ class OverworldEntityObject():
         entity.dtype = OverworldEntityTypes.UNIT_OBJ
         entity.team = unit.team
 
-        entity.sprite = OverworldUnitSprite(unit, entity, team)
+        entity.sprite = OverworldUnitSprite(unit, entity, unit.team)
         
         entity.display_position = initial_position
 
@@ -131,7 +131,7 @@ class OverworldEntityObject():
             entity_object = OverworldEntityObject.from_party_prefab(on_node_nid, prefab_nid, game.unit_registry)
             entity_object.team = s_dict['team']
             return entity_object
-        elif entity_dtype == OverworldEntityTypes.UNIT: # dummy entity
+        elif entity_dtype == OverworldEntityTypes.UNIT:  # dummy entity
             entity_position = s_dict['position']
             entity_object = OverworldEntityObject.from_unit_prefab(entity_nid, entity_position, prefab_nid, s_dict['team'])
             return entity_object
