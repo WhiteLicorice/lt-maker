@@ -1010,8 +1010,8 @@ class PrepTradeSelectState(State):
     def draw(self, surf):
         if self.bg:
             self.bg.draw(surf)
-        menus.draw_unit_items(surf, (6, 52), self.unit, include_face=True, shimmer=2)
-        menus.draw_unit_items(surf, (126, 52), self.menu.get_current(), include_face=True, right=False, shimmer=2)
+        menus.draw_unit_items(surf, (6, 72), self.unit, include_face=True, shimmer=2)
+        menus.draw_unit_items(surf, (126, 72), self.menu.get_current(), include_face=True, right=False, shimmer=2)
 
         self.menu.draw(surf)
 
