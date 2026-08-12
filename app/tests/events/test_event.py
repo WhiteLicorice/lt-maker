@@ -272,5 +272,41 @@ class EventUnitTests(unittest.TestCase):
         add_unit_command = add_unit("Eirika", "2,5", "Normal")
         self.MACRO_test_event([add_unit_command])
 
+    def MACRO_test_has_visited(self, unit_arg):
+        from app.engine.game_state import GameState
+        from app.events import event_functions
+
+        unit = MagicMock()
+        unit.nid = 'Eirika'
+        unit.dead = False
+        unit.is_dying = False
+        unit.position = (1, 1)
+        units = {unit.nid: unit}
+        # game.get_unit is keyed by nid, exactly as it is in a real game
+        self.game.get_unit = lambda nid: units.get(nid) if isinstance(nid, str) else None
+        self.game.check_alive = GameState.check_alive.__get__(self.game)
+        self.game.level_vars = {}
+        self.game.state = MagicMock()
+        self.game.cursor = MagicMock()
+
+        event = self.create_event_from_script([])
+        with patch.object(event_functions, 'action') as mock_action, \
+                patch.object(event_functions, 'skill_system') as mock_skill_system:
+            mock_skill_system.has_canto.return_value = False
+            event_functions.has_visited(event, unit_arg, flags=set())
+        return mock_action
+
+    def test_has_visited_ends_turn(self):
+        '''
+        has_visited must end the visiting unit's turn whether it was handed a nid
+        (regular eventing) or the unit object itself (Python eventing)
+        '''
+        mock_action = self.MACRO_test_has_visited('Eirika')
+        self.assertEqual(1, mock_action.Wait.call_count)
+
+    def test_has_visited_ends_turn_with_unit_object(self):
+        mock_action = self.MACRO_test_has_visited(MagicMock(nid='Eirika'))
+        self.assertEqual(1, mock_action.Wait.call_count)
+
 if __name__ == '__main__':
     unittest.main()

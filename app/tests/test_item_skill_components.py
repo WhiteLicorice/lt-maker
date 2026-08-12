@@ -431,5 +431,41 @@ class ItemSkillComponentTests(unittest.TestCase):
         no_tag_skill = SkillObject("test", "Test", "Test", None, (0, 0), Data())
         self.assertFalse('skill' in no_tag_skill.tags)
 
+    def test_shove_on_end_combat_shoves_splash_targets(self) -> None:
+        '''
+        With a splash component there may be no main defender at all (spell blast
+        returns None as the main target), so the units to shove can only be found
+        from the on_hit calls -- not from cleanup_combat's `target` argument.
+        '''
+        from app.engine.item_components import hit_components
+        component = hit_components.ShoveOnEndCombat(1)
+
+        unit = MagicMock()
+        unit.position = (0, 0)
+        near = MagicMock()
+        near.position = (1, 0)
+        far = MagicMock()
+        far.position = (2, 0)
+
+        playback: List[Any] = []
+        with patch.object(hit_components, 'action') as mock_action, \
+                patch.object(hit_components, 'skill_system') as mock_skill_system, \
+                patch.object(hit_components, 'game') as mock_game:
+            mock_skill_system.ignore_forced_movement.return_value = False
+            mock_game.query_engine.check_shove.side_effect = \
+                lambda target, anchor_pos, magnitude: (target.position[0] + magnitude, target.position[1])
+
+            for target in (near, far):
+                component.on_hit([], [], unit, None, target, None, target.position, 'attack', None)
+            # No main defender -- every unit hit was a splash target
+            component.cleanup_combat(playback, unit, None, None, None, 'attack')
+
+            # Farthest target shoved first, so the near unit doesn't stop short against it
+            self.assertEqual([((far, (3, 0)),), ((near, (2, 0)),)],
+                             [(c.args,) for c in mock_action.ForcedMovement.call_args_list])
+        self.assertEqual(2, len(playback))
+        # Targets are not carried over into the next combat
+        self.assertFalse(component._did_hit)
+
 if __name__ == '__main__':
     unittest.main()

@@ -226,3 +226,11 @@ class ShowDisadvantageArrow(ItemComponent):
     
     def show_weapon_disadvantage(self, unit, item, target, item2):
         return True
+
+class SpecialArticle(ItemComponent):
+    nid = 'special_article'
+    desc = 'Causes the article in the banner to be this string'
+    tag = ItemTags.AESTHETIC
+
+    expose = ComponentType.String
+    value = ''

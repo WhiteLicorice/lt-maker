@@ -247,6 +247,51 @@ class AddRemoveSkillTests(unittest.TestCase):
             self.assertNotIn(aura_child, self.test_unit.all_skills)
             self.assertIn(klass_skill, self.test_unit.all_skills)
 
+    def _add_rescue_skill(self, traveler_nid):
+        AddSkill(self.test_unit, 'Rescue', source=traveler_nid, source_type=SourceType.TRAVELER).do()
+        self.assertIn('Rescue', [s.nid for s in self.test_unit.all_skills])
+
+    def test_separate_removes_rescue_skill(self):
+        '''
+        Separating from a *rescued* traveler must take the Rescue skill off the
+        carrier. TRAVELER skills are only removable via their exact source, so a
+        Separate that clears unit.traveler without removing the skill leaves an
+        orphan that can never be removed again (the captured-unit Rescue bug).
+        '''
+        from app.engine.action import Separate
+        with unittest.mock.patch('app.engine.action.ResetUnitVars', FakeResetUnitVars), \
+                unittest.mock.patch('app.engine.action.Wait', FakeResetUnitVars), \
+                unittest.mock.patch('app.engine.action.skill_system', new=MagicMock()), \
+                unittest.mock.patch('app.engine.action.game', new=MagicMock()):
+            droppee = MagicMock()
+            droppee.nid = 'Traveler'
+            self.test_unit.traveler = droppee.nid
+            self._add_rescue_skill(droppee.nid)
+
+            Separate(self.test_unit, droppee, None, with_wait=False).do()
+
+            self.assertIsNone(self.test_unit.traveler)
+            self.assertNotIn('Rescue', [s.nid for s in self.test_unit.all_skills])
+
+    def test_drop_removes_rescue_skill_when_executed(self):
+        '''
+        Drop.execute() (used by the turnwheel and by end of chapter cleanup) must
+        remove the Rescue skill too, not just Drop.do().
+        '''
+        from app.engine.action import Drop
+        with unittest.mock.patch('app.engine.action.ResetUnitVars', FakeResetUnitVars), \
+                unittest.mock.patch('app.engine.action.skill_system', new=MagicMock()), \
+                unittest.mock.patch('app.engine.action.game', new=MagicMock()):
+            droppee = MagicMock()
+            droppee.nid = 'Traveler'
+            self.test_unit.traveler = droppee.nid
+            self._add_rescue_skill(droppee.nid)
+
+            Drop(self.test_unit, droppee, (1, 1)).execute()
+
+            self.assertIsNone(self.test_unit.traveler)
+            self.assertNotIn('Rescue', [s.nid for s in self.test_unit.all_skills])
+
 
 if __name__ == '__main__':
     unittest.main()

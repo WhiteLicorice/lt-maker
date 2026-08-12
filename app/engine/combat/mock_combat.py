@@ -56,12 +56,9 @@ class MockCombat():
         self.damage = 0
 
     def create_background(self):
-        res = RESOURCES.panoramas.get('promotion_background')
-        img = None
-        if res:
-            img = engine.image_load(res.full_image)
-        if img:
-            self.bg = background.SpriteBackground(img, fade=False)
+        panorama = RESOURCES.panoramas.get('promotion_background')
+        if panorama:
+            self.bg = background.PanoramaBackground(panorama)
         else:
             self.bg = background.create_background('default_background')
 

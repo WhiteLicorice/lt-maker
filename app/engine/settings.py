@@ -172,15 +172,15 @@ class SettingsMenuState(State):
                     if self.current_menu.move_up(first_push):
                         get_sound_thread().play_sfx('Select 6')
             elif 'LEFT' in directions:
-                if self.current_menu.move_left():
+                did_change = self.current_menu.move_left()
+                self.update_volume_option()
+                if did_change:
                     get_sound_thread().play_sfx('Select 6')
-                if self.current_menu.get_current_option().name in ('music_volume', 'sound_volume'):
-                    self.update_sound()
             elif 'RIGHT' in directions:
-                if self.current_menu.move_right():
+                did_change = self.current_menu.move_right()
+                self.update_volume_option()
+                if did_change:
                     get_sound_thread().play_sfx('Select 6')
-                if self.current_menu.get_current_option().name in ('music_volume', 'sound_volume'):
-                    self.update_sound()
 
             elif event == 'BACK':
                 self.back()
@@ -191,10 +191,13 @@ class SettingsMenuState(State):
                     self.state = 'get_input'
                     get_input_manager().set_change_keymap(True)
                 elif self.state == 'config':
-                    get_sound_thread().play_sfx('Select 6')
                     self.current_menu.move_next()
-                    if self.current_menu.get_current_option().name in ('music_volume', 'sound_volume'):
-                        self.update_sound()
+                    self.update_volume_option()
+                    get_sound_thread().play_sfx('Select 6')
+
+    def update_volume_option(self):
+        if self.current_menu.get_current_option().name in ('music_volume', 'sound_volume'):
+            self.update_sound()
 
     def back(self):
         get_sound_thread().play_sfx('Select 4')

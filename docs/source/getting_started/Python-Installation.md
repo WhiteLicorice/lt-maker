@@ -147,7 +147,7 @@ python run_engine.py
 ```
 from within the "lt-maker" directory.
 
-The engine main screen should pop up and you should be able to play the Lion Throne.
+The engine main screen should pop up and you should be able to play the first five chapters of Sacred Stones.
 
 ![TitleScreen](images/TitleScreen.png)
 

@@ -638,7 +638,9 @@ def build_new_game(slot: int):
         game.game_vars['_next_level_nid'] = first_level_nid
 
     save.suspend_game(game, 'start', slot)
-    save.remove_suspend()
+    # The old suspend belongs to a playthrough that no longer exists, so it has to
+    # go even in debug -- resuming it would drop you back into the overwritten game
+    save.delete_suspend()
 
 class TitleNewState(TitleLoadState):
     name = 'title_new'

@@ -333,14 +333,22 @@ class Config(Controls):
                 option.help_box = help_menu.HelpDialog(info_descs[idx])
             self.options.append(option)
 
+    # These return whether the option's value actually changed, so that the
+    # settings menu knows whether to play its scroll sound
     def move_left(self):
         option = self.get_current_option()
+        old_value = option.get_value()
         option.move_left()
+        return option.get_value() != old_value
 
     def move_right(self):
         option = self.get_current_option()
+        old_value = option.get_value()
         option.move_right()
+        return option.get_value() != old_value
 
     def move_next(self):
         option = self.get_current_option()
+        old_value = option.get_value()
         option.move_next()
+        return option.get_value() != old_value

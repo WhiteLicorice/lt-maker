@@ -430,5 +430,13 @@
     {
         "nid": "forecast_desc",
         "text": "What information is shown in the battle forecast."
+    },
+    {
+        "nid": "display_fps_desc",
+        "text": "Show frames per second."
+    },
+    {
+        "nid": "battle_bg_desc",
+        "text": "Display battle background during combat."
     }
 ]

@@ -2,7 +2,7 @@ import os
 
 from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout, QListView, QDialog, \
     QPushButton, QFileDialog, QMessageBox, QGroupBox, QFormLayout, QSpinBox, \
-    QCheckBox
+    QCheckBox, QInputDialog
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap, QIcon, QImage, QPainter
 
@@ -39,6 +39,8 @@ class FrameModel(ResourceCollectionModel):
         return None
 
 class FrameSelector(Dialog):
+    NEW_PALETTE_OPTION = "<Create a new palette>"
+
     def __init__(self, combat_anim, weapon_anim, parent=None):
         super().__init__(parent)
         self.window = parent
@@ -213,6 +215,48 @@ class FrameSelector(Dialog):
         else:
             return None, False
 
+    def ask_for_palette(self, all_palette_colors):
+        """
+        Called when none of this animation's palettes match the colors of the
+        frames being imported.
+        Returns None if the user would rather not import after all.
+        """
+        options = [name for name, nid in self.combat_anim.palettes]
+        options.append(self.NEW_PALETTE_OPTION)
+        current_idx = 0
+        for idx, (name, nid) in enumerate(self.combat_anim.palettes):
+            if nid == self.current_palette_nid:
+                current_idx = idx
+                break
+        choice, ok = QInputDialog.getItem(
+            self, "Unrecognized Palette",
+            "These frames don't match any palette of %s.\n"
+            "Which palette should they be imported into?" % self.combat_anim.nid,
+            options, current_idx, False)
+        if not ok:
+            return None
+        if choice == self.NEW_PALETTE_OPTION:
+            return self.create_palette(all_palette_colors)
+        for name, nid in self.combat_anim.palettes:
+            if name == choice:
+                self.current_palette_nid = nid
+                return RESOURCES.combat_palettes.get(nid)
+        return None
+
+    def create_palette(self, all_palette_colors):
+        nid = utilities.get_next_name("New Palette", RESOURCES.combat_palettes.keys())
+        my_palette = combat_palettes.Palette(nid)
+        RESOURCES.combat_palettes.append(my_palette)
+        # The name matters -- the engine picks an animation's palette by matching
+        # it against the unit's name, nid, variant or team palette, so two
+        # palettes sharing a name makes the second one unreachable
+        palette_name = utilities.get_next_name(
+            "New Palette", [name for name, _ in self.combat_anim.palettes])
+        self.combat_anim.palettes.append([palette_name, my_palette.nid])
+        self.current_palette_nid = my_palette.nid
+        my_palette.assign_colors(all_palette_colors)
+        return my_palette
+
     def import_frames(self):
         starting_path = self.settings.get_last_open_path()
         fns, ok = QFileDialog.getOpenFileNames(self.window, "Select Frames", starting_path, "PNG Files (*.png);;All Files(*)")
@@ -235,6 +279,9 @@ class FrameSelector(Dialog):
                     error = True
                     QMessageBox.critical(self.window, "File Type Error!", "Frame must be PNG format!")
 
+            if not pixmaps:
+                return
+
             # Now determine palette to use for ingestion
             all_palette_colors = editor_utilities.find_palette_from_multiple([pix.toImage() for pix in pixmaps])
             my_palette = None
@@ -243,13 +290,10 @@ class FrameSelector(Dialog):
                 if palette and palette.is_similar(all_palette_colors):
                     my_palette = palette
                     break
-            else:
-                nid = utilities.get_next_name("New Palette", RESOURCES.combat_palettes.keys())
-                my_palette = combat_palettes.Palette(nid)
-                RESOURCES.combat_palettes.append(my_palette)
-                self.combat_anim.palettes.append(["New Palette", my_palette.nid])
-                self.current_palette_nid = my_palette.nid
-                my_palette.assign_colors(all_palette_colors)
+            if not my_palette:
+                my_palette = self.ask_for_palette(all_palette_colors)
+                if not my_palette:
+                    return
 
             convert_dict = editor_utilities.get_color_conversion(my_palette)
             for idx, pix in enumerate(pixmaps):

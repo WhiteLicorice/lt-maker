@@ -6,7 +6,7 @@ _last updated 2022-04-28_
 
 ![SummonItemScreenshot](./images/Summoning/SummonItemScreenshot.png)
 
-Items can call an event when they hit using the *Event on Hit* component. Assign this component to the item you want to do the summoning. For summoning a generic phantom, you'll want to make sure the item targets an empty space using the *Empty Tile Target Restrict* component. 
+Items can call an event when they hit using the *Event Before Hit* component. Assign this component to the item you want to do the summoning. For summoning a generic phantom, you'll want to make sure the item targets an empty space using the *Empty Tile Target Restrict* component. 
 
 ![GlobalSummonEvent](./images/Summoning/SummonEventScreenshot.png)
 

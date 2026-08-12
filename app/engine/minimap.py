@@ -290,7 +290,7 @@ class MiniMap(object):
             return self.get_sprite(pos)
         # Error!
         else:
-            print("Error! Unrecognized Minimap Key %s" % key)
+            print(f"Error! Unrecognized Minimap Key: {key}")
 
     def build_units(self, units):
         for unit in units:

@@ -233,12 +233,23 @@ def get_all_saves():
     return save_slots
 
 def remove_suspend():
+    """
+    Consumes the suspend once it's been loaded.
+    Debug keeps it around so it can be resumed again
+    """
     if not cf.SETTINGS['debug'] and os.path.exists(SUSPEND_LOC):
         os.remove(SUSPEND_LOC)
 
 def delete_suspend():
+    """
+    Throws the suspend away for good, even in debug.
+    For when the state it points at no longer exists, like on a new game
+    """
+    save_loc = SUSPEND_LOC[:-4]
     if os.path.exists(SUSPEND_LOC):
         os.remove(SUSPEND_LOC)
+    if os.path.exists(save_loc):
+        os.remove(save_loc)
 
 def delete_save(game_state, num: Optional[int] = None):
     """

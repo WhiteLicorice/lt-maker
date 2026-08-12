@@ -23,5 +23,10 @@ class Painter:
     def single_process(self, tilemap) -> None:
         pass
 
+    def quit_all_threads(self) -> None:
+        """Painters that solve in the background (MountainPainter) override this.
+        Called whenever the positions a painter solved for stop being valid."""
+        pass
+
     def get_coord(self, tilemap, pos: Pos) -> Pos:
         return self.base_coord

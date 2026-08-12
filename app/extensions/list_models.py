@@ -43,6 +43,10 @@ class VirtualListModel(QAbstractItemModel):
         pass
 
 class SingleListModel(VirtualListModel):
+    # When the rows must be nids from some catalog (skills, items, ...), the owner
+    # sets this to a valid one. A made up name would not be a legal value there
+    default_value = None
+
     def __init__(self, data, title, parent=None):
         super().__init__(parent)
         self.window = parent
@@ -54,16 +58,19 @@ class SingleListModel(VirtualListModel):
         self._data.pop(idx)
         self.layoutChanged.emit()
 
+    def create_new_value(self):
+        if self.default_value is not None:
+            return self.default_value
+        return str_utils.get_next_name("New %s" % self.title, self._data)
+
     def append(self):
-        new_row = str_utils.get_next_name("New %s" % self.title, self._data)
-        self._data.append(new_row)
+        self._data.append(self.create_new_value())
         self.layoutChanged.emit()
         last_index = self.index(self.rowCount() - 1, 0)
         self.window.view.setCurrentIndex(last_index)
 
     def new(self, idx):
-        new_row = str_utils.get_next_name("New %s" % self.title, self._data)
-        self._data.insert(idx + 1, new_row)
+        self._data.insert(idx + 1, self.create_new_value())
         self.layoutChanged.emit()
         new_index = self.index(idx + 1, 0)
         self.window.view.setCurrentIndex(new_index)
@@ -120,6 +127,9 @@ class DoubleListModel(VirtualListModel):
     Used for Type.Dict in item_component editor and
     skill_component editor.
     """
+    # See SingleListModel.default_value
+    default_value = None
+
     def __init__(self, data, headers, parent=None):
         super().__init__(parent)
         self.window = parent
@@ -162,7 +172,10 @@ class DoubleListModel(VirtualListModel):
         self.layoutChanged.emit()
 
     def create_new(self):
-        new_row = str_utils.get_next_name("%s" % self.title, [d[0] for d in self._data])
+        if self.default_value is not None:
+            new_row = self.default_value
+        else:
+            new_row = str_utils.get_next_name("%s" % self.title, [d[0] for d in self._data])
         self._data.append([new_row, 0])
 
     def new(self, idx):

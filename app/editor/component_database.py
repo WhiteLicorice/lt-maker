@@ -1,6 +1,6 @@
 from __future__ import annotations
 from functools import partial
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from PyQt5.QtCore import Qt, QSize, pyqtSignal
 from PyQt5.QtGui import QColor, QIcon, QPalette, QFont
@@ -639,6 +639,14 @@ class EventItemComponent(BoolItemComponent):
     def on_value_changed(self, index):
         self._data.value = self.editor.itemData(index)
 
+def get_first_valid_nid(delegate) -> Optional[NID]:
+    """The rows of these components are nids from the delegate's catalog, so a new
+    row must start as one of those rather than as an invented name"""
+    if not delegate:
+        return None
+    return next((obj.nid for obj in delegate.data), None)
+
+
 class ListItemComponent(BoolItemComponent):
     delegate = None
 
@@ -650,6 +658,7 @@ class ListItemComponent(BoolItemComponent):
         self.editor.view.setColumnWidth(0, 100)
         self.editor.view.setMaximumHeight(75)
         self.editor.model.nid_column = 0
+        self.editor.model.default_value = get_first_valid_nid(self.delegate)
 
         hbox.addWidget(self.editor)
 
@@ -667,6 +676,7 @@ class DictItemComponent(BoolItemComponent):
         self.editor.view.setColumnWidth(0, 100)
         self.editor.view.setMaximumHeight(75)
         self.editor.model.nid_column = 0
+        self.editor.model.default_value = get_first_valid_nid(self.delegate)
 
         hbox.addWidget(self.editor)
 

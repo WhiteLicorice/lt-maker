@@ -245,11 +245,13 @@ class AnimationCombat(BaseCombat, MockCombat):
 
         if self.state == 'init':
             self.start_combat()
+            # The cursor must be on the combat's view position before the attacker's
+            # sprite state changes, since that's where it takes its facing from
+            game.cursor.combat_show()
+            game.cursor.set_pos(self.view_pos)
             self.attacker.sprite.change_state('combat_attacker')
             self.defender.sprite.change_state('combat_defender')
             self.state = 'red_cursor'
-            game.cursor.combat_show()
-            game.cursor.set_pos(self.view_pos)
             if not self._skip:
                 game.state.change('move_camera')
             self._set_stats(self.playback)  # For start combat changes

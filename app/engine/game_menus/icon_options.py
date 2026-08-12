@@ -222,11 +222,13 @@ class BasicItemOption(BaseOption[Optional[ItemObject]]):
         if self.get_ignore():
             pass
         elif self._color:
-            main_color = self._color
-            if not custom_color:
-                if owner and not item_funcs.available(owner, self._value):
-                    pass
-                else:
+            if owner and not item_funcs.available(owner, self._value):
+                # Stays grey -- an item its owner can't use is greyed out,
+                # whatever color tag it carries
+                pass
+            else:
+                main_color = self._color
+                if not custom_color:
                     uses_color = 'blue'
         elif self._value.droppable:
             main_color = 'green'
