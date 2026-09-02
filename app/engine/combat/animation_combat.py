@@ -269,8 +269,6 @@ class AnimationCombat(BaseCombat, MockCombat):
                 self.viewbox = (self.viewbox[0], self.viewbox[1], 0, 0)
                 self.state = 'entrance'
                 self.pair_battle_animations(14)
-                # Unit should be facing down
-                self.attacker.sprite.change_state('selected')
 
         elif self.state == 'entrance':
             entrance_time = utils.frames2ms(10)

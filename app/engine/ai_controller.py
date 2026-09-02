@@ -822,7 +822,11 @@ class SecondaryAI():
         highest_damage_term, highest_status_term = 0, 0
 
         for item in items:
-            status_term = 1 if item.status_on_hit else 0
+            # Consult the item's own AI priority hooks rather than probing for one
+            # hardcoded component, so every status-applying component counts and a
+            # target that already has the status scores nothing.
+            custom_priority = item_system.ai_priority(self.unit, item, enemy, self.unit.position)
+            status_term = utils.clamp(custom_priority, 0, 1) if custom_priority is not None else 0
             true_damage = None
             if item_system.is_weapon(self.unit, item) or item_system.is_spell(self.unit, item):
                 raw_damage = combat_calcs.compute_damage(self.unit, enemy, item, enemy.get_weapon(), 'attack', (0, 0))

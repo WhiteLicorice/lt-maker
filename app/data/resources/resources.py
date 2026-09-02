@@ -131,10 +131,13 @@ class Resources():
         cc_path = self.get_custom_components_path()
 
         if not cc_path:
+            self.unload_custom_components()
             self.loaded_custom_components_path = None
             return
 
         module_path = os.path.join(cc_path, '__init__.py')
+        if module_path != self.loaded_custom_components_path:
+            self.unload_custom_components()
         if module_path != self.loaded_custom_components_path and os.path.exists(module_path):
             self.loaded_custom_components_path = module_path
             print("Importing Custom Components")
@@ -150,6 +153,32 @@ class Resources():
                 raise exceptions.CustomComponentsException("Failed to import custom components: %s" % (import_failure_msg))
         if not os.path.exists(module_path):
             self.loaded_custom_components_path = None
+
+    def unload_custom_components(self):
+        """
+        Drops the previous project's custom components.
+
+        A component class stays registered as a subclass of ItemComponent or
+        SkillComponent for as long as something holds a reference to it, so two
+        projects' components otherwise pile up together and share their nids. The
+        subclass registry itself holds only weak references, so releasing the
+        modules that defined the classes and the caches that list them is enough.
+        """
+        import gc
+        import sys
+
+        if not self.loaded_custom_components_path:
+            return
+        for name in [name for name in sys.modules
+                     if name == 'custom_components' or name.startswith('custom_components.')]:
+            del sys.modules[name]
+
+        from app.engine.item_component_access import get_cached_item_components
+        from app.engine.skill_component_access import get_cached_skill_components
+        get_cached_item_components.cache_clear()
+        get_cached_skill_components.cache_clear()
+        # The classes sit in reference cycles, so refcounting alone will not free them
+        gc.collect()
 
     def save_as_data(self, save_data_types) -> NestedPrimitiveDict:
         to_save = {}

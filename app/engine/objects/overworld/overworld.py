@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict, List, Set, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
 
 from app.constants import TILEHEIGHT, TILEWIDTH
 from app.data.database.database import DB
@@ -187,15 +187,38 @@ class OverworldObject():
                   }
         return s_dict
 
+    @staticmethod
+    def _restore_menu_options(from_prefab: Dict[NID, Dict[NID, bool]],
+                              saved: Dict[NID, Dict[NID, bool]]) -> Dict[NID, Dict[NID, bool]]:
+        """Which nodes exist, and which options they offer, is the prefab's to say. A save
+        can only speak for the ones it knew about, so a node or option added since keeps the
+        setting the prefab gives it, and one deleted since is dropped."""
+        for node_nid, options in saved.items():
+            if node_nid not in from_prefab:
+                continue
+            for option_nid, setting in options.items():
+                if option_nid in from_prefab[node_nid]:
+                    from_prefab[node_nid][option_nid] = setting
+        return from_prefab
+
     @classmethod
-    def restore(cls, s_dict: Dict, game: GameState) -> OverworldObject:
-        overworld = OverworldObject.from_prefab(DB.overworlds.get(s_dict['prefab_nid']), game.parties, game.unit_registry)
+    def restore(cls, s_dict: Dict, game: GameState) -> Optional[OverworldObject]:
+        """Rebuilds a saved overworld, or returns None if the project no longer has it."""
+        prefab = DB.overworlds.get(s_dict['prefab_nid'])
+        if not prefab:
+            logging.error("Save refers to overworld '%s', which is not in the database. "
+                          "It was probably renamed or deleted since the save was made.",
+                          s_dict['prefab_nid'])
+            return None
+        overworld = OverworldObject.from_prefab(prefab, game.parties, game.unit_registry)
         overworld.tilemap = TileMapObject.restore(s_dict['tilemap']) if s_dict['tilemap'] else None
         overworld.enabled_nodes = set(s_dict['enabled_nodes'])
         overworld.enabled_roads = set(s_dict['enabled_roads'])
         overworld.node_properties = s_dict.get('node_properties', {})
-        overworld.enabled_menu_options = s_dict.get('enabled_menu_options', {})
-        overworld.visible_menu_options = s_dict.get('visible_menu_options', {})
+        overworld.enabled_menu_options = cls._restore_menu_options(
+            overworld.enabled_menu_options, s_dict.get('enabled_menu_options', {}))
+        overworld.visible_menu_options = cls._restore_menu_options(
+            overworld.visible_menu_options, s_dict.get('visible_menu_options', {}))
 
         for entity in s_dict['overworld_entities']:
             entity_obj = OverworldEntityObject.restore(entity, game)

@@ -524,7 +524,8 @@ class GameState():
         if 'overworlds' in s_dict:
             for overworld in s_dict['overworlds']:
                 overworld_obj = OverworldObject.restore(overworld, self)
-                self.overworld_registry[overworld_obj.nid] = overworld_obj
+                if overworld_obj:  # None when the project no longer has that overworld
+                    self.overworld_registry[overworld_obj.nid] = overworld_obj
         for overworld in DB.overworlds.values():
             if overworld.nid not in self.overworld_registry:
                 self.overworld_registry[overworld.nid] = OverworldObject.from_prefab(overworld, self.parties, self.unit_registry)

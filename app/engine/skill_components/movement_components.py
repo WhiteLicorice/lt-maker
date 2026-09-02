@@ -16,6 +16,13 @@ class Canto(SkillComponent):
     tag = SkillTags.MOVEMENT
 
     def canto_movement(self, unit, unit2) -> int:
+        # Only offer movement when this component is the one granting the canto.
+        # canto_movement takes the maximum across every component that defines it,
+        # so a component that is declining to grant canto has to abstain here too --
+        # otherwise a fixed-range component like Canter is drowned out by our
+        # remaining movement.
+        if not self.has_canto(unit, unit2):
+            return 0
         return unit.movement_left
 
     def has_canto(self, unit, unit2) -> bool:
@@ -41,6 +48,8 @@ class CantoSharp(SkillComponent):
     tag = SkillTags.MOVEMENT
 
     def canto_movement(self, unit, unit2) -> int:
+        if not self.has_canto(unit, unit2):
+            return 0
         return unit.movement_left
 
     def has_canto(self, unit, unit2) -> bool:
