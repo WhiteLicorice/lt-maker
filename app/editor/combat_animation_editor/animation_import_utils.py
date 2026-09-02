@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Set
+from typing import Dict, List, Optional, Set, Tuple
 
 from PyQt5.QtGui import QImage, QPixmap, QPainter, QColor, qRgb
 
@@ -17,6 +17,31 @@ def simple_crop(pixmap: QPixmap) -> QPixmap:
     elif pixmap.width() == 488:
         pixmap = pixmap.copy(0, 0, 480, pixmap.height())
     return pixmap
+
+def crop_imported_frames(nid: str, pixmap: QPixmap) -> List[Tuple[str, QPixmap, tuple]]:
+    """Turns one imported file into the frames it holds, trimmed to their artwork.
+
+    A GBA format frame is 240 wide with the palette parked in an extra 8 pixel
+    column on the right, so that column has to go before the bounding box is
+    measured. It is not the background color, so it would otherwise count as
+    artwork and stretch the box across the whole frame -- and get_bbox reads the
+    top right pixel to recognize the colorkey, which lands inside the palette.
+
+    A 480 wide frame is two frames side by side, the second of which is what gets
+    drawn under the unit, and each half needs its own bounding box.
+
+    Returns a (nid, pixmap, rect) per frame; the rect is kept as the frame's
+    offset. A half holding nothing but background is dropped rather than becoming
+    an empty frame.
+    """
+    halves = split_doubles({nid: simple_crop(pixmap)})
+    frames = []
+    for frame_nid, half in halves.items():
+        x, y, width, height = editor_utilities.get_bbox(half.toImage())
+        if width <= 0 or height <= 0:  # nothing but background
+            continue
+        frames.append((frame_nid, half.copy(x, y, width, height), (x, y, width, height)))
+    return frames
 
 def split_doubles(pixmaps: Dict[str, QPixmap]) -> dict:
     new_pixmaps = {}

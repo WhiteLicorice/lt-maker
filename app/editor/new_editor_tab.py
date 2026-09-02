@@ -98,6 +98,11 @@ class NewEditorTab(QWidget, Generic[T]):
 
     def reset(self):
         self.tree_list.reset(self.data.keys(), self.categories)
+        # The properties widget draws on data other tabs own -- a unit's stat columns
+        # come from DB.stats -- so re-push the current entry through it whenever this
+        # tab comes back into view
+        if self.right_frame.current:
+            self.right_frame.set_current(self.right_frame.current)
 
     def attempt_change_nid(self, old_nid: NID, new_nid: NID) -> bool:
         if not new_nid:

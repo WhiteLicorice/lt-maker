@@ -102,7 +102,7 @@ class LTNestedList(QWidget):
         self.allow_rename = allow_rename
         self.allow_duplicate = allow_duplicate
         self.get_icon = get_icon or (lambda nid: create_empty_icon(32, 32))
-        self.get_foreground = get_foreground or None
+        self.get_foreground = get_foreground or (lambda nid: None)
         self.on_click_item = on_click_item
         self.on_rearrange_items = on_rearrange_items
         self.on_begin_rename_item = on_begin_rename_item
@@ -213,11 +213,13 @@ class LTNestedList(QWidget):
     def on_filter_changed(self, text: str):
         if text:
             filtered_items = self.tree_widget.findItems(text, QtCore.Qt.MatchContains | QtCore.Qt.MatchRecursive)
-            items = set([item.text(0) for item in filtered_items if not item.data(0, IsCategoryRole)])
-            item_icons = {item.text(0): item.icon(0) for item in filtered_items}
+            # Only real entries can be selected, and a folder is allowed to share an entry's name,
+            # so folders must be kept out of the icons as well or they overwrite the entry's own
+            entries = [item for item in filtered_items if not item.data(0, IsCategoryRole)]
+            item_icons = {item.text(0): item.icon(0) for item in entries}
             self.search_list.clear()
-            for item_nid in items:
-                item_widget = QListWidgetItem(item_icons[item_nid], item_nid)
+            for item_nid, icon in item_icons.items():
+                item_widget = QListWidgetItem(icon, item_nid)
                 self.search_list.addItem(item_widget)
             self.tree_widget.hide()
             self.search_list.show()
@@ -253,13 +255,12 @@ class LTNestedList(QWidget):
                 self.insert_item(index, new_nid, item, icon)
 
     def new_category(self, index, item: Optional[QTreeWidgetItem]):
-        existing_categories = set()
         closest_category = self._determine_category_parent(item)
-        for i in range(closest_category.childCount()):
-            entry = closest_category.child(i)
-            if entry.data(0, IsCategoryRole):
-                existing_categories.add(entry.data(0, 0))
-        new_category_name = str_utils.get_next_name("New Category", existing_categories)
+        # Siblings share a namespace, entries included -- a folder named after the unit
+        # beside it is indistinguishable from that unit everywhere it is looked up by name
+        sibling_names = {closest_category.child(i).data(0, 0)
+                         for i in range(closest_category.childCount())}
+        new_category_name = str_utils.get_next_name("New Category", sibling_names)
         new_category = self.create_tree_entry(new_category_name, create_empty_icon(32, 32), True)
         row = self._determine_insertion_row(index, item)
         closest_category.insertChild(row, new_category)
@@ -505,7 +506,9 @@ class LTNestedList(QWidget):
     class ListNode():
         nid: NID
         is_category: bool = False
-        children: Dict[NID, LTNestedList.ListNode] = field(default_factory=dict)
+        # Keyed by (is_category, nid): a folder and an entry are allowed to share a
+        # name, so the role has to be part of what tells two children apart
+        children: Dict[Tuple[bool, NID], LTNestedList.ListNode] = field(default_factory=dict)
 
     def _build_tree_widget_in_place(self, list_entries: Optional[List[NID]],
                                    list_categories: Optional[Categories],
@@ -522,18 +525,19 @@ class LTNestedList(QWidget):
                 item_categories = list_categories.get(nid, None)
                 if item_categories:
                     for category in item_categories:
-                        new_node = LTNestedList.ListNode(category, True)
-                        if category not in curr_node.children:
-                            curr_node.children[category] = new_node
-                        curr_node = curr_node.children[category]
+                        key = (True, category)
+                        if key not in curr_node.children:
+                            curr_node.children[key] = LTNestedList.ListNode(category, True)
+                        curr_node = curr_node.children[key]
                 list_item = LTNestedList.ListNode(nid)
-                curr_node.children[nid] = list_item
+                curr_node.children[(False, nid)] = list_item
             return root
         def _build_tree_widget(root: LTNestedList.ListNode, parent: QTreeWidgetItem):
             for node in root.children.values():
                 item = self.create_tree_entry(node.nid, create_empty_icon(32, 32), node.is_category)
-                if self.get_foreground(node.nid):
-                    item.setForeground(0, self.get_foreground(node.nid))
+                foreground = self.get_foreground(node.nid)
+                if foreground:
+                    item.setForeground(0, foreground)
                 parent.addChild(item)
                 if(node.is_category):
                     _build_tree_widget(node, item)

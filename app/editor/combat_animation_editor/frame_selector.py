@@ -19,7 +19,7 @@ from app.editor.base_database_gui import ResourceCollectionModel
 from app.editor.icon_editor.icon_view import IconView
 from app.editor.map_sprite_editor import map_sprite_model
 from app.editor.combat_animation_editor import combat_animation_model
-from app.editor.combat_animation_editor.animation_import_utils import update_anim_full_image
+from app.editor.combat_animation_editor.animation_import_utils import crop_imported_frames, update_anim_full_image
 
 import app.editor.utilities as editor_utilities
 
@@ -269,12 +269,11 @@ class FrameSelector(Dialog):
             for fn in fns:
                 if fn.endswith('.png'):
                     nid = os.path.split(fn)[-1][:-4]
-                    nids.append(nid)
-                    pix = QPixmap(fn)
-                    x, y, width, height = editor_utilities.get_bbox(pix.toImage())
-                    pix = pix.copy(x, y, width, height)
-                    pixmaps.append(pix)
-                    crops.append((x, y, width, height))
+                    # One file can hold two frames, the second drawn under the unit
+                    for frame_nid, pix, rect in crop_imported_frames(nid, QPixmap(fn)):
+                        nids.append(frame_nid)
+                        pixmaps.append(pix)
+                        crops.append(rect)
                 elif not error:
                     error = True
                     QMessageBox.critical(self.window, "File Type Error!", "Frame must be PNG format!")
