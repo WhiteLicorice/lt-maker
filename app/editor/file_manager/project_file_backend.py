@@ -273,6 +273,13 @@ class ProjectFileBackend():
 
         self.settings.append_or_bump_project(DB.constants.value('title') or os.path.basename(self.current_proj), self.current_proj)
 
+        # A Save As moves the project to a new directory without reloading it,
+        # and DB.current_proj_dir is only ever set by DB.load. Anything that
+        # writes through DB.current_proj_dir (the tilemap editor's save button)
+        # or keys a cache off it (custom item/skill components) would otherwise
+        # keep pointing at the project we came from.
+        DB.current_proj_dir = Path(self.current_proj)
+
         if has_fatal_errors:
             self.display_fatal_errors()
 
