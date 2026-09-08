@@ -42,6 +42,19 @@ class TilemapEditorSaveTests(unittest.TestCase):
     def tearDown(self) -> None:
         shutil.rmtree(self.tmp_dir, ignore_errors=True)
 
+    @classmethod
+    def tearDownClass(cls) -> None:
+        # RESOURCES.load points the global SPRITES dict at the loaded project's
+        # custom_sprites, so every temp project this class loads leaves those
+        # entries holding paths under a directory tearDown has deleted. The next
+        # sprites.load_images() anywhere in the suite then dies on a missing file.
+        # Leave the singletons on the project the rest of the suite expects.
+        from app.data.database.database import DB
+        from app.data.resources.resources import RESOURCES
+        from app.data.serialization.versions import CURRENT_SERIALIZATION_VERSION
+        RESOURCES.load('testing_proj.ltproj', CURRENT_SERIALIZATION_VERSION)
+        DB.load('testing_proj.ltproj', CURRENT_SERIALIZATION_VERSION)
+
     def make_editor(self, proj_dir):
         """A tilemap editor on the first tilemap, pointed at proj_dir."""
         from app.data.resources.resources import RESOURCES
