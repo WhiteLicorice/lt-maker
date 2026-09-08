@@ -424,7 +424,8 @@ class UnitSprite():
             self.net_position = pos
             self.handle_net_position(self.net_position)
         elif self.state == 'selected':
-            self.set_image_state('down')
+            # Mounted units face right while selected, everybody else faces down
+            self.set_image_state('right' if 'Mounted' in self.unit.tags else 'down')
         elif self.state == 'start_cast':
             self.map_sprite.start_cast.counter.reset()
             self.set_image_state('start_cast')

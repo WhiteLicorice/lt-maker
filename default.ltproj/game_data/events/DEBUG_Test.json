@@ -9,6 +9,7 @@
         "priority": 20,
         "_source": [
             "add_lore;Eirika",
+            "add_lore;Test",
             "add_base_convo;Dreams of Home",
             "add_weather;rain",
             "game_var;_supports;True",

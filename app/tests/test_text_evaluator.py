@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 
 from app.engine.text_evaluator import TextEvaluator
 from app.tests.mocks.mock_game import get_mock_game
+from app.utilities.primitive_counter import PrimitiveCounter
 
 
 class TextEvaluatorTests(unittest.TestCase):
@@ -30,3 +31,22 @@ class TextEvaluatorTests(unittest.TestCase):
         text = "{e:1}+{e:1+{e:1}}"
         evaled = self.text_evaluator._evaluate_all(text)
         self.assertEqual(evaled, "1+2")
+
+    def testVarNestedInsideEval(self):
+        self.mock_game.game_vars = PrimitiveCounter({"Tactician": "Bob"})
+        text = "{e:'{v:Tactician}' if game.game_vars['Tactician'] else 'Mark'}"
+        evaled = self.text_evaluator._evaluate_all(text)
+        self.assertEqual(evaled, "Bob")
+
+    def testVarWithNoLevelVars(self):
+        # level_vars doesn't exist until a level starts (e.g. the event tester)
+        self.mock_game.level_vars = None
+        self.mock_game.game_vars = PrimitiveCounter({"Tactician": "Bob"})
+        evaled = self.text_evaluator._evaluate_all("{v:Tactician}")
+        self.assertEqual(evaled, "Bob")
+
+    def testVarWithNoGameVars(self):
+        self.mock_game.level_vars = None
+        self.mock_game.game_vars = None
+        evaled = self.text_evaluator._evaluate_all("{v:Tactician}")
+        self.assertEqual(evaled, "??")

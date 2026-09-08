@@ -12,6 +12,7 @@ class CreditEntry(Prefab):
     sub_nid: str = None
     credit_type: Union[ResourceType, Literal["List", "Text"]] = "Text"
     category: str = "Graphics"
+    custom_header: str = None
 
     icon_index: Tuple[int, int] = field(default_factory=tuple)
     contrib: List[Tuple[str, str]] = field(default_factory=list)    # (author, contribution)
@@ -31,6 +32,8 @@ class CreditEntry(Prefab):
         return super().restore_attr(name, value)
 
     def header(self):
+        if self.custom_header:
+                return self.custom_header
         return self.credit_type.name.replace('_', ' ').capitalize() \
                     if isinstance(self.credit_type, ResourceType) \
                     else self.sub_nid

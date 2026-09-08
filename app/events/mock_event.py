@@ -3,7 +3,7 @@ from typing import List
 
 from app.data.database.database import DB
 
-from app.engine import engine
+from app.engine import engine, game_state
 from app.events import speak_style, event_commands
 from app.events.event import Event
 from app.engine.sprites import SPRITES
@@ -62,7 +62,11 @@ class MockEvent(Event):
         # unit2/position must be passed positionally too: check_pair() closes
         # over those params, not over local_args.
         local_args = local_args or {}
-        self.text_evaluator = TextEvaluator(self.logger, None,
+        # Use the process-global GameState. It's not a real playthrough, but it's
+        # the same object `evaluate.evaluate` falls back on for {e:} expressions,
+        # so {v:}/{d:}/{f:} resolve against the same world instead of silently
+        # returning "??".
+        self.text_evaluator = TextEvaluator(self.logger, game_state.game,
                                             unit=local_args.get('unit1'),
                                             unit2=local_args.get('unit2'),
                                             position=local_args.get('position'),

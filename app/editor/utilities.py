@@ -122,6 +122,28 @@ def get_full_palette(image) -> list:
 def get_color_conversion(palette: Palette) -> dict:
     return {QtGui.qRgb(*color[:3]): QtGui.qRgb(0, *coord) for coord, color in palette.colors.items()}
 
+def assign_new_colors(palette: Palette, colors: list) -> dict:
+    """
+    Returns the coord -> color entries for each of `colors` the palette does not
+    already contain, placed in the palette's next free slots
+    """
+    existing = set(palette.colors.values())
+    new_colors = []
+    for color in colors:
+        if color not in existing and color not in new_colors:
+            new_colors.append(color)
+    start = len(palette.colors)
+    return {(int((idx + start) % 8), int((idx + start) / 8)): color
+            for idx, color in enumerate(new_colors)}
+
+def find_unconvertible_colors(image: QtGui.QImage, convert_dict: dict) -> list:
+    """
+    Returns the colors in the image that the conversion dict has no entry for.
+    Those pixels survive into the sheet as literal RGB, where every later reader
+    misinterprets them as the palette coord (green, blue)
+    """
+    return [color for color in find_palette(image) if QtGui.qRgb(*color) not in convert_dict]
+
 def get_coord_conversion(palette: Palette) -> dict:
     return {QtGui.qRgb(0, *coord): QtGui.qRgb(*color[:3]) for coord, color in palette.colors.items()}
 

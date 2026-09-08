@@ -105,6 +105,7 @@ class AnimationCombat(BaseCombat, MockCombat):
         self.full_playback = []
         self.playback = []
         self.actions = []
+        self._pending_attack_marks = []
 
         self.viewbox_time = 250
         self.viewbox = None
@@ -268,8 +269,6 @@ class AnimationCombat(BaseCombat, MockCombat):
                 self.viewbox = (self.viewbox[0], self.viewbox[1], 0, 0)
                 self.state = 'entrance'
                 self.pair_battle_animations(14)
-                # Unit should be facing down
-                self.attacker.sprite.change_state('selected')
 
         elif self.state == 'entrance':
             entrance_time = utils.frames2ms(10)
@@ -444,6 +443,12 @@ class AnimationCombat(BaseCombat, MockCombat):
                     # I used the `Legend` effect from the discord as a template to format other effects
                     effect = self.current_battle_anim.get_effect(effect_nid, pose='Effect')
                     self.current_battle_anim.add_effect(effect)
+                    
+            for (mark_attacker, mark_defender, mark_item, damage, was_hit) in self._pending_attack_marks:
+                game.events.trigger(triggers.CombatAttack(mark_attacker, mark_defender, mark_attacker.position, mark_item, damage))
+                if was_hit and damage > 0 and mark_defender:
+                    game.events.trigger(triggers.CombatAttacked(mark_defender, mark_attacker, mark_defender.position, mark_item, damage))
+            self._pending_attack_marks = []
 
             self.state = 'hp_change'
                 
@@ -730,12 +735,26 @@ class AnimationCombat(BaseCombat, MockCombat):
     def _handle_playback(self, sound=True):
         hp_brushes = ('damage_hit', 'damage_crit', 'heal_hit')
         hit_brushes = ('defense_hit_proc', 'attack_hit_proc')
+        attack_brushes = ('mark_hit', 'mark_crit', 'mark_miss')
         _, _, defender, _, _ = self.get_actors()
+        
+        damage_lookup = {}
+        for b in self.playback:
+            if b.nid in ('damage_hit', 'damage_crit'):
+                damage_lookup[(b.attacker, b.defender, b.item)] = b.true_damage
+        
         for brush in self.playback:
             if brush.nid in hp_brushes:
                 self.last_update = engine.get_time()
                 self.state = 'combat_hit'
                 self.handle_damage_numbers(brush)
+            elif brush.nid in attack_brushes:
+                damage = damage_lookup.get((brush.attacker, brush.defender, brush.item), 0)
+                was_hit = brush.nid != 'mark_miss'
+                self._pending_attack_marks.append((brush.attacker, brush.defender, brush.item, damage, was_hit))
+                if brush.nid == 'mark_miss':
+                    self.last_update = engine.get_time()
+                    self.state = 'combat_hit'
             elif brush.nid in hit_brushes:
                 self.add_proc_icon(brush.unit, brush.skill)
             elif brush.nid == 'hit_sound' and sound and not brush.map_only:

@@ -296,12 +296,16 @@ class TextEvaluator():
             return "??"
         to_evaluate = re.findall(r'\{v:[^{}]*\}', text) + re.findall(r'\{var:[^{}]*\}', text)
         evaluated = []
+        # Either store can still be None outside a live playthrough (level_vars is
+        # only built once a level starts), so don't assume they're subscriptable
+        level_vars = self.game.level_vars or {}
+        game_vars = self.game.game_vars or {}
         for to_eval in to_evaluate:
             key = self.trim_eval_tags(to_eval)
-            if key in self.game.level_vars:
-                val = self._object_to_str(self.game.level_vars[key])
-            elif key in self.game.game_vars:
-                val = self._object_to_str(self.game.game_vars[key])
+            if key in level_vars:
+                val = self._object_to_str(level_vars[key])
+            elif key in game_vars:
+                val = self._object_to_str(game_vars[key])
             else:
                 self.logger.error("Could not find var {%s} in self.game.level_vars or self.game.game_vars" % key)
                 val = '??'

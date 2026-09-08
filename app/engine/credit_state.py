@@ -68,7 +68,8 @@ def populate_options(credit_catalog: CreditCatalog) -> Tuple[List[str], List[str
         ignore.append(False)
         prev_option = curr_option
         temp_list = [credit]
-    ordered_credits.append(temp_list)
+    if temp_list:  # No credits at all
+        ordered_credits.append(temp_list)
 
     return options, ignore, ordered_credits
 
@@ -162,6 +163,8 @@ class CreditDisplay():
         self.credits = credits
         self.current = None
         self.pages = []
+        self.num_pages = 0
+        self.page_num = 0
         self.font = 'text'
 
         self.topleft = (84, 4)
@@ -192,10 +195,11 @@ class CreditDisplay():
         self.current = idx
         self.page_num = 0
         self.pages = []
+        self.num_pages = 0
 
         self.contents = []
 
-        lst = self.credits[idx]
+        lst = self.credits[idx] if idx < len(self.credits) else None
         if lst:
             if lst[0].credit_type in (ResourceType.ICONS16, ResourceType.ICONS32, 
                                       ResourceType.MAP_ICONS, ResourceType.MAP_SPRITES):
@@ -264,6 +268,8 @@ class CreditDisplay():
         self.clear_display()
 
     def page_right(self, first_push=False) -> bool:
+        if not self.num_pages:
+            return False
         if self.page_num < self.num_pages - 1:
             self.page_num += 1
             self.right_arrow.pulse()
@@ -277,6 +283,8 @@ class CreditDisplay():
         return False
 
     def page_left(self, first_push=False) -> bool:
+        if not self.num_pages:
+            return False
         if self.page_num > 0:
             self.page_num -= 1
             self.left_arrow.pulse()

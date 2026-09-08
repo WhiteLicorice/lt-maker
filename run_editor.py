@@ -1,5 +1,15 @@
+import logging
 import os
 import sys
+
+from app.utilities.system_info import get_python_version_warning
+
+# Checked before anything else is imported, so it still gets printed when a
+# too-new interpreter makes one of the imports below blow up.
+PYTHON_VERSION_WARNING = get_python_version_warning()
+if PYTHON_VERSION_WARNING:
+    print("WARNING: " + PYTHON_VERSION_WARNING, file=sys.stderr)
+
 from app.editor.recent_project_dialog import choose_recent_project
 
 from app.editor.editor_locale import init_locale
@@ -34,6 +44,9 @@ def initialize_logger():
     success = lt_log.create_logger()
     if not success:
         sys.exit()
+    if PYTHON_VERSION_WARNING:
+        # Logged as well as printed so it shows up in the log file users send us
+        logging.warning(PYTHON_VERSION_WARNING)
 
 if __name__ == '__main__':
     initialize_translations()

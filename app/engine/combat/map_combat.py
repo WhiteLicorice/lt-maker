@@ -9,6 +9,8 @@ from app.engine.health_bar import MapCombatInfo
 from app.engine.animations import MapAnimation
 from app.engine.game_state import game
 
+from app.events import triggers
+
 from app.engine.combat.simple_combat import SimpleCombat
 
 
@@ -358,6 +360,11 @@ class MapCombat(SimpleCombat):
                     self.health_bars[defender] = splash_health
 
     def _handle_playback(self):
+        damage_lookup = {}
+        for b in self.playback:
+            if b.nid in ('damage_hit', 'damage_crit'):
+                damage_lookup[(b.attacker, b.defender, b.item)] = b.true_damage
+                
         for brush in self.playback:
             if brush.nid == 'unit_tint_add':
                 brush.unit.sprite.begin_flicker(333, brush.color, 'add')
@@ -417,6 +424,12 @@ class MapCombat(SimpleCombat):
                     d = gui.DamageNumber(int(num), idx, len(
                         str_damage), target.position, 'small_cyan')
                     target.sprite.damage_numbers.append(d)
+            elif brush.nid in ('mark_hit', 'mark_crit', 'mark_miss'):
+                damage = damage_lookup.get((brush.attacker, brush.defender, brush.item), 0)
+                was_hit = brush.nid != 'mark_miss'
+                game.events.trigger(triggers.CombatAttack(brush.attacker, brush.defender, brush.attacker.position, brush.item, damage))
+                if was_hit and damage > 0 and brush.defender:
+                    game.events.trigger(triggers.CombatAttacked(brush.defender, brush.attacker, brush.defender.position, brush.item, damage))
 
     def _apply_actions(self):
         """

@@ -23,6 +23,7 @@ from app.editor.base_database_gui import ResourceCollectionModel
 from app.extensions.custom_gui import ResourceListView, Dialog, PropertyBox
 from app.extensions.tiled_view import DraggableTileImageView
 
+from app.editor.file_manager.project_file_backend import DEFAULT_PROJECT
 from app.editor.settings import MainSettingsController
 from app.utilities import str_utils
 
@@ -764,9 +765,33 @@ class MapEditor(QDialog):
                 self.settings.set_last_open_path(parent_dir)
 
     def save_current(self):
-        if self.current and DB.current_proj_dir:
-            RESOURCES.save(DB.current_proj_dir, specific=['tilemaps'])
+        """Write the tile resources out to the project on disk.
+
+        The resource dialog that owns this editor restores itself on Cancel by
+        reloading the project from disk, so writing here is what lets the save
+        survive that Cancel. Tilesets are written alongside the tilemaps because
+        a tilemap that references a newly added tileset is useless without it.
+        """
+        if not self.current:
+            return
+        proj_dir = self.settings.get_current_project()
+        if not proj_dir or os.path.basename(proj_dir) == DEFAULT_PROJECT:
+            QMessageBox.warning(
+                self, "Cannot Save",
+                "The default project cannot be written to.\n"
+                "Use File -> Save As in the main editor to give this project its "
+                "own name, then save again.")
+            return
+        if RESOURCES.save(proj_dir, specific=['tilesets', 'tilemaps']):
+            # Cancel in this editor rewinds to the snapshot taken when it opened.
+            # What was just saved is now the state worth rewinding to.
+            self.save()
             QMessageBox.information(self, "Save Complete", "Successfully saved tilemaps!")
+        else:
+            QMessageBox.critical(
+                self, "Save Failed",
+                "Could not save tilemaps to %s.\n"
+                "See the log (Extra -> View Logs) for details." % proj_dir)
 
     def update_view(self):
         self.view.update_view()

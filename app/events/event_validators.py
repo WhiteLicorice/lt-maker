@@ -278,7 +278,7 @@ class Achievement(Validator):
 
     def valid_entries(self, level: Optional[NID] = None, text: Optional[str] = None) -> List[Tuple[Optional[str], NID]]:
         achs = self._db.events.inspector.find_all_calls_of_command(event_commands.CreateAchievement())
-        slots = [(None, command.parameters['Nid']) for command in achs.values()]
+        slots = [(None, command.parameters['Nid']) for command in achs.values() if command.parameters.get('Nid')]
         return slots
 
 class GeneralVar(Validator):
@@ -610,7 +610,7 @@ class DialogVariant(Validator):
     def validate(self, text, level):
         slots = self.built_in.copy()
         predefined_variants = self._db.events.inspector.find_all_calls_of_command(event_commands.SpeakStyle())
-        slots += list(set([variant.parameters['Style'] for variant in predefined_variants.values()]))
+        slots += list(set([variant.parameters['Style'] for variant in predefined_variants.values() if variant.parameters.get('Style')]))
         if text in slots:
             return text
         return None
@@ -618,7 +618,7 @@ class DialogVariant(Validator):
     def valid_entries(self, level: Optional[NID] = None, text: Optional[str] = None) -> List[Tuple[Optional[str], NID]]:
         slots = [(None, style) for style in self.built_in]
         predefined_variants = self._db.events.inspector.find_all_calls_of_command(event_commands.SpeakStyle())
-        slots += [(None, style) for style in set([variant.parameters['Style'] for variant in predefined_variants.values()])]
+        slots += [(None, style) for style in set([variant.parameters['Style'] for variant in predefined_variants.values() if variant.parameters.get('Style')])]
         return slots
 
 class StringList(SequenceValidator):
@@ -644,7 +644,7 @@ class Speaker(Validator):
 
     def valid_entries(self, level: Optional[NID] = None, text: Optional[str] = None) -> List[Tuple[Optional[str], NID]]:
         predefined_variants = self._db.events.inspector.find_all_calls_of_command(event_commands.SpeakStyle())
-        slots = [(None, style) for style in set([variant.parameters['Style'] for variant in predefined_variants.values()])]
+        slots = [(None, style) for style in set([variant.parameters['Style'] for variant in predefined_variants.values() if variant.parameters.get('Style')])]
         return []
 
 class Panorama(Validator):

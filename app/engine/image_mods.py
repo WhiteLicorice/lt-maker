@@ -234,3 +234,16 @@ def draw_flicker_tint(image: engine.Surface, time: int, tints: List[FlickerTint]
             image = sub_tint(image.convert_alpha(), color)
 
     return image
+
+def do_flip(surf, t): # By DecklynKern
+    t = utils.clamp(t, 0, 1)
+    
+    newSurf = engine.create_surface((surf.get_width(), surf.get_height()), True)
+    
+    if t < 0.5:
+        scaled = engine.transform_scale(surf, (surf.get_width(), int(surf.get_height() * (1 - 2 * t))))
+    else:
+        scaled = engine.transform_scale(surf, (surf.get_width(), int(surf.get_height() * (2 * t - 1))))
+    
+    newSurf.blit(scaled, (0, (newSurf.get_height() - scaled.get_height()) / 2)) 
+    return newSurf

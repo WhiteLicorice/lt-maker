@@ -25,6 +25,19 @@ if TYPE_CHECKING:
     from app.engine.objects.team import TeamObject
 
 
+def first_existing_sprite(*nids: str) -> engine.Surface:
+    """Return the first of `nids` that is actually loaded.
+
+    SPRITES.get only accepts a single fallback, which isn't enough for the combat
+    forecast sprites, where both the size and the color baked into the name can be
+    unsupported. The last nid given is used unconditionally if none of them exist.
+    """
+    for nid in nids:
+        if nid in SPRITES:
+            return SPRITES.get(nid)
+    return SPRITES.get(nids[-1])
+
+
 class UIView():
     legal_states = ('free', 'prep_formation', 'prep_formation_select')
     initiative_states = ('status_endstep', 'turn_change', 'ai', 'phase_change', 'menu', 'turnwheel')
@@ -386,15 +399,46 @@ class UIView():
         a_color = attacker_team.combat_color
         d_color = defender_team.combat_color
 
-        if attacker_team.combat_color_diverged() or defender_team.combat_color_diverged():
-            surf = SPRITES.get('attack_info_' + str(height) + '_top_' + a_color, 'attack_info_3_top_' + a_color).copy()
-            surf.blit(SPRITES.get('attack_info_' + str(height) + '_bottom_' + d_color, 'attack_info_3_bottom_red'), (0, 0))
+        # The old-format sprites are one baked image per color, and only ship in a
+        # handful of colors. The new-format sprites compose a neutral center over an
+        # attacker-colored top and a defender-colored bottom, so they cover any color.
+        # Prefer an old-format sprite when one actually exists for this color (so a
+        # project's custom art still wins), otherwise fall through to the new format.
+        # combat_color_diverged() only catches a *runtime* palette change; a color set
+        # in the team editor and never touched by an event has no old-format sprite and
+        # would silently render red without the membership check.
+        use_new_format = (attacker_team.combat_color_diverged() or
+                          defender_team.combat_color_diverged() or
+                          (prefix + d_color) not in SPRITES)
+        if use_new_format:
+            # Fall back on the size first, then on a color that is guaranteed to ship.
+            # Both of the old fallbacks kept the requested color, so a team recolored to
+            # something with no sprites at all missed twice and got None back, and the
+            # .copy() below raised.
+            surf = first_existing_sprite(
+                'attack_info_' + str(height) + '_top_' + a_color,
+                'attack_info_3_top_' + a_color,
+                'attack_info_' + str(height) + '_top_blue',
+                'attack_info_3_top_blue').copy()
+            surf.blit(first_existing_sprite(
+                'attack_info_' + str(height) + '_bottom_' + d_color,
+                'attack_info_3_bottom_' + d_color,
+                'attack_info_' + str(height) + '_bottom_red',
+                'attack_info_3_bottom_red'), (0, 0))
             surf.blit(SPRITES.get(prefix + 'center'), (0, 0))
 
             if a_assist_flag:
-                surf.blit(SPRITES.get('assist_info_' + str(as_height) + '_' + a_color, 'assist_info_2_blue'), (92, 35))
+                surf.blit(first_existing_sprite(
+                    'assist_info_' + str(as_height) + '_' + a_color,
+                    'assist_info_2_' + a_color,
+                    'assist_info_' + str(as_height) + '_blue',
+                    'assist_info_2_blue'), (92, 35))
             if d_assist_flag:
-                surf.blit(SPRITES.get('assist_info_' + str(as_height) + '_' + d_color, 'assist_info_2_red'), (1, 35))
+                surf.blit(first_existing_sprite(
+                    'assist_info_' + str(as_height) + '_' + d_color,
+                    'assist_info_2_' + d_color,
+                    'assist_info_' + str(as_height) + '_red',
+                    'assist_info_2_red'), (1, 35))
         else:
             surf = SPRITES.get(prefix + d_color, prefix + 'red').copy()
             if a_assist_flag:

@@ -681,10 +681,10 @@ class TitleNewState(TitleLoadState):
                 save.SAVE_THREAD.join()
                 save.check_save_slots()
                 options, color = save.get_save_title(save.SAVE_SLOTS)
-                self.menu.set_colors(color)
-                self.menu.update_options(options)
                 game.memory['transition_from'] = 'New Game'
                 game.memory['title_menu'] = self.menu
+                game.memory['flip_options'] = options
+                game.memory['flip_color'] = color
                 game.state.change('title_wait')
 
     def back(self):
@@ -725,8 +725,8 @@ class TitleNewChildState(State):
                 save.SAVE_THREAD.join()
                 save.check_save_slots()
                 options, color = save.get_save_title(save.SAVE_SLOTS)
-                game.memory['title_menu'].set_colors(color)
-                game.memory['title_menu'].update_options(options)
+                game.memory['flip_options'] = options
+                game.memory['flip_color'] = color
                 game.state.change('title_wait')
                 game.state.process_temp_state()
             elif selection == 'Back':
@@ -847,10 +847,12 @@ class TitleWaitState(State):
     name = 'title_wait'
     in_level = False
     show_map = False
+    flipped = False
     # NOT TRANSPARENT!!!
     bg = None
     particles = []
     menu = None
+    flip_timer = 0
 
     def start(self):
         self.bg = game.memory['title_bg']
@@ -863,9 +865,16 @@ class TitleWaitState(State):
     def update(self):
         if self.menu:
             self.menu.update()
-        if not self.wait_flag and engine.get_time() - self.wait_time > 750:
+        if not self.wait_flag and engine.get_time() - self.wait_time > 1250:
             self.wait_flag = True
             game.state.change('transition_pop')
+
+        if engine.get_time() - self.wait_time > 167 and not self.flipped and 'flip_color' in game.memory:
+            self.menu.set_colors(game.memory['flip_color'])
+            self.menu.update_options(game.memory['flip_options'])
+            del game.memory['flip_color']
+            del game.memory['flip_options']
+            self.flipped = True
 
     def draw(self, surf):
         if self.bg:
@@ -874,10 +883,11 @@ class TitleWaitState(State):
             self.particles.update()
             self.particles.draw(surf)
         if self.menu:
-            if 100 < engine.get_time() - self.wait_time > 200:
-                self.menu.draw(surf, flicker=True)
+            if self.wait_time and 'flip_color' in game.memory or self.flipped == True:
+                flip_timer = (engine.get_time() - self.wait_time) / 333
             else:
-                self.menu.draw(surf)
+                flip_timer = 0
+            self.menu.draw(surf, flip_timer=flip_timer)
         return surf
 
 class TitleSaveState(State):
@@ -891,6 +901,10 @@ class TitleSaveState(State):
 
     wait_time = 0
     fluid = None
+
+    flipped = False
+    flip_update_text = ''
+    flip_update_color = ''
 
     def start(self):
         if game.memory.get('_skip_save', False):
@@ -986,14 +1000,13 @@ class TitleSaveState(State):
             self.wait_time = engine.get_time()
             if self.name == 'in_chapter_save':
                 name = game.game_vars.get('_save_name') or game.level.name
-                self.menu.set_text(self.menu.current_index, name)
+                self.flip_update_text = name
             else:
                 next_level_nid = game.game_vars['_next_level_nid']
                 level = DB.levels.get(next_level_nid)
                 if level:
-                    name = game.game_vars.get('_save_name') or level.name
-                    self.menu.set_text(self.menu.current_index, name)
-            self.menu.set_color(self.menu.current_index, game.mode.color)
+                    self.flip_update_text = level.name
+            self.flip_update_color = game.mode.color
 
     def update(self):
         if self.menu:
@@ -1015,6 +1028,11 @@ class TitleSaveState(State):
             else:
                 self.go_to_next_level(make_save=True)
 
+        if self.wait_time and engine.get_time() - self.wait_time > 167 and not self.flipped:
+            self.menu.set_text(self.menu.current_index, self.flip_update_text)
+            self.menu.set_color(self.menu.current_index, self.flip_update_color)
+            self.flipped = True
+
     def draw(self, surf):
         if self.bg:
             self.bg.draw(surf)
@@ -1022,8 +1040,9 @@ class TitleSaveState(State):
             self.particles.update()
             self.particles.draw(surf)
         if self.menu:
-            if 100 < engine.get_time() - self.wait_time < 200:
-                self.menu.draw(surf, flicker=True)
+            if self.wait_time:
+                flip_timer = (engine.get_time() - self.wait_time) / 333
             else:
-                self.menu.draw(surf)
+                flip_timer = 0
+            self.menu.draw(surf, flip_timer=flip_timer)
         return surf

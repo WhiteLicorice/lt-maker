@@ -125,6 +125,12 @@ class ModifyMusicDialog(Dialog):
         self.soundroom_box.edit.setValue(self.current.soundroom_idx)
         self.soundroom_box.edit.valueChanged.connect(self.soundroom_idx_changed)
         layout.addWidget(self.soundroom_box)
+        
+        self.display_name_box = PropertyBox("Display Name", QLineEdit, self)
+        layout.addWidget(self.display_name_box)
+
+        self.display_name_box.edit.setText(self.current.display_name)
+        self.display_name_box.edit.textChanged.connect(self.display_name_changed)
 
         layout.addWidget(self.buttonbox)
 
@@ -232,3 +238,6 @@ class ModifyMusicDialog(Dialog):
                 song_prefab.soundroom_idx -= 1
 
         self.current.soundroom_idx = min(new_idx, max_idx)
+        
+    def display_name_changed(self, text):
+        self.current.display_name = text

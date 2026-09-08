@@ -376,22 +376,22 @@ class PromotionState(State, MockCombat):
         else:
             return surf
 
-        combat_surf = engine.copy_surface(self.combat_surf)
-
         # Platforms
         top = WINHEIGHT - 72
+        combat_surf = engine.copy_surface(self.combat_surf)
         combat_surf.blit(self.left_platform, (WINWIDTH//2 - self.left_platform.get_width(), top))
         combat_surf.blit(self.right_platform, (WINWIDTH//2, top))
-
-        # Name Tag
-        combat_surf.blit(self.name_tag, (WINWIDTH + 3 - self.name_tag.get_width(), 0))
-
         self.color_ui(combat_surf)
-
-        surf.blit(combat_surf, (0, 0))
+        surf.blit(combat_surf, (0,0))
 
         if self.current_battle_anim:
             self.current_battle_anim.draw(surf)
+
+        # Name Tag
+        combat_surf = engine.copy_surface(self.combat_surf)
+        combat_surf.blit(self.name_tag, (WINWIDTH + 3 - self.name_tag.get_width(), 0))
+        self.color_ui(combat_surf)
+        surf.blit(combat_surf, (0, 0))
 
         self.foreground.draw(surf)
 

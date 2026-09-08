@@ -2866,7 +2866,7 @@ Optional args:
 * *OtherOptions* is a list of strings (Option1, Option2, Option3) that specify additional option names to display in the base.
 * *OtherOptionsEnabled* is a list of string bools (e.g. true, false, false) that specify which of the OtherOptions are enabled. If blank, all OtherOptions will be enabled by default.
 * *OtherOptionsOnSelect* is a list of Event NIDs or Event Names. These events will be triggered when the corresponding OtherOptions are selected.
-* *OtherOptionsDesciption* is a list of strings that provide description to the Option in gba prep screen.
+* *OtherOptionsDesciption* is a list of strings that provide description to the Option in specifically the GBA version of the prep screen.
 
 Flags:
 * *gba* uses gba prep screen layout instead.

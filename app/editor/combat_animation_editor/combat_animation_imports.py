@@ -27,17 +27,17 @@ def populate_palettes(current, images, nid):
         palette_names = [_[0] for _ in current.palettes]
         logging.debug("palette name: %s %s", palette_name, palette_name in palette_names)
         if palette_name in palette_names:
-            # Check whether this palette is bigger
+            # Check whether this image uses colors the palette doesn't have yet.
+            # Every color has to earn a palette slot: the conversion below rewrites only
+            # the colors the palette knows, and leaves the rest in the frame as literal RGB
             idx = palette_names.index(palette_name)
             orig_palette_nid = current.palettes[idx][1]
             orig_palette = RESOURCES.combat_palettes.get(orig_palette_nid)
             pix = QPixmap(image_fn)
             palette_colors = editor_utilities.find_palette(pix.toImage())
-            orig_len = len(orig_palette.colors)
-            if len(palette_colors) > orig_len:
-                # Add new colors in
-                new_colors = [color for color in palette_colors if color not in orig_palette.colors.values()]
-                new_colors = {(int((idx + orig_len) % 8), int((idx + orig_len) / 8)): color for idx, color in enumerate(new_colors)}
+            new_colors = editor_utilities.assign_new_colors(orig_palette, palette_colors)
+            if new_colors:
+                logging.debug("Adding %s to palette %s", new_colors, orig_palette_nid)
                 orig_palette.colors.update(new_colors)
         else:
             if palette_nid not in RESOURCES.combat_palettes:
@@ -76,6 +76,10 @@ def add_frames(index_fn, current, new_weapon, images):
         new_pixmap = main_pixmap.copy(x, y, width, height)
         assert width > 0 and height > 0
         # Convert to universal base palette
+        leftover = editor_utilities.find_unconvertible_colors(new_pixmap.toImage(), convert_dict)
+        if leftover:
+            logging.error("Frame %s uses colors missing from palette %s: %s. They will be stored raw "
+                          "and read back as palette coords", nid, palette_nid, leftover)
         new_pixmap = editor_utilities.color_convert_pixmap(new_pixmap, convert_dict)
         new_frame = combat_anims.Frame(nid, (x, y, width, height), (offset_x, offset_y), pixmap=new_pixmap)
         # print(new_frame.nid, id(new_frame.pixmap), new_frame.pixmap.width(), new_frame.pixmap.height(), editor_utilities.find_palette(QImage(new_frame.pixmap)))

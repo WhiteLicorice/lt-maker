@@ -1615,7 +1615,6 @@ class BaseSoundRoomState(State):
     def start(self):
         self.fluid = FluidScroll()
         self.bg = game.memory.get('base_bg')
-
         sorted_list = sorted(RESOURCES.music.keys(), key=lambda x: RESOURCES.music.get(x).soundroom_idx)
         if sorted_list:
             self.music_names = sorted_list[-RESOURCES.music.get(sorted_list[-1]).soundroom_idx:]
@@ -1749,8 +1748,9 @@ class BaseSoundRoomState(State):
         return surf
 
     def draw_sound_room_title(self, surf, center, music_name):
+        display_name = RESOURCES.music.get(music_name).display_name
         engine.blit_center(surf, SPRITES.get('chapter_select_green'), center)
-        render_text(surf, ['convo'], [music_name], ['white'], (center[0], center[1] - 8), HAlignment.CENTER)
+        render_text(surf, ['convo'], [display_name], ['white'], (center[0], center[1] - 8), HAlignment.CENTER)
         return surf
 
     def draw_volume(self, surf):

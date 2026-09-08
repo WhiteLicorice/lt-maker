@@ -28,6 +28,10 @@ class Database(object):
                        "support_pairs", "ai", "parties", "difficulty_modes", "credit",
                        "translations", "lore", "levels", "events", "overworlds", "raw_data")
     save_as_chunks = ("events", 'items', 'skills', 'units', 'classes', 'levels', "credit")
+    # Data types that were added to the format after the fact. Projects created before
+    # then simply don't have the file on disk, so rather than refusing to load them,
+    # we fall back to an empty catalog and write it out on the next save.
+    optional_data_types = ("credit",)
 
     def __init__(self):
         self.current_proj_dir = None

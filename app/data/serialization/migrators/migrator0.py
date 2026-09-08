@@ -1,3 +1,4 @@
+import logging
 import os
 import shutil
 
@@ -16,10 +17,22 @@ class Migrator0(MigratorBase):
         if not portraits:
             return resource_dict
 
-        # Back-up into 'old_portraits' folder
-        shutil.copytree(os.path.join('.', data_dir, 'portraits'),
-                        os.path.join('.', data_dir, 'old_portraits'),
-                        dirs_exist_ok=True)
+        portraits_dir = os.path.join(data_dir, 'portraits')
+        backup_dir = os.path.join(data_dir, 'old_portraits')
+
+        if os.path.exists(backup_dir):
+            # We already migrated these portraits once, but the project never finished
+            # loading afterwards, so the version on disk was never bumped and we're being
+            # asked to migrate them a second time. The backup holds the only pristine
+            # originals left -- roll back to it rather than overwriting it with the
+            # half-migrated files, which would migrate them twice and destroy them.
+            logging.warning("Found an existing portrait back-up at %s from an unfinished "
+                            "migration; restoring the original portraits from it before "
+                            "migrating again.", backup_dir)
+            shutil.copytree(backup_dir, portraits_dir, dirs_exist_ok=True)
+        else:
+            # Back-up into 'old_portraits' folder
+            shutil.copytree(portraits_dir, backup_dir, dirs_exist_ok=True)
         filetype = '.png'
 
         try:
@@ -51,9 +64,7 @@ class Migrator0(MigratorBase):
                 portrait['mouth_frames'] = 3
         except:
             # Bring back the old portrait to undo the edits made to PNG files
-            shutil.copytree(os.path.join('.', data_dir, 'old_portraits'),
-                            os.path.join('.', data_dir, 'portraits'),
-                            dirs_exist_ok=True)
+            shutil.copytree(backup_dir, portraits_dir, dirs_exist_ok=True)
             raise
 
         return resource_dict

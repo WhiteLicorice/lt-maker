@@ -161,8 +161,6 @@ The editor should pop up and you should be able to begin making your own fangame
 
 ![EditorScreen](images/EditorScreen.png)
 
-> Some users have reported that on Linux systems (specifically Ubuntu), PyQt5 installation does not work. In that case, try: `sudo apt-get install python3-pyqt5` instead.
-
 Once installed, you can follow the second part of the [Build Engine](Build-Engine) guide to distribute your project as an executable.
 
 ## Updating the Engine (Python/Git)

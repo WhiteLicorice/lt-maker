@@ -177,7 +177,9 @@ class EventInspectorEngine():
         for event in self.event_db.get_by_level(level_nid):
             if event.level_nid == level_nid:
                 for command in self.get_commands(event.nid):
-                    if command.nid in [GameVar.nid, LevelVar.nid]:
+                    # Partially-typed python event commands (e.g. `$gvar `) reconstruct
+                    # with no parameters at all, so don't assume the keyword is present
+                    if command.nid in [GameVar.nid, LevelVar.nid] and command.parameters.get('Nid'):
                         all_vars.add(command.parameters['Nid'])
         return all_vars
 

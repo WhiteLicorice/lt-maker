@@ -143,13 +143,18 @@ class MountainPainter(Painter):
             self.organization[pos] = valid_coord
 
     def _quit_thread(self, thread):
-        thread.stop()
-        thread.wait()
+        # Drop it from the list *before* waiting. QThread.finished is emitted
+        # from inside wait(), and mountain_process_finished uses membership here
+        # to tell a real completion from a cancellation -- a cancelled thread
+        # solved for positions that may no longer exist (see resize()).
         if thread in self.current_threads:
             self.current_threads.remove(thread)
+        thread.stop()
+        thread.wait()
 
     def quit_all_threads(self):
-        for thread in self.current_threads:
+        threads = self.current_threads[:]
+        self.current_threads.clear()
+        for thread in threads:
             thread.stop()
             thread.wait()
-        self.current_threads.clear()

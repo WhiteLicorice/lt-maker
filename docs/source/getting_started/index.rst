@@ -9,5 +9,6 @@ lt-maker is a thing.
 
     Getting-Started
     Python-Installation
+    Installation-Linux
     making-a-basic-map
     Build-Engine

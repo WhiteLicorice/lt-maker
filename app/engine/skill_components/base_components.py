@@ -36,6 +36,14 @@ class CannotTrade(SkillComponent):
 
     def no_trade(self, unit) -> bool:
         return True
+        
+class CannotAccessConvoy(SkillComponent):
+    nid = 'cannot_access_convoy'
+    desc = "Unit cannot access the convoy from the map.  Useful for generics and summons."
+    tag = SkillTags.BASE
+
+    def no_convoy(self, unit) -> bool:
+        return True
 
 class AdditionalAccessories(SkillComponent):
     nid = 'additional_accessories'

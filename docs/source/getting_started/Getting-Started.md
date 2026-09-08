@@ -9,7 +9,7 @@ The Windows executable version of the **Lex Talionis** editor can be downloaded 
 
 ![PictureOfDoubleClick](images/PictureOfDoubleClick.png)
 
-This executable will **ONLY** work on Windows. On Mac and Linux you must follow the Python Installation method linked above. Once you have downloaded and unzipped the file, locate the `double_click_to_run.bat`. Double-click it to run the editor.
+This executable will **ONLY** work on Windows. On Mac, you must follow the Python Installation method linked above. On Linux, refer to the [Linux installation guide](LinuxInstall). Once you have downloaded and unzipped the file, locate the `double_click_to_run.bat`. Double-click it to run the editor.
 
 **warning: IF YOU DOWNLOAD THE WINDOWS EXECUTABLE VERSION YOU DO NOT NEED TO PROCEED WITH ANY OTHER INSTALLATION STEPS.**
 

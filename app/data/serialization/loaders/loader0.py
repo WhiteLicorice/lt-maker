@@ -49,7 +49,11 @@ def _load_as_dict(data_dir: Path) -> NestedPrimitiveDict:
     category_suffix = database.CATEGORY_SUFFIX
     for key in database.Database.save_data_types:
         as_dict[key] = _json_load(data_dir, key)
-        if as_dict[key] is None:
+        if as_dict[key] is None and key in database.Database.optional_data_types:
+            logging.warning("%s is missing from %s -- it predates this project. "
+                            "Starting with an empty %s instead.", key + '.json', data_dir, key)
+            as_dict[key] = []
+        elif as_dict[key] is None:
             raise FileNotFoundError(
                 f"Data directory {data_dir / key} does not exist!\n"
                 f"Please do the following steps:\n\n"

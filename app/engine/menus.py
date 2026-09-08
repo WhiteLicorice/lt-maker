@@ -1888,7 +1888,7 @@ class ChapterSelect(Main):
             elif self.rel_pos_y < 0:
                 self.rel_pos_y = min(0, self.rel_pos_y + 8)
 
-    def draw(self, surf, center=(WINWIDTH//2, WINHEIGHT//2), show_cursor=True, flicker=False):
+    def draw(self, surf, center=(WINWIDTH//2, WINHEIGHT//2), show_cursor=True, flicker=False, flip_timer=0):
         self.center = center
         num_options = len(self.options)
         start_index = max(0, self.current_index - 3)
@@ -1900,7 +1900,9 @@ class ChapterSelect(Main):
             else:
                 top = center[1] + idx * (option.height() + 1) - (num_options * (option.height() + 1)//2)
             if self.current_index == idx:
-                if flicker:
+                if flip_timer:
+                    option.draw_flip(surf, center[0], top, flip_timer)
+                elif flicker:
                     option.draw_flicker(surf, center[0], top)
                 else:
                     option.draw_highlight(surf, center[0], top)

@@ -117,9 +117,13 @@ class DropAbility(Ability):
         u = game.get_unit(unit.traveler)
         action.do(action.Drop(unit, u, game.cursor.position))
         if skill_system.has_canto(unit, u):
+            # Read the canto movement before HasAttacked lands -- components that
+            # stop granting canto once the unit has attacked abstain from
+            # canto_movement too, and has_canto above was judged on the same state.
+            canto_movement = skill_system.canto_movement(unit, u)
             action.do(action.HasAttacked(unit))
             game.state.change('move')
-            action.do(action.SetMovementLeft(unit, skill_system.canto_movement(unit, u)))
+            action.do(action.SetMovementLeft(unit, canto_movement))
             game.cursor.place_arrows()
         else:
             game.state.change('free')
@@ -142,9 +146,13 @@ class RescueAbility(Ability):
     def do(unit):
         u = game.board.get_unit(game.cursor.position)
         if skill_system.has_canto(unit, u):
+            # Read the canto movement before HasAttacked lands -- components that
+            # stop granting canto once the unit has attacked abstain from
+            # canto_movement too, and has_canto above was judged on the same state.
+            canto_movement = skill_system.canto_movement(unit, u)
             action.do(action.HasAttacked(unit))
             game.state.change('move')
-            action.do(action.SetMovementLeft(unit, skill_system.canto_movement(unit, u)))
+            action.do(action.SetMovementLeft(unit, canto_movement))
             game.cursor.place_arrows()
             game.cursor.set_pos(unit.position)
             # Actually Rescuing needs to be after the state changes above, so that if rescuing causes
@@ -293,7 +301,7 @@ class SupplyAbility(Ability):
 
     @staticmethod
     def targets(unit) -> set:
-        if game.game_vars.get('_convoy'):
+        if game.game_vars.get('_convoy') and not skill_system.no_convoy(unit):
             adj_allies = game.target_system.get_adj_allies(unit)
             if 'Convoy' in unit.tags:
                 return {unit.position}

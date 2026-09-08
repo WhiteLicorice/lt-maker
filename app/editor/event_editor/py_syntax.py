@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from PyQt5 import QtCore, QtGui
 from app import dark_theme
@@ -149,6 +150,14 @@ class PythonHighlighter(QtGui.QSyntaxHighlighter):
     def highlightBlock(self, text):
         """Apply syntax highlighting to the given block of text.
         """
+        # See EventHighlighter.highlightBlock -- an exception escaping a
+        # reimplemented Qt virtual aborts the whole editor.
+        try:
+            self._highlight_block(text)
+        except Exception:
+            logging.exception("Failed to syntax highlight line %s", text)
+
+    def _highlight_block(self, text):
         self.tripleQuoutesWithinStrings = []
         # Do other syntax formatting
         for expression, nth, format in self.rules:

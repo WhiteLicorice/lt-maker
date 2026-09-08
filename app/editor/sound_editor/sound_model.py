@@ -26,6 +26,8 @@ class SoundModel(TableModel):
                 return "Variant"
             elif val == 'soundroom_idx':
                 return 'Sound Room Number'
+            elif val == 'display_name':
+                return 'Display Name'
             else:
                 return val.capitalize()
         return None
@@ -105,7 +107,7 @@ class SFXModel(SoundModel):
         return main_flags
 
 class MusicModel(SoundModel):
-    rows = ['nid', 'extra', 'soundroom_idx']
+    rows = ['nid', 'extra', 'soundroom_idx', 'display_name']
 
     def create_new(self) -> bool:
         settings = MainSettingsController()
@@ -146,6 +148,7 @@ class MusicModel(SoundModel):
                 c.intro_full_path = saved_d[idx][1]
                 c.battle_full_path = saved_d[idx][2]
                 c.soundroom_idx = saved_d[idx][3]
+                c.display_name = saved_d[idx][4]
                 self._data.update_nid(c, c.nid)
 
     def autofill(self):

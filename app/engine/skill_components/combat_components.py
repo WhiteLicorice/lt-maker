@@ -34,7 +34,7 @@ class StatChangeExpression(SkillComponent):
     def stat_change(self, unit=None):
         from app.engine import evaluate
         try:
-            return {stat[0]: int(evaluate.evaluate(stat[1], unit)) for stat in self.value}
+            return {stat[0]: int(evaluate.evaluate(stat[1], unit, local_args={'skill': self.skill})) for stat in self.value}
         except Exception as e:
             logging.error("Couldn't evaluate conditional for skill %s: [%s], %s", self.skill.nid, str(self.value), e)
         return {stat[0]: 0 for stat in self.value}

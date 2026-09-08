@@ -14,6 +14,11 @@ class MountainRenderer(SimpleRenderer):
         self.painter.mountain_processing = self.mountain_processing
 
     def mountain_process_finished(self, thread, tilemap):
+        if thread not in self.painter.current_threads:
+            # Cancelled (quit_all_threads/_quit_thread already dropped it).
+            # Its group is pre-resize/pre-repaint, so filling organization from
+            # it would put sprites at positions that no longer hold mountains.
+            return
         print("Finished", id(thread), thread.did_complete)
         if thread.did_complete:
             self.painter.organization.update(thread.organization)

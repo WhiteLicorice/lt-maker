@@ -253,6 +253,30 @@ class CombatEnd(EventTrigger):
     playback: List[PlaybackBrush] #: a list of the playback brushes from the combat.
 
 @dataclass(init=True)
+class CombatAttack(EventTrigger):
+    """
+    Occurs when a unit attacks in combat, regardless of whether the attack hits, misses, or deals damage.
+    """
+    nid: ClassVar[NID] = 'combat_attack'
+    unit1: UnitObject #: the unit who is attacking.
+    unit2: UnitObject #: the unit being attacked (can be None).
+    position: Tuple[int, int] #: contains the position of unit1.
+    item: ItemObject #: the item/ability used by unit1.
+    damage: int #: the actual amount of damage dealt (0 if missed or no damage).
+
+@dataclass(init=True)
+class CombatAttacked(EventTrigger):
+    """
+    Occurs when a unit is hit by an attack in combat and takes actual damage (not on miss or on a hit that deals 0 damage).
+    """
+    nid: ClassVar[NID] = 'combat_attacked'
+    unit1: UnitObject #: the unit who was attacked.
+    unit2: UnitObject #: the unit who attacked (can be None).
+    position: Tuple[int, int] #: contains the position of unit1.
+    item: ItemObject #: the item/ability used against unit1.
+    damage: int #: the actual amount of damage dealt (always > 0).
+
+@dataclass(init=True)
 class OnTalk(EventTrigger):
     """
     This trigger fires when two units "Talk" to one another.

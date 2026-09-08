@@ -139,7 +139,14 @@ class EventHighlighter(QSyntaxHighlighter):
         self.event_syntax_formatter = EventSyntaxRuleHighlighter(self.window)
 
     def highlightBlock(self, text: str):
-        to_format = self.event_syntax_formatter.match_line(text)
+        # PyQt aborts the entire process (SIGABRT, no dialog, no chance to save)
+        # if an exception escapes a reimplemented virtual like this one.
+        # Syntax highlighting is cosmetic -- never let it take the editor down.
+        try:
+            to_format = self.event_syntax_formatter.match_line(text)
+        except Exception:
+            logging.exception("Failed to syntax highlight line %s", text)
+            return
         for piece_to_format in to_format:
             if piece_to_format.length == 0:
                 piece_to_format.length = 1

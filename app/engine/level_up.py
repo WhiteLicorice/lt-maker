@@ -273,7 +273,7 @@ class ExpState(State):
         elif self.state.get_state() == 'level_screen':
             if not self.level_up_screen:
                 self.level_up_screen = LevelUpScreen(
-                    self, self.unit, self.stat_changes, self.old_level, self.unit.level)
+                    self, self.unit, self.stat_changes, self.old_level, self.unit.level, self.unit_klass)
             if self.level_up_screen.update(current_time):
                 game.state.back()
                 game.events.trigger(triggers.UnitLevelUp(self.unit, self.stat_changes, self.source))
@@ -423,23 +423,26 @@ class ExpState(State):
         ExpState._give_skills(unit, unit_klass.learned_skills, compare, source_type=SourceType.KLASS)
 
 class LevelUpScreen():
-    bg = SPRITES.get('level_screen')
-    bg = bg.convert_alpha()
-    width = bg.get_width()
-    height = bg.get_height()
+    bg_top = SPRITES.get('level_screen_top')
+    bg_top = bg_top.convert_alpha()
+    bg_bottom = SPRITES.get('level_screen_bottom')
+    bg_bottom = bg_bottom.convert_alpha()
+    width = bg_bottom.get_width()
+    height = bg_bottom.get_height()
 
     spark_time = 350
     level_up_wait = 1366
 
     underline = SPRITES.get('stat_underline')
 
-    def __init__(self, parent, unit, stat_changes, old_level, new_level):
+    def __init__(self, parent, unit, stat_changes, old_level, new_level, old_class):
         self.parent = parent
         self.unit = unit
         self.stat_list = [stat_changes.get(nid, 0) for nid in DB.stats.keys()]
         self.stat_list = self.stat_list[:8]  # Can only show first 8 stats on level up
         self.old_level = old_level
         self.new_level = new_level
+        self.old_class = old_class
 
         self.current_spark = -1
 
@@ -453,6 +456,10 @@ class LevelUpScreen():
 
         self.state = 'scroll_in'
         self.start_time = 0
+
+        self.flipped = False
+        self.flip_start_time = 0
+        self.flip_timer = 0
 
     def make_spark(self, topleft):
         anim = RESOURCES.animations.get('StatUpSpark')
@@ -495,15 +502,26 @@ class LevelUpScreen():
                 self.start_time = current_time
 
         elif self.state == 'init_wait':
-            if current_time - self.start_time > 500:
-                if self.old_level == self.new_level:  # No level up spark
-                    self.state = 'get_next_spark'
-                else:
+            if self.old_class.name != DB.classes.get(self.unit.klass).name:
+                if current_time - self.start_time > 500:
+                    if self.flip_start_time == 0:
+                        self.flip_start_time = current_time
+                        get_sound_thread().play_sfx('Level_Up_Level')
+                    if self.flip_start_time and current_time - self.flip_start_time > 167:
+                        self.flipped = True
+                if current_time - self.start_time > 850: # No level up spark
+                        self.state = 'get_next_spark'
+                        self.start_time = current_time
+            elif current_time - self.start_time > 500:
+                if self.old_level != self.new_level:
                     self.state = 'first_spark'
                     topleft = (87, 27)
                     self.animations.append(self.make_spark(topleft))
                     get_sound_thread().play_sfx('Level_Up_Level')
-                self.start_time = current_time
+                    self.start_time = current_time
+                else:
+                    self.state = 'get_next_spark'
+                    self.start_time = current_time
 
         elif self.state == 'scroll_out':
             self.unit_scroll_offset += 10
@@ -573,7 +591,8 @@ class LevelUpScreen():
                 self.start_time = current_time
 
     def draw(self, surf):
-        sprite = self.bg.copy()
+        sprite_top = self.bg_top.copy()
+        sprite_bottom = self.bg_bottom.copy()
         # Changes through entire color wheel
         # from t = 0 to t = 1 in
         # 180 * 10 milliseconds
@@ -581,18 +600,31 @@ class LevelUpScreen():
         new_color = image_mods.blend_colors((88, 16, -40), (-80, -32, 40), t)
 
         # Render top
-        klass = DB.classes.get(self.unit.klass)
-        if FONT['text'].width(klass.name) > 60:
-            FONT['narrow'].blit(klass.name, sprite, (12, 3))
+        if self.flipped == False:
+            klass = self.old_class.name
         else:
-            FONT['text'].blit(klass.name, sprite, (12, 3))
-        FONT['text-yellow'].blit('Lv', sprite, (self.width//2 + 12, 3))
-        if self.state in ('scroll_in', 'init_wait'):
+            klass = DB.classes.get(self.unit.klass).name
+        if FONT['text'].width(klass) > 60:
+            FONT['narrow'].blit(klass, sprite_top, (12, 3))
+        else:
+            FONT['text'].blit(klass, sprite_top, (12, 3))
+        FONT['text-yellow'].blit('Lv', sprite_top, (self.width//2 + 12, 3))
+        if self.state in ('scroll_in', 'init_wait') and self.flipped == False:
             level = str(self.old_level)
         else:
             level = str(self.new_level)
         width = FONT['text-blue'].width(level)
-        FONT['text-blue'].blit(level, sprite, (self.width//2 + 50 - width, 3))
+        FONT['text-blue'].blit(level, sprite_top, (self.width//2 + 50 - width, 3))
+
+        if engine.get_time() > self.flip_start_time:
+            self.flip_timer = (engine.get_time() - self.flip_start_time) / 333
+        else:
+            self.flip_timer = 0
+        if self.flip_timer:
+            sprite_top = image_mods.do_flip(sprite_top, self.flip_timer)
+
+        pos = (6 - self.screen_scroll_offset, WINHEIGHT - 8 - self.height)
+        surf.blit(sprite_top, pos)
 
         # Render underlines
         new_underline_surf = image_mods.change_color(self.underline, new_color)
@@ -609,12 +641,12 @@ class LevelUpScreen():
                 else:
                     pos = self.get_position(idx)
                     pos = (pos[0] + 4, pos[1] + 11)
-                sprite.blit(new_underline_surf, pos)
+                sprite_bottom.blit(new_underline_surf, pos)
 
         # Update and draw arrow animations
         self.arrow_animations = [a for a in self.arrow_animations if not a.update()]
         for animation in self.arrow_animations:
-            animation.draw(sprite, blend=new_color)
+            animation.draw(sprite_bottom, blend=new_color)
 
         # Draw stats
         for idx, stat in enumerate(DB.stats.keys()):
@@ -623,10 +655,10 @@ class LevelUpScreen():
                 continue
             pos = self.get_position(idx)
             name = DB.stats.get(stat).name
-            render_text(sprite, ['text'], [name], ['yellow'], pos)
+            render_text(sprite_bottom, ['text'], [name], ['yellow'], pos)
             text = self.unit.stats[stat] - (self.stat_list[idx] if self.current_spark < idx else 0)
             width = FONT['text-blue'].width(str(text))
-            FONT['text-blue'].blit(str(text), sprite, (pos[0] + 40 - width, pos[1]))
+            FONT['text-blue'].blit(str(text), sprite_bottom, (pos[0] + 40 - width, pos[1]))
 
         # Blit unit's pic
         right = WINWIDTH - 4
@@ -634,7 +666,7 @@ class LevelUpScreen():
         icons.draw_portrait(surf, self.unit, bottomright=(right, bottom))
 
         pos = (6 - self.screen_scroll_offset, WINHEIGHT - 8 - self.height)
-        surf.blit(sprite, pos)
+        surf.blit(sprite_bottom, pos)
 
         # Update and draw animations
         self.animations = [a for a in self.animations if not a.update()]
