@@ -48,7 +48,8 @@ class SkillOption(menu_options.BasicOption):
         text = text_funcs.translate_and_text_evaluate(
             self.skill.desc,
             unit=game.get_unit(self.skill.owner_nid),
-            self=self.skill)
+            self=self.skill,
+            local_args={'skill': self.skill})
         return help_menu.HelpDialog(text, name=self.skill.name)
 
     def draw(self, surf, x, y):

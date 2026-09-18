@@ -18,11 +18,15 @@ from app.engine.graphics.ui_framework.ui_framework_layout import convert_align
 from app.engine.icons import draw_chibi, get_icon, get_icon_by_nid, get_portrait_from_nid
 from app.engine.objects.item import ItemObject
 from app.engine.objects.unit import UnitObject
+from app.engine.unit_sprite import load_klass_sprite
 from app.sprites import SPRITES
 from app.utilities.enums import Alignments, HAlignment, Orientation
 from app.utilities.typing import NID
 
 ICON_HEIGHT = 16
+
+# Rows of these types show animated map sprites, so they are rebuilt on every update
+MAP_SPRITE_DATA_TYPES = ('type_unit', 'type_class')
 
 HEIGHT_DATA_TYPE_MAP = {
     'type_base_item': ICON_HEIGHT,
@@ -67,7 +71,7 @@ class SimpleMenuUI():
                                background=bg, orientation=orientation,
                                option_text_align=text_align, default_row_height=entry_height)
     def set_data(self, raw_data):
-        if self._data == raw_data and not self._data_type == 'type_unit': # units need to be refreshed
+        if self._data == raw_data and self._data_type not in MAP_SPRITE_DATA_TYPES:
             return
         self._data = raw_data
         parsed_data = self.parse_data(raw_data)
@@ -108,9 +112,17 @@ class SimpleMenuUI():
         else:
             return [(None, choice_text if choice_text else choice_nid, choice_nid) for choice_nid, choice_text in split_data]
 
-    def parse_klass(self, klass: Klass, choice_name: str)-> Tuple[engine.Surface, str, str]:
-        # @TODO: figure out why klasses don't know their own sprite and fix that
-        return klass
+    def parse_klass(self, klass: Klass, choice_name: str) -> Tuple[UIComponent, str, str]:
+        if klass:
+            klass_icon = UIComponent()
+            klass_icon.size = (16, 16)
+            klass_icon.overflow = (12, 0, 12, 0) # map sprites are much larger than an icon
+            map_sprite = load_klass_sprite(klass.nid)
+            if map_sprite:  # A class without a map sprite resource shows just its name
+                klass_icon.add_surf(map_sprite.create_image('passive'), (-24, -24))
+            return (klass_icon, klass.name if not choice_name else choice_name, klass.nid)
+        else:
+            return (get_icon(None), "ERR", "ERR")
 
     def parse_custom_icon_data(self, tup: Tuple[NID, str, str, str], choice_name: str) -> Tuple[engine.Surface, str, str]:
         icon_sheet_nid = tup[0]
@@ -162,7 +174,7 @@ class SimpleMenuUI():
         if self._get_data:
             new_data = self._get_data()
             self.set_data(new_data)
-        elif self._data_type == 'type_unit': # we need to reset data to update sprites
+        elif self._data_type in MAP_SPRITE_DATA_TYPES: # we need to reset data to update sprites
             # elif because while not mutually exclusive, we only ever need one call of "set_data"
             if self._get_data:
                 new_data = self._get_data()

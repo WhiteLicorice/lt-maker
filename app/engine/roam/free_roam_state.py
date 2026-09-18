@@ -124,15 +124,19 @@ class FreeRoamState(MapState):
 
     def get_visit_region(self):
         """
-        # Returns the first region that is close enough to visit
+        # Returns the first event region under the roam unit whose condition lets it be visited.
+        # Several event regions can share a tile (e.g. a village's destroy and visit regions),
+        # so each one's condition is checked in turn
         """
-        if not self.roam_unit:
+        if not self.roam_unit or not self.roam_unit.position:
             return None
-        region = game.get_region_under_pos(self.roam_unit.position, RegionType.EVENT)
-        if region:
+        position = self.roam_unit.position
+        for region in game.level.regions.values():
+            if region.region_type != RegionType.EVENT or not region.contains(position):
+                continue
             try:
                 truth = evaluate.evaluate(region.condition, self.roam_unit,
-                                          position=self.roam_unit.position,
+                                          position=position,
                                           local_args={'region': region})
                 if truth:
                     return region

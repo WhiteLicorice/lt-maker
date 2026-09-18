@@ -321,7 +321,7 @@ class BasicSkillOption(BaseOption[SkillObject]):
 
     def get_help_box(self):
         if not self._help_box:
-            text = text_funcs.translate_and_text_evaluate(self._value.desc, self=self._value)
+            text = text_funcs.translate_and_text_evaluate(self._value.desc, self=self._value, local_args={'skill': self._value})
             self._help_box = help_menu.HelpDialog(text, name=self._value.name)
         return self._help_box
 
