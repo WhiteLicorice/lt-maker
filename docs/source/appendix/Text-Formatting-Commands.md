@@ -45,7 +45,7 @@ The below formatting can be used in both dialogue and most description boxes for
 
 `<red>`: Can be used to turn the font to red color. Turn back to normal with `</red>` or `</>`. Can also use `<blue>`, `<green>`, etc.
 
-`<icon>??</>`: Paste any 16x16 icon with a name directly into the text. For instance, `<icon>Waffle</>`.
+`<icon>??</>`: Paste any 16x16 icon with a name directly into the text. For instance, `<icon>Waffle</>`. It is recommended that you rename your icons via the Icons editor before using this. Otherwise, you will have to use the default project's names for icons. For example, `Affinity 0, 0` is the name of the GBA Thunder Affinity icon in the default project, so one would have to use `<icon>Affinity 0, 0</>` to show it in text without changes.
 
 `<text>`: Can be used to change the font. Turn back to normal with `</text>` or `</>`. Can also use `<nconvo>`, `<narrow>`, `<iconvo>`, `<bconvo>`, etc.
 
