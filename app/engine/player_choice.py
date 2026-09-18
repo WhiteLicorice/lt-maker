@@ -98,7 +98,8 @@ class PlayerChoiceState(MapState):
                 text = text_funcs.translate_and_text_evaluate(
                     skill.desc,
                     unit=game.get_unit(skill.owner_nid),
-                    self=skill)
+                    self=skill,
+                    local_args={'skill': skill})
                 self.help_boxes.append(help_menu.HelpDialog(text))
 
     def choose(self, selection):

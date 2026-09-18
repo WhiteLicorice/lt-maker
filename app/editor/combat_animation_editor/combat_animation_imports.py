@@ -339,11 +339,14 @@ def import_from_gba(current, fn):
     # Convert pixmaps to new palette colors
     convert_dict = editor_utilities.get_color_conversion(my_palette)
     pixmaps = {name: editor_utilities.color_convert_pixmap(pixmap, convert_dict) for name, pixmap in pixmaps.items()}
+    # What the transparent pixels hold now. A palette without the colorkey leaves them as the colorkey itself.
+    # Measuring frames against it matters because a frame's top left pixel can be artwork
+    colorkey = convert_dict.get(editor_utilities.qCOLORKEY, editor_utilities.qCOLORKEY)
     # Determine which pixmaps should be replaced by "wait" commands
-    empty_pixmaps = find_empty_pixmaps(pixmaps)
+    empty_pixmaps = find_empty_pixmaps(pixmaps, colorkey)
 
     # So now we have melee_anim and ranged_anim with all poses
-    melee_weapon_anim, ranged_weapon_anim = parse_gba_script(fn, pixmaps, weapon_type, empty_pixmaps)
+    melee_weapon_anim, ranged_weapon_anim = parse_gba_script(fn, pixmaps, weapon_type, empty_pixmaps, colorkey)
 
     for pose in melee_weapon_anim.poses:
         combine_identical_commands(pose)
@@ -443,7 +446,7 @@ def import_from_gba(current, fn):
         path = os.path.join(settings.get_current_project(), 'resources', 'combat_anims')
         RESOURCES.combat_anims.save_image(path, current)
 
-def parse_gba_script(fn, pixmaps, weapon_type, empty_pixmaps):
+def parse_gba_script(fn, pixmaps, weapon_type, empty_pixmaps, colorkey):
     # Read script
     # Now add poses to the weapon anim
     with open(fn, encoding='utf-8') as script_fp:
@@ -542,7 +545,7 @@ def parse_gba_script(fn, pixmaps, weapon_type, empty_pixmaps):
                     # Don't bother if already present
                     continue
                 pixmap = pixmaps[frame_nid]
-                x, y, width, height = editor_utilities.get_bbox(pixmap.toImage())
+                x, y, width, height = editor_utilities.get_bbox(pixmap.toImage(), colorkey)
                 if width > 0 and height > 0:
                     pixmap = pixmap.copy(x, y, width, height)
                     new_frame = combat_anims.Frame(frame_nid, (0, 0, width, height), (x, y), pixmap=pixmap)

@@ -142,6 +142,17 @@ class Channel():
                 return True
         return False
 
+    def _without_end_event(self, func, *args):
+        """
+        SDL posts the end event the moment a sound is stopped or replaced, just as if it had
+        finished playing. update treats that event as the track ending, so for a song that
+        was only just started it would skip ahead (e.g. past its intro). Only a sound that
+        really finishes should advance the channel.
+        """
+        self._channel.set_endevent()
+        func(*args)
+        self._channel.set_endevent(self.end_event)
+
     def _play(self):
         logging.debug('%s _Play: %s %s', self.nid, self.last_state, self.num_plays)
         self.last_play = engine.get_time()
@@ -154,16 +165,16 @@ class Channel():
 
         if self.name == "battle":
             if self.current_song.battle:
-                self._channel.play(self.current_song.battle, 0)
+                self._without_end_event(self._channel.play, self.current_song.battle, 0)
                 self.reset_volume()
         else:
             if self.current_song.intro and not self.played_intro:
                 # logging.debug("Playing Intro %s", self.current_song.intro)
-                self._channel.play(self.current_song.intro, 0)
+                self._without_end_event(self._channel.play, self.current_song.intro, 0)
                 self.played_intro = True
             else:
                 # logging.debug("Playing %s", self.current_song.song)
-                self._channel.play(self.current_song.song, 0)
+                self._without_end_event(self._channel.play, self.current_song.song, 0)
             self.reset_volume()
 
     def set_current_song(self, song, num_plays=-1):
@@ -179,7 +190,7 @@ class Channel():
 
     def clear(self):
         logging.debug("%s Clear", self.nid)
-        self._channel.stop()
+        self._without_end_event(self._channel.stop)
         self.current_song = None
         self.num_plays = 0
         self.played_intro = False
@@ -213,12 +224,20 @@ class Channel():
         self.state = "fade_out"
         self.last_update = engine.get_time()
 
+    def _finish_fade_in(self):
+        # A crossfade takes over the state, and update would never finish raising local_volume
+        if self.state == "fade_in":
+            self.local_volume = 1
+            self.reset_volume()
+
     def crossfade_in(self):
+        self._finish_fade_in()
         self.last_state = "playing"
         self.state = "crossfade_in"
         self.last_update = engine.get_time()
 
     def crossfade_out(self):
+        self._finish_fade_in()
         self.last_state = "playing"
         self.state = "crossfade_out"
         self.last_update = engine.get_time()
@@ -237,7 +256,7 @@ class Channel():
 
     def stop(self):
         logging.debug("%s Stop: %s", self.nid, self.last_state)
-        self._channel.stop()
+        self._without_end_event(self._channel.stop)
         self.played_intro = False
         self.last_state = "stopped"
         self.state = "stopped"
@@ -261,11 +280,17 @@ class ChannelPair():
         self.channel = Channel("music", nid, event)
         self.battle = Channel("battle", nid + 1, event)
 
-        self.battle_mode = False
-        self.battle.crossfade_volume = 0
-        self.battle.reset_volume()
+        self._reset_battle_mode()
 
         self.current_song = None
+
+    def _reset_battle_mode(self):
+        """Crossfades fully back to the normal track, which is where every song starts"""
+        self.battle_mode = False
+        self.channel.crossfade_volume = 1
+        self.battle.crossfade_volume = 0
+        self.channel.reset_volume()
+        self.battle.reset_volume()
 
     def is_playing(self):
         return (self.channel.state in self.channel.playing_states) or \
@@ -312,6 +337,8 @@ class ChannelPair():
         self.current_song = None
         self.channel.clear()
         self.battle.clear()
+        # The next song to use this pair must not inherit the old song's battle crossfade
+        self._reset_battle_mode()
 
     def fade_in(self):
         self.channel.fade_in()
@@ -699,8 +726,10 @@ class DefaultSoundController(SoundController):
         any_music_is_playing = self.is_playing()
         current_song = self.get_current_song()
 
-        # Confirm that we're not just replacing the same song
-        if current_song is next_song:
+        # Confirm that we're not just replacing the same song. That includes a song that is still
+        # waiting for the previous one to fade out: it's already been asked for, but isn't playing yet
+        queued_song = self.song_stack[-1] if self.song_stack and self.state == GlobalMusicState.FADE_OUT_TO_FADE_IN else None
+        if current_song is next_song or queued_song is next_song:
             logging.info("Song already present")
             return None
 

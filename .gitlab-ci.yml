@@ -23,6 +23,7 @@ run_tests:
         - apt-get install -y libgl1
         - python --version
         - pip install -r requirements_editor.txt
+        - pip install pillow  # test_gba_script_import writes indexed PNG fixtures
     script:
         - echo "Running tests"
         - python -m app.engine.codegen.source_generator

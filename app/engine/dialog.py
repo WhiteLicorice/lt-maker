@@ -60,6 +60,7 @@ class DialogState(Enum):
 class Dialog:
     solo_flag = False
     cursor_offset = [0] * 20 + [1] * 2 + [2] * 8 + [1] * 2
+    cursor_gap = 4  # Pixels between the end of the text and the waiting cursor
     transition_speed = utils.frames2ms(10)
     pause_before_wait_time = utils.frames2ms(9)
     pause_time = utils.frames2ms(3)
@@ -403,6 +404,9 @@ class Dialog:
             start, stop = self.text_indices[-1]
             stop += len(next_word) + 1
             next_width = self.tagged_text[start:stop].width()
+            if self._cursor_drawn_after(self.text_index + len(next_word) + 1):
+                # The waiting cursor sits at the end of this word, so it has to fit on the line too
+                next_width += self.cursor_gap + self.cursor.get_width()
             if next_width > self.text_width:
                 # move to next line and discard ' '
                 self._next_line(True)
@@ -437,6 +441,20 @@ class Dialog:
             else:
                 word += letter
         return word
+
+    def _cursor_drawn_after(self, text_index: int) -> bool:
+        """
+        Whether the waiting cursor will be drawn right after the text that ends just
+        before text_commands[text_index], i.e. a wait arrives before any more text or line break
+        """
+        if not self.draw_cursor_flag:
+            return False
+        for command in self.text_commands[text_index:]:
+            if command in ("{w}", "{wait}"):
+                return True
+            if len(command) == 1 or command in ("{br}", "{break}", "{sub_break}", "{clear}"):
+                return False
+        return False
 
     def is_complete(self) -> bool:
         """
@@ -707,7 +725,7 @@ class Dialog:
 
             if self.state == DialogState.WAIT and self.draw_cursor_flag:
                 cursor_pos = (
-                    4 + end_pos[0],
+                    self.cursor_gap + end_pos[0],
                     6 + end_pos[1] + self.cursor_offset[self.cursor_offset_index],
                 )
                 surf.blit(self.cursor, cursor_pos)

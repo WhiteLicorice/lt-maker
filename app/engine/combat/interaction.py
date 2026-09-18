@@ -67,7 +67,9 @@ def engage(attacker: UnitObject, positions: list, main_item: ItemObject, skip: b
 
             # To separate out each instance of the multi-target item so that
             # each positional target pretends to be it's own item-target pair for the next combat.
-            multitarget_items[idx:idx] = [item] * (len(position) - 1)
+            # Earlier multi-target items are already expanded, so this item sits where its first target does
+            first_target_idx = len(target_positions) - len(position)
+            multitarget_items[first_target_idx:first_target_idx] = [item] * (len(position) - 1)
 
         elif position:
             main_target, splash = item_system.splash(attacker, item, position)
