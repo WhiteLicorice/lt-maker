@@ -438,5 +438,37 @@
     {
         "nid": "battle_bg_desc",
         "text": "Display battle background during combat."
+    },
+    {
+        "nid": "Random_desc",
+        "text": "Stats randomly increase based on growth rates."
+    },
+    {
+        "nid": "Fixed_desc",
+        "text": "Stats will always be their averages."
+    },
+    {
+        "nid": "Dynamic_desc",
+        "text": "Stats that don't increase for one level up are more likely to increase on the next one."
+    },
+    {
+        "nid": "Lucky_desc",
+        "text": "Units will get perfect level ups."
+    },
+    {
+        "nid": "Bexp_desc",
+        "text": "ONLY three stats will increase per level up."
+    },
+    {
+        "nid": "Casual_desc",
+        "text": "Units that fall in combat will come back next chapter."
+    },
+    {
+        "nid": "Classic_desc",
+        "text": "Units that fall in combat will die permanently."
+    },
+    {
+        "nid": "_attribution",
+        "text": "This game is made by (Edit \"_attribution\" in the Translations editor.)"
     }
 ]
