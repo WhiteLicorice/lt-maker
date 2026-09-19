@@ -200,6 +200,30 @@ def convert_default_palette_pixmap(pixmap: QtGui.QPixmap) -> Optional[QtGui.QPix
         pixmap = QtGui.QPixmap.fromImage(im)
         return pixmap
 
+def make_gray_colorkey(image: QtGui.QImage) -> QtGui.QImage:
+    #   Easier/Efficient way would be to use either:
+    #   - QImage.Format_Grayscale8_Alpha8 (not in PyQt5 yet)
+    #   - QImage.setAlphaChannel() (available in PyQt5 5.15.3)
+    #   So remember to update this when update PyQt5
+
+    new_image = image.convertToFormat(QtGui.QImage.Format_ARGB32)
+
+    for x in range(new_image.width()):
+        for y in range(new_image.height()):
+            if new_image.pixel(x, y) == qCOLORKEY:
+                continue
+
+            r, g, b, a = QtGui.QColor(image.pixel(x, y)).getRgb()
+            gray = int(0.298*r + 0.587*g + 0.114*b)
+            new_image.setPixel(x, y, QtGui.qRgb(gray, gray, gray))
+
+    return new_image
+
+def make_gray_colorkey_pixmap(pixmap: QtGui.QPixmap) -> QtGui.QPixmap:
+    im = pixmap.toImage()
+    im = make_gray_colorkey(im)
+    return QtGui.QPixmap.fromImage(im)
+
 def get_bbox(image, exclude_color: Optional[QtGui.qRgb] = None):
     min_x, max_x = image.width(), 0
     min_y, max_y = image.height(), 0

@@ -1,7 +1,7 @@
 import os
 
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QCheckBox, \
-    QGridLayout, QPushButton, QSizePolicy, QFrame, QSplitter, QButtonGroup
+    QGridLayout, QPushButton, QSizePolicy, QFrame, QSplitter, QButtonGroup, QMessageBox
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap, QPainter, QImage, QColor
 
@@ -106,7 +106,10 @@ class NewMapSpriteProperties(QWidget):
         self.team_box.edit.activated.connect(self.team_changed)
         self.team_box.setMaximumWidth(120)
 
+        config_section = QVBoxLayout()
         self.gray_box = PropertyCheckBox("Display exhausted sprite?", QCheckBox, self)
+        self.gray_button = QPushButton("Generate exhauted sprite")
+        self.gray_button.clicked.connect(self.gray_button_clicked)
 
         bg_section = QHBoxLayout()
         self.bg_button = QPushButton(self)
@@ -121,10 +124,14 @@ class NewMapSpriteProperties(QWidget):
         bg_section.addWidget(self.grid_button)
         bg_section.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
 
+        config_section.addWidget(self.gray_box)
+        config_section.addWidget(self.gray_button)
+        config_section.addLayout(bg_section)
+        config_section.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+
         right_section.addLayout(button_section)
         right_section.addWidget(self.team_box)
-        right_section.addWidget(self.gray_box)
-        right_section.addLayout(bg_section)
+        right_section.addLayout(config_section)
 
         left_frame = QFrame(self)
         left_frame.setLayout(left_section)
@@ -270,3 +277,19 @@ class NewMapSpriteProperties(QWidget):
 
     def team_changed(self, val):
         self.draw_frame()
+
+    def gray_button_clicked(self):
+        if not self.current:
+            return
+
+        ret = QMessageBox.warning(self, "Irreversible edits", "The engine will modify your %s file directly.\n"
+                                  "Do you want to continue?" % self.current.stand_full_path,
+                                  QMessageBox.Ok | QMessageBox.Cancel)
+        if ret == QMessageBox.Ok:
+            new_standing_pix = map_sprite_model.generate_exhausted_sprite(self.current.standing_pixmap)
+            new_standing_pix.save(self.current.stand_full_path)
+            self.current.standing_pixmap = new_standing_pix
+            self.set_current(self.current)
+
+        elif ret == QMessageBox.Cancel:
+            pass

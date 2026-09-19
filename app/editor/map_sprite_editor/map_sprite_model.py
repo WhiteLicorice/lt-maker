@@ -307,6 +307,20 @@ def import_gba_map_sprite(standing_pix: QPixmap, moving_pix: QPixmap, gba_overha
 
     return new_s, new_m
 
+def generate_exhausted_sprite(standing_pix: QPixmap) -> QPixmap:
+    width = standing_pix.width()
+    height = standing_pix.height()
+
+    passive = standing_pix.copy(0, 0, width, height//3)
+    exhaust = editor_utilities.make_gray_colorkey_pixmap(passive)
+
+    new_pix = standing_pix.copy()
+    painter = QPainter(new_pix)
+    painter.drawPixmap(0, height//3, exhaust)
+    painter.end()
+
+    return new_pix
+
 class MapSpriteModel(ResourceCollectionModel):
     def data(self, index, role):
         if not index.isValid():
