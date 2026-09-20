@@ -121,6 +121,8 @@ class LTNestedList(QWidget):
         self.search_list = QListWidget()
         layout.addWidget(self.search_list)
         self.search_list.itemClicked.connect(self.on_filter_list_click)
+        self.search_list.customContextMenuRequested.connect(self.searchMenuRequested)
+        self.search_list.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.search_list.hide()
 
         self.tree_widget = QTreeWidget()
@@ -128,8 +130,7 @@ class LTNestedList(QWidget):
         layout.addWidget(self.tree_widget)
 
         self.new_item_button = QPushButton("Create New")
-        self.new_item_button.clicked.connect(lambda: self.new(self.tree_widget.selectedIndexes()[0] if self.tree_widget.selectedIndexes() else None,
-                                             self.tree_widget.selectedItems()[0] if self.tree_widget.selectedItems() else None))
+        self.new_item_button.clicked.connect(lambda: self.new(self.tree_widget.selectedItems()[0] if self.tree_widget.selectedItems() else None))
         layout.addWidget(self.new_item_button)
         self.setLayout(layout)
 
@@ -156,29 +157,79 @@ class LTNestedList(QWidget):
 
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Delete:
-            if self.tree_widget.selectedIndexes():
-                self.delete(self.tree_widget.selectedIndexes()[0], self.tree_widget.selectedItems()[0])
+            if not self.search_list.isHidden():
+                result = self.search_list.currentItem()
+                item = self.find_item_by_nid(result.text()) if result else None
+                if item:
+                    self.delete_from_search(item)
+            elif self.tree_widget.selectedItems():
+                self.delete(self.tree_widget.selectedItems()[0])
 
     def customMenuRequested(self, pos):
         item = self.tree_widget.itemAt(pos)
-        index = self.tree_widget.indexAt(pos)
         menu = QMenu(self)
-        new_action = QAction("New", self, triggered=lambda: self.new(index, item))
+        new_action = QAction("New", self, triggered=lambda: self.new(item))
         menu.addAction(new_action)
-        new_category = QAction("New Folder", self, triggered=lambda:self.new_category(index, item))
+        new_category = QAction("New Folder", self, triggered=lambda:self.new_category(item))
         menu.addAction(new_category)
         if item:
             is_category = item.data(0, IsCategoryRole)
             if self.allow_duplicate and not is_category:
-                duplicate_action = QAction("Duplicate", self, triggered=lambda: self.duplicate(index, item))
+                duplicate_action = QAction("Duplicate", self, triggered=lambda: self.duplicate(item))
                 menu.addAction(duplicate_action)
-            if self.can_delete(index, item):
-                delete_action = QAction("Delete", self, triggered=lambda: self.delete(index, item))
+            if self.can_delete(item):
+                delete_action = QAction("Delete", self, triggered=lambda: self.delete(item))
                 menu.addAction(delete_action)
             if is_category or self.allow_rename:
                 rename_action = QAction("Rename", self, triggered=lambda: self.rename(item))
                 menu.addAction(rename_action)
         menu.popup(self.tree_widget.viewport().mapToGlobal(pos))
+
+    def searchMenuRequested(self, pos):
+        """Context menu for the search results.
+
+        Every action runs against the real tree item behind the result, so a duplicate
+        lands beside its original inside its folder. New and New Folder are left off:
+        a filtered result carries no sensible place to insert a fresh entry at.
+        """
+        result = self.search_list.itemAt(pos)
+        item = self.find_item_by_nid(result.text()) if result else None
+        if not item:
+            return
+        menu = QMenu(self)
+        if self.allow_duplicate:
+            duplicate_action = QAction("Duplicate", self, triggered=lambda: self.duplicate_from_search(item))
+            menu.addAction(duplicate_action)
+        if self.can_delete(item):
+            delete_action = QAction("Delete", self, triggered=lambda: self.delete_from_search(item))
+            menu.addAction(delete_action)
+        if self.allow_rename:
+            rename_action = QAction("Rename", self, triggered=lambda: self.rename_from_search(item))
+            menu.addAction(rename_action)
+        menu.popup(self.search_list.viewport().mapToGlobal(pos))
+
+    def duplicate_from_search(self, item: QTreeWidgetItem):
+        self.duplicate(item)
+        self.refresh_search_list(self.get_selected_nid())
+
+    def delete_from_search(self, item: QTreeWidgetItem):
+        self.delete(item)
+        self.refresh_search_list(self.get_selected_nid())
+
+    def rename_from_search(self, item: QTreeWidgetItem):
+        # editItem on the hidden tree opens an editor nobody can see, and strands the
+        # tree in EditingState -- so drop the filter first and rename in the visible tree
+        self.search_box.clear()
+        self.select_item(item)
+        self.rename(item)
+
+    def refresh_search_list(self, select_nid: Optional[NID] = None):
+        """Rebuild the results so entries added or removed behind the filter show up."""
+        self.on_filter_changed(self.search_box.text())
+        for i in range(self.search_list.count()):
+            if self.search_list.item(i).text() == select_nid:
+                self.search_list.setCurrentRow(i)
+                return
 
     def reset(self, list_entries: Optional[List[NID]], list_categories: Optional[Categories]):
         previous_selected_item_nid = self.get_selected_nid()
@@ -236,7 +287,7 @@ class LTNestedList(QWidget):
             raise ValueError("Fatal: old_nid '%s' not found in tree" % old_nid)
         old_item.setText(0, new_nid)
 
-    def new(self, index, item: Optional[QTreeWidgetItem]):
+    def new(self, item: Optional[QTreeWidgetItem]):
         list_entries, _ = self.get_list_and_category_structure()
         nids = list_entries
         new_nid = str_utils.get_next_name("new", nids)
@@ -246,15 +297,15 @@ class LTNestedList(QWidget):
             if isinstance(attempt, list):
                 for nid in attempt:
                     icon = self.get_icon(nid)
-                    self.insert_item(index, nid, item, icon)
+                    self.insert_item(nid, item, icon)
             elif isinstance(attempt, NID):
                 new_nid = attempt
                 icon = self.get_icon(new_nid)
-                self.insert_item(index, new_nid, item, icon)
+                self.insert_item(new_nid, item, icon)
             elif attempt:
-                self.insert_item(index, new_nid, item, icon)
+                self.insert_item(new_nid, item, icon)
 
-    def new_category(self, index, item: Optional[QTreeWidgetItem]):
+    def new_category(self, item: Optional[QTreeWidgetItem]):
         closest_category = self._determine_category_parent(item)
         # Siblings share a namespace, entries included -- a folder named after the unit
         # beside it is indistinguishable from that unit everywhere it is looked up by name
@@ -262,11 +313,11 @@ class LTNestedList(QWidget):
                          for i in range(closest_category.childCount())}
         new_category_name = str_utils.get_next_name("New Category", sibling_names)
         new_category = self.create_tree_entry(new_category_name, create_empty_icon(32, 32), True)
-        row = self._determine_insertion_row(index, item)
+        row = self._determine_insertion_row(item)
         closest_category.insertChild(row, new_category)
         self.regenerate_icons(new_category)
 
-    def duplicate(self, index, item: QTreeWidgetItem):
+    def duplicate(self, item: QTreeWidgetItem):
         list_entries, _ = self.get_list_and_category_structure()
         nids = list_entries
         nid = item.data(0, 2)
@@ -274,14 +325,14 @@ class LTNestedList(QWidget):
         is_category = item.data(0, IsCategoryRole)
         if not is_category: # duping categories doesn't make sense, lol
             if self.attempt_duplicate and self.attempt_duplicate(nid, new_nid):
-                self.insert_item(index, new_nid, item, item.icon(0))
+                self.insert_item(new_nid, item, item.icon(0))
 
-    def insert_item(self, index, new_nid, item: Optional[QTreeWidgetItem], icon: Optional[QIcon] = None):
+    def insert_item(self, new_nid, item: Optional[QTreeWidgetItem], icon: Optional[QIcon] = None):
         if icon is None:
             icon = create_empty_icon(32, 32)
         closest_category = self._determine_category_parent(item)
         new_item = self.create_tree_entry(new_nid, icon, False)
-        row = self._determine_insertion_row(index, item)
+        row = self._determine_insertion_row(item)
         closest_category.insertChild(row, new_item)
         self.select_item(new_item)
         self.data_changed(new_item)
@@ -291,8 +342,8 @@ class LTNestedList(QWidget):
         if self.allow_rename and item and not item.data(0, IsCategoryRole):
             self.on_begin_rename_item(item)
 
-    def can_delete(self, index, item: QTreeWidgetItem):
-        if not index or not item:
+    def can_delete(self, item: Optional[QTreeWidgetItem]):
+        if not item:
             return False
         is_category = item.data(0, IsCategoryRole)
         if is_category and not item.childCount(): # is an empty category
@@ -301,18 +352,19 @@ class LTNestedList(QWidget):
             return True
         return False
 
-    def delete(self, index, item: QTreeWidgetItem):
+    def delete(self, item: QTreeWidgetItem):
         nid = item.data(0, 2)
         actually_delete = False
-        if self.can_delete(index, item):
+        if self.can_delete(item):
             if item.data(0, IsCategoryRole):
                 actually_delete = True
             elif self.attempt_delete and self.attempt_delete(nid):
                 actually_delete = True
         if actually_delete:
             parent = item.parent() or self.tree_widget.invisibleRootItem()
+            row = self._row_of(item)
             parent.removeChild(item)
-            index_of_item_before = min(index.row(), parent.childCount() - 1)
+            index_of_item_before = min(row, parent.childCount() - 1)
             self.select_item(parent.child(index_of_item_before))
 
     def is_editor_open(self) -> bool:
@@ -479,13 +531,23 @@ class LTNestedList(QWidget):
 
         return (item_list, item_categories)
 
-    def _determine_insertion_row(self, index, item: Optional[QTreeWidgetItem]) -> int:
-        if not item or not index: # clicked on empty space - add to end of top level
+    def _row_of(self, item: QTreeWidgetItem) -> int:
+        """The item's row beneath its own parent.
+
+        An item knows its parent, so its row needs no QModelIndex handed over by the
+        view. That is what lets the search results drive the same insert/delete
+        operations as the tree itself, even though a filtered row has no index into it.
+        """
+        parent = item.parent() or self.tree_widget.invisibleRootItem()
+        return parent.indexOfChild(item)
+
+    def _determine_insertion_row(self, item: Optional[QTreeWidgetItem]) -> int:
+        if not item: # clicked on empty space - add to end of top level
             return self.tree_widget.invisibleRootItem().childCount()
         if item.data(0, IsCategoryRole): # clicked on a category - add to bottom of category
             return item.childCount()
         else: # clicked on an item - add immediately after item
-            return index.row() + 1
+            return self._row_of(item) + 1
 
     def _determine_category_parent(self, item: Optional[QTreeWidgetItem]) -> QTreeWidgetItem:
         """determines the closest category to the clicked item.
