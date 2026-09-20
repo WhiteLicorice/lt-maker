@@ -15,9 +15,13 @@ from PyQt5.QtWidgets import (QCheckBox, QDialog, QGridLayout, QLineEdit,
 
 
 class IconSheetList(QListWidget):
-    def __init__(self, delete_func, parent=None):
+    def __init__(self, delete_func, reorder_func, parent=None):
         super().__init__(parent)
         self._delete_func = delete_func
+        self._reorder_func = reorder_func
+        self.setDragDropMode(QListWidget.InternalMove)
+        self.setDefaultDropAction(Qt.MoveAction)
+        self.setToolTip("Drag to reorder icon sheets")
 
     def keyPressEvent(self, event):
         super().keyPressEvent(event)
@@ -25,6 +29,10 @@ class IconSheetList(QListWidget):
             current = self.currentItem()
             if current:
                 self._delete_func(current.text())
+
+    def dropEvent(self, event):
+        super().dropEvent(event)
+        self._reorder_func([self.item(i).text() for i in range(self.count())])
 
 class IconTab(QWidget):
     side_menu_enabled: bool = False
@@ -64,7 +72,7 @@ class IconTab(QWidget):
 
             left_layout.addWidget(self.icon_sheet_search)
 
-            self.icon_sheet_list = IconSheetList(self.delete_icon_sheet)
+            self.icon_sheet_list = IconSheetList(self.delete_icon_sheet, self.reorder_icon_sheets)
             for i, icon_sheet in enumerate(data):
                 self.icon_sheet_list.insertItem(i, icon_sheet.nid)
             self.icon_sheet_list.itemSelectionChanged.connect(self.on_icon_sheet_selection_changed)
@@ -90,6 +98,19 @@ class IconTab(QWidget):
                 self.full_model.delete(i)
                 self.update_list()
                 return
+
+    def reorder_icon_sheets(self, shown_order: List[NID]):
+        """Rearrange the icon sheets to match the order the list widget now shows.
+
+        Sheets currently hidden by the search filter hold their slots; the shown
+        sheets are redistributed among the slots they already occupied.
+        """
+        shown = set(shown_order)
+        shown_iter = iter(shown_order)
+        desired = [next(shown_iter) if sheet.nid in shown else sheet.nid for sheet in self._data]
+        for target, nid in enumerate(desired):
+            self._data.move_index(self._data.index(nid), target)
+        self.full_model.reorder_sub_data()
 
     def on_icon_sheet_selection_changed(self):
         item = self.icon_sheet_list.currentItem()

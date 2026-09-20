@@ -101,6 +101,21 @@ class IconModel(ResourceCollectionModel):
                 self.sub_data.delete(i)
         self.layoutChanged.emit()
 
+    def reorder_sub_data(self):
+        """Re-sort the sliced icons to follow the current icon sheet order.
+
+        Keeps the existing Icon objects (and their aliases) rather than re-slicing.
+        """
+        self.layoutAboutToBeChanged.emit()
+        by_sheet = {}
+        for icon in self.sub_data:
+            by_sheet.setdefault(icon.parent_nid, []).append(icon)
+        self.sub_data.clear()
+        for sheet in self._data:
+            for icon in by_sheet.get(sheet.nid, []):
+                self.sub_data.append(icon)
+        self.layoutChanged.emit()
+
 class Icon16Model(IconModel):
     database = RESOURCES.icons16
     width, height = 16, 16
@@ -273,6 +288,10 @@ class MapIconModel(Icon16Model):
     def __init__(self, data, window):
         super().__init__(data, window)
         self.sub_data = self._data
+
+    def reorder_sub_data(self):
+        # Map icons are never sliced -- sub_data *is* _data, so it is already in order
+        pass
 
     def flags(self, index):
         if index.isValid():
