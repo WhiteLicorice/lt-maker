@@ -52,7 +52,7 @@ class IconModel(ResourceCollectionModel):
             return False
         if role == Qt.EditRole:
             item: Icon = self.sub_data[index.row()]
-            item.nid = value
+            self.sub_data.update_nid(item, value)
             self._data.get(item.parent_nid).set_alias(item.nid, item.icon_index)
         return True
 

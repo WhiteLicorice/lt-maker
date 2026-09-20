@@ -75,7 +75,7 @@ class EventState(State):
                 else:
                     if not DB.overworlds.values(): # don't go to overworld?
                         logging.error('No overworld selected at end of level ' + current_level_nid)
-                        game.game_vars['should_go_to_overworld'] = False
+                        game.game_vars['_should_go_to_overworld'] = False
                         game.game_vars['_next_overworld_nid'] = None
                     else: # go to default
                         game.game_vars['_next_overworld_nid'] = DB.overworlds.values()[0].nid

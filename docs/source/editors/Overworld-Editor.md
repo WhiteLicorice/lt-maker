@@ -88,6 +88,22 @@ And you can see the results below:
 
 Not so painful, is it? There a variety of commands that are used in the overworld. All of them are documented in the `Show Commands` button in the event editor; feel free to check them out.
 
+## Returning to the Overworld After a Level
+
+Each level has a **Go to overworld after?** checkbox in its properties in the Level Editor. It only shows up once the `overworld` constant is turned on. When a level with this box checked ends, the game saves and sends the player to the overworld, where they pick what to do next by selecting a node, instead of moving straight on to the next level in the level list.
+
+A couple of things decide where the player ends up:
+
+* **Which overworld.** The player goes back to the overworld they were last on, or the first overworld if they haven't visited one yet. To send them to a different one, set the `_go_to_overworld_nid` game variable (see Special Variables) before the level ends:
+
+```
+game_var;_go_to_overworld_nid;MyOverworld
+```
+
+* **`set_next_chapter` takes priority.** If an event has called `set_next_chapter` by the time the level ends, the game goes straight to that chapter and skips the overworld, even if the box is checked.
+
+That second point matters for optional chapters, like paralogues the player can start from the overworld at any time. To bring the player back to the overworld when one of these ends, check **Go to overworld after?** on it and *don't* call `set_next_chapter` in its ending events. The player lands back on the overworld and can carry on from there. Save `set_next_chapter` for when you really do want to skip the overworld.
+
 ## Overworld Nodes
 
 This guide will serve as an introduction to the “Overworld Node Menu Options” feature. If you have not done so, please read the guide on Overworlds in order to familiarize yourself with how they work, before reading this guide.

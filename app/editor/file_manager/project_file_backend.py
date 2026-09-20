@@ -352,6 +352,12 @@ class ProjectFileBackend():
         except Exception:
             self.metadata = Metadata()
 
+        if self.metadata.serialization_version > CURRENT_SERIALIZATION_VERSION:
+            error_msg = "Engine version is outdated, and will not open this newer project. Update to a newer version of the engine."
+            logging.error(error_msg)
+            QMessageBox.warning(self.parent, "Project load failed", error_msg)
+            return False
+
         if self.metadata.serialization_version < CURRENT_SERIALIZATION_VERSION:
             ret = QMessageBox.warning(self.parent, "Main Editor",
                                         "Project serialization version %d is outdated. The engine requires serialization version %d.\n"

@@ -110,7 +110,8 @@ class FontModel(ResourceCollectionModel):
                 'The font may not render correctly without one.' % os.path.basename(fn))
         nid = os.path.splitext(os.path.basename(fn))[0]
         nid = str_utils.get_next_name(nid, [d.nid for d in RESOURCES.fonts])
-        new_font = Font(nid=nid, file_name=file_name_no_ext)
+        new_font = Font(nid=nid)
+        new_font.set_full_path(file_name_no_ext)
         RESOURCES.fonts.append(new_font)
         settings.set_last_open_path(os.path.dirname(fn))
         return new_font

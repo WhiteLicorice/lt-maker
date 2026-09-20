@@ -964,7 +964,10 @@ class SetNextChapter(EventCommand):
 
     desc = \
         """
-Sets the next chapter the player will go to
+Sets the next chapter the player will go to.
+
+This takes priority over the current level's *Go to overworld after?* setting: if a next chapter has been set
+when the level ends, the game goes straight to that chapter instead of returning to the overworld.
         """
 
     keywords = ["Chapter"]
