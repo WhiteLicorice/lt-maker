@@ -1,3 +1,4 @@
+import os
 from app.constants import WINWIDTH, WINHEIGHT, COLORKEY
 from app.data.resources.resources import RESOURCES
 from app.data.database.database import DB
@@ -9,6 +10,7 @@ from app.engine import engine, image_mods, item_system, item_funcs, skill_system
 
 from app.data.resources.combat_anims import CombatAnimation, WeaponAnimation, EffectAnimation
 from app.data.resources.combat_palettes import Palette
+from app.utilities import file_utils
 
 import logging
 
@@ -156,10 +158,13 @@ class BattleAnimation():
         image_full_path = self.anim_prefab.full_path
         self.anim_prefab.image = engine.image_load(image_full_path, convert=True)
         colors = self.current_palette.colors.values()
-        if COLORKEY in colors:
-            engine.set_colorkey(self.anim_prefab.image, COLORKEY, rleaccel=True)
-        else:  # Effects can use 0, 0, 0 as their colorkey
+        if file_utils.Pltfm.mac():
             engine.set_colorkey(self.anim_prefab.image, (0, 0, 0), rleaccel=True)
+        else:
+            if COLORKEY in colors:
+                engine.set_colorkey(self.anim_prefab.image, COLORKEY, rleaccel=True)
+            else:  # Effects can use 0, 0, 0 as their colorkey
+                engine.set_colorkey(self.anim_prefab.image, (0, 0, 0), rleaccel=True)
         for frame in self.anim_prefab.frames:
             frame.image = engine.subsurface(self.anim_prefab.image, frame.rect)
 
