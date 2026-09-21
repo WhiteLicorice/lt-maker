@@ -719,12 +719,14 @@ class MoveState(MapState):
         if cur_unit.traveler:
             cur_unit.lead_unit = True
 
+        self.move_selection = game.path_system.get_move_selection(cur_unit)
+        # The cursor clamps to the same selection this state judges a SELECT against
+        game.cursor.move_selection = self.move_selection
         if cur_unit.has_traded:
-            self.valid_moves = game.path_system.get_valid_moves(cur_unit)
-            self.valid_xcom_moves = set()
-            game.highlight.display_moves(self.valid_moves, light=False)
+            # A traded unit has already acted, so only show where it can still walk
+            game.highlight.display_moves(self.move_selection.normal, light=False)
         else:
-            self.valid_moves, self.valid_xcom_moves = game.highlight.display_highlights(cur_unit)
+            game.highlight.display_highlights(cur_unit, self.move_selection)
 
         # Fade in phase music if the unit has canto
         if cur_unit.has_attacked or cur_unit.has_traded:
@@ -770,20 +772,19 @@ class MoveState(MapState):
                     action.execute(cur_unit.current_move)
                     game.state.change('menu')
 
-            elif game.cursor.position in self.valid_moves:
+            elif game.cursor.position in self.move_selection.normal:
                 if game.board.in_vision(game.cursor.position) and game.board.get_unit(game.cursor.position):
                     get_sound_thread().play_sfx('Error')
                 else:
-                    normal_moves = game.path_system.get_valid_moves(cur_unit, witch_warp=False)
-                    witch_warp = set(skill_system.witch_warp(cur_unit))
+                    is_warp = self.move_selection.is_warp(game.cursor.position)
                     if cur_unit.has_attacked or cur_unit.has_traded:
-                        if game.cursor.position in witch_warp and game.cursor.position not in normal_moves:
+                        if is_warp:
                             cur_unit.current_move = action.Warp(cur_unit, game.cursor.position)
                         else:
                             game.cursor.clamp_path_to_movement()
                             cur_unit.current_move = action.CantoMove(cur_unit, game.cursor.position)
                         game.state.change('canto_wait')
-                    elif game.cursor.position in witch_warp and game.cursor.position not in normal_moves:
+                    elif is_warp:
                         action.do(action.MarkActionGroupStart(cur_unit, 'free'))
                         cur_unit.current_move = action.Warp(cur_unit, game.cursor.position)
                         game.state.change('menu')
@@ -795,7 +796,7 @@ class MoveState(MapState):
                     game.state.change('movement')
                     action.do(cur_unit.current_move)
 
-            elif game.cursor.position in self.valid_xcom_moves:
+            elif game.cursor.position in self.move_selection.xcom:
                 if game.board.in_vision(game.cursor.position) and game.board.get_unit(game.cursor.position):
                     get_sound_thread().play_sfx('Error')
                 else:

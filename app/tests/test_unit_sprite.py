@@ -55,7 +55,8 @@ class SelectedFacingTests(unittest.TestCase):
             cur_unit.traveler = None
             cur_unit.has_traded = False
             cur_unit.has_attacked = False
-            mock_game.highlight.display_highlights.return_value = (set(), set())
+            from app.engine.movement.move_selection import MoveSelection
+            mock_game.path_system.get_move_selection.return_value = MoveSelection()
 
             move_state.begin()
 

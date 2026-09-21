@@ -3,8 +3,10 @@ from typing import TYPE_CHECKING, List, Optional, Set
 
 import functools
 
+from app.data.database.database import DB
 from app.engine import equations, skill_system
 from app.engine.movement import movement_funcs
+from app.engine.movement.move_selection import MoveSelection
 from app.engine.pathfinding import pathfinding
 from app.engine.game_state import GameState
 from app.utilities.typing import Pos
@@ -81,7 +83,41 @@ class PathSystem():
         valid_moves = pathfinder.process(can_move_through, movement_left)
         return valid_moves
 
-    def get_path(self, unit: UnitObject, position: Pos, ally_block: bool = False, 
+    def is_zero_move(self, unit: UnitObject) -> bool:
+        """Whether this unit should be treated as unable to move at all.
+
+        A guarding AI never leaves its tile, so with the zero_move constant set, its range
+        is reported from where it stands rather than from everywhere it could walk.
+        """
+        if not DB.constants.value('zero_move'):
+            return False
+        if not unit.get_ai() or self.game.ai_group_active(unit.ai_group):
+            return False
+        return bool(DB.ai.get(unit.get_ai()).guard_ai())
+
+    def get_move_selection(self, unit: UnitObject, force: bool = False,
+                           zero_move: bool = False) -> MoveSelection:
+        """Everywhere this unit may move right now, split by how it would get there.
+
+        This is the single source of truth behind both the move highlights and the
+        cursor's movement borders.
+
+        Args:
+            unit (UnitObject): The unit to find valid moves for
+            force (bool, optional): Set to true to use unit's max movement instead of movement left
+            zero_move (bool, optional): Set to true to honor the zero_move constant for guarding AI
+        """
+        walkable = self.get_valid_moves(unit, force=force, witch_warp=False)
+        warp = set(skill_system.witch_warp(unit)) if walkable else set()
+        if zero_move and self.is_zero_move(unit):
+            return MoveSelection(walkable={unit.position})
+        # A unit that has traded has spent its turn, so xcom movement is no longer on offer
+        if unit.has_traded:
+            return MoveSelection(walkable=walkable, warp=warp)
+        xcom = self.get_valid_xcom_moves(unit) - walkable - warp
+        return MoveSelection(walkable=walkable, warp=warp, xcom=xcom)
+
+    def get_path(self, unit: UnitObject, position: Pos, ally_block: bool = False,
                  use_limit: int = None, free_movement: bool = False) -> List[Pos]:
         """Given a unit and a goal position, find the best path for the unit to get to that goal position
         
