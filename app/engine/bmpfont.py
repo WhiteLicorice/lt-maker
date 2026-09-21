@@ -85,11 +85,14 @@ class BmpFont():
         self.surfaces: Dict[str, engine.Surface] = {}
         base_surf = engine.image_load(self.png_path, convert_alpha=not headless)
         self.surfaces[self.default_color] = base_surf
+        # The default palette names the sheet's own colors; without it there is
+        # nothing to map *from*, so every palette just renders as the sheet.
+        default_palette = font_info.palettes.get(self.default_color, [])
         for color_name, palette in font_info.palettes.items():
-            if color_name == self.default_color:
+            if color_name == self.default_color or not default_palette:
                 self.surfaces[color_name] = base_surf
             else:
-                palette_map = {orig: new for orig, new in zip(map(tuple, font_info.palettes[self.default_color]), map(tuple, palette))}
+                palette_map = {orig: new for orig, new in zip(map(tuple, default_palette), map(tuple, palette))}
                 self.surfaces[color_name] = image_mods.color_convert_alpha(base_surf.copy(), palette_map)
 
     @property
