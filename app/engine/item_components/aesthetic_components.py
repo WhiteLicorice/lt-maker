@@ -127,6 +127,61 @@ class NoMapHPDisplay(ItemComponent):
     def no_map_hp_display(self, unit, item):
         return True
 
+class NoMapHitFlash(ItemComponent):
+    nid = 'no_map_hit_flash'
+    desc = "Targets do not flash white (or the color chosen by a Map Hit Add/Sub Blend component) when hit in map combat. Also suppresses the critical hit flash."
+    tag = ItemTags.AESTHETIC
+
+    def no_map_hit_flash(self, unit, item):
+        return True
+
+class NoMapHitSFX(ItemComponent):
+    nid = 'no_map_hit_sfx'
+    desc = "No sound effect is played when a target is hit or missed in map combat. Sounds from a Map Cast SFX component still play."
+    tag = ItemTags.AESTHETIC
+
+    def no_map_hit_sfx(self, unit, item):
+        return True
+
+class NoMapCombatMovement(ItemComponent):
+    nid = 'no_map_combat_movement'
+    desc = "Combatants do not turn to face one another or jostle towards one another during map combat. Also suppresses the critical hit vibration."
+    tag = ItemTags.AESTHETIC
+
+    def no_map_combat_movement(self, unit, item):
+        return True
+
+class NoMapDamageNumbers(ItemComponent):
+    nid = 'no_map_damage_numbers'
+    desc = "No floating damage, healing, or critical damage numbers appear over targets in map combat."
+    tag = ItemTags.AESTHETIC
+
+    def no_map_damage_numbers(self, unit, item):
+        return True
+
+class NoMapCombatFX(ItemComponent):
+    nid = 'no_map_combat_fx'
+    desc = ("Suppresses every default map combat flourish at once -- the hp display, the hit flash, "
+            "the hit sound effect, the combatants' facing and jostle, and the floating damage numbers. "
+            "Equivalent to adding No Map HP Display, No Map Hit Flash, No Map Hit SFX, "
+            "No Map Combat Movement, and No Map Damage Numbers together.")
+    tag = ItemTags.AESTHETIC
+
+    def no_map_hp_display(self, unit, item):
+        return True
+
+    def no_map_hit_flash(self, unit, item):
+        return True
+
+    def no_map_hit_sfx(self, unit, item):
+        return True
+
+    def no_map_combat_movement(self, unit, item):
+        return True
+
+    def no_map_damage_numbers(self, unit, item):
+        return True
+
 class PreCombatEffect(ItemComponent):
     nid = 'pre_combat_effect'
     desc = "Item plays a combat effect right before combat."

@@ -210,6 +210,9 @@ class UnitSprite():
         self._roam_position = None  # For roam
         self.net_position = None
         self.offset = [0, 0]
+        # Set by change_state whenever a combat state is entered -- when True the unit
+        # neither turns to face its opponent nor jostles towards it
+        self.suppress_combat_movement = False
 
         self.flicker = []
         self.vibrate = []
@@ -393,8 +396,12 @@ class UnitSprite():
             self._fake_position = self.unit.position
             self.add_swoosh_anim(reverse=True)
 
-    def change_state(self, new_state, dir = None):
+    combat_states = ('combat_attacker', 'combat_anim', 'combat_defender', 'combat_counter')
+
+    def change_state(self, new_state, dir = None, suppress_movement: bool = False):
         self.state = new_state
+        if self.state in self.combat_states:
+            self.suppress_combat_movement = suppress_movement
         if self.state in ('combat_attacker', 'combat_anim'):
             self.net_position = game.cursor.position[0] - self.unit.position[0], game.cursor.position[1] - self.unit.position[1]
             self.handle_net_position(self.net_position)
@@ -441,6 +448,8 @@ class UnitSprite():
 
     def handle_net_position(self, pos):
         self.net_position = pos
+        if self.suppress_combat_movement and self.state in self.combat_states:
+            return  # Hold whatever direction the unit was already facing
         if abs(pos[0]) >= abs(pos[1]):
             if pos[0] > 0:
                 self.set_image_state('right')
@@ -489,8 +498,11 @@ class UnitSprite():
             else:
                 self.set_image_state('passive')
         elif self.state == 'combat_anim':
-            self.offset[0] = utils.clamp(self.net_position[0], -1, 1) * ANIMATION_COUNTERS.attack_movement_counter.value()
-            self.offset[1] = utils.clamp(self.net_position[1], -1, 1) * ANIMATION_COUNTERS.attack_movement_counter.value()
+            if self.suppress_combat_movement:
+                self.offset = [0, 0]
+            else:
+                self.offset[0] = utils.clamp(self.net_position[0], -1, 1) * ANIMATION_COUNTERS.attack_movement_counter.value()
+                self.offset[1] = utils.clamp(self.net_position[1], -1, 1) * ANIMATION_COUNTERS.attack_movement_counter.value()
         elif self.state == 'chosen':
             pos = self.unit.position or self._fake_position
             test_position = game.cursor.position[0] - pos[0], game.cursor.position[1] - pos[1]
