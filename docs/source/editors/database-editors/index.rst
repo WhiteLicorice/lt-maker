@@ -28,3 +28,4 @@ These pages will contain details pertaining to editors that change game data.
    Lore-Editor
    Raw-Data-Editor
    Translations-Editor
+   Fonts-Editor
