@@ -17,3 +17,4 @@ These pages will contain details pertaining to editors that change game data.
    Combat-Animations-Editor
    Tilemaps-Editor
    Sounds-Editor
+   Fonts-Editor
