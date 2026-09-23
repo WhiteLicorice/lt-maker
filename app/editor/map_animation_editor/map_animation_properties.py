@@ -1,21 +1,28 @@
 from __future__ import annotations
 
+import math
 import time
 
 from typing import Tuple
 
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, \
-    QLabel, QFrame, QSplitter, QRadioButton, QSpinBox, \
+    QLabel, QFrame, QSplitter, QRadioButton, QSpinBox, QCheckBox, QComboBox, \
     QStyle, QToolButton, QListWidget, QListWidgetItem, QListView
 from PyQt5.QtCore import Qt, QSize, pyqtSignal
-from PyQt5.QtGui import QPixmap, QPainter, QImage, QColor, QPen
+from PyQt5.QtGui import QPixmap, QPainter, QImage, QColor, QPen, QBrush
 
+from app.constants import TILEWIDTH, TILEHEIGHT
+from app.data.resources.resources import RESOURCES
 from app.extensions.custom_gui import PropertyBox
 from app.extensions.spinbox_xy import SpinBoxXY
 
 from app.utilities import utils
 from app.editor import timer
 from app.editor.icon_editor.icon_view import IconView
+from app.editor.map_sprite_editor import map_sprite_model
+
+# How far above its tile a standing map sprite is drawn (see unit_sprite.draw)
+MAP_SPRITE_TOP_OFFSET = 24
 
 class SpeedSpecification(QWidget):
     frame_speed_toggled = pyqtSignal(bool)
@@ -67,6 +74,85 @@ class SpeedSpecification(QWidget):
     def change_spinbox(self, val):
         if self.window.current:
             self.window.current.speed = int(val)
+
+class PreviewSpecification(QWidget):
+    """Controls for how the map animation preview is composited against
+    example map tiles and an example unit."""
+    preview_changed = pyqtSignal()
+
+    # How the engine anchors this animation to a tile
+    TILE_PLACEMENT = "Centered on Tile"
+    UNIT_PLACEMENT = "Attached to Unit"
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        self.placement_box = QComboBox(self)
+        self.placement_box.addItem(self.TILE_PLACEMENT)
+        self.placement_box.addItem(self.UNIT_PLACEMENT)
+        self.placement_box.setToolTip(
+            "<b>%s</b>: how combat, cast, and tilemap animations are placed -- "
+            "the frame is centered on the tile.<br>"
+            "<b>%s</b>: how the <i>Unit Anim</i> skill component places the frame -- "
+            "its top left corner sits one tile up and to the left of the unit's tile, "
+            "so only a %dx%d frame ends up centered." %
+            (self.TILE_PLACEMENT, self.UNIT_PLACEMENT, TILEWIDTH * 3, TILEHEIGHT * 3))
+        self.placement_box.currentIndexChanged.connect(lambda val: self.preview_changed.emit())
+        layout.addWidget(self.placement_box)
+
+        check_section = QHBoxLayout()
+        self.tile_check = QCheckBox("Show Tiles", self)
+        self.tile_check.stateChanged.connect(lambda val: self.preview_changed.emit())
+        self.grid_check = QCheckBox("Show Grid", self)
+        self.grid_check.stateChanged.connect(lambda val: self.preview_changed.emit())
+        check_section.addWidget(self.tile_check)
+        check_section.addWidget(self.grid_check)
+        layout.addLayout(check_section)
+
+        unit_section = QHBoxLayout()
+        self.unit_check = QCheckBox("Show Unit", self)
+        self.unit_check.stateChanged.connect(self.unit_toggled)
+        self.unit_box = QComboBox(self)
+        self.unit_box.setEnabled(False)
+        for map_sprite in RESOURCES.map_sprites:
+            self.unit_box.addItem(map_sprite.nid)
+        self.unit_box.currentIndexChanged.connect(lambda val: self.preview_changed.emit())
+        unit_section.addWidget(self.unit_check)
+        unit_section.addWidget(self.unit_box, Qt.AlignLeft)
+        layout.addLayout(unit_section)
+
+        self.setLayout(layout)
+
+    def unit_toggled(self, val):
+        self.unit_box.setEnabled(self.show_unit())
+        self.preview_changed.emit()
+
+    def show_tiles(self) -> bool:
+        return self.tile_check.isChecked()
+
+    def show_grid(self) -> bool:
+        return self.grid_check.isChecked()
+
+    def show_unit(self) -> bool:
+        return self.unit_check.isChecked() and self.unit_box.count() > 0
+
+    def attached_to_unit(self) -> bool:
+        return self.placement_box.currentText() == self.UNIT_PLACEMENT
+
+    def get_unit_frame(self) -> QImage:
+        """Returns the current frame of the example unit's standing map sprite,
+        or None if no map sprite is available."""
+        map_sprite = RESOURCES.map_sprites.get(self.unit_box.currentText())
+        if not map_sprite:
+            return None
+        if not map_sprite.standing_pixmap:
+            map_sprite.standing_pixmap = QPixmap(map_sprite.stand_full_path)
+        num = timer.get_timer().passive_counter.count
+        frame = map_sprite.standing_pixmap.copy(num * 64, 0, 64, 48).toImage()
+        return map_sprite_model.color_shift_team(frame, 'player')
 
 class FrameTime(QWidget):
     frame_time_changed = pyqtSignal(int, int)
@@ -172,6 +258,7 @@ class MapAnimationProperties(QWidget):
         self.last_update = 0
         self.counter = 0
         self.frames_passed = 0
+        self._background = None
 
         left_section = QVBoxLayout()
 
@@ -214,6 +301,12 @@ class MapAnimationProperties(QWidget):
         self.speed_box = PropertyBox("Speed", SpeedSpecification, self)
         self.speed_box.edit.frame_speed_toggled.connect(self.which_speed_toggled)
         right_section.addWidget(self.speed_box)
+
+        self.preview_box = PropertyBox("Preview", PreviewSpecification, self)
+        self.preview_box.edit.preview_changed.connect(self.preview_changed)
+        right_section.addWidget(self.preview_box)
+
+        right_section.addStretch(1)
 
         left_frame = QFrame(self)
         left_frame.setLayout(left_section)
@@ -317,8 +410,85 @@ class MapAnimationProperties(QWidget):
         top = (num // self.current.frame_x) * height
         base_image = self.current.pixmap.copy(left, top, width, height)
 
-        self.frame_view.set_image(base_image)
+        self.frame_view.set_image(self.build_preview(base_image))
         self.frame_view.show_image()
+
+    def get_background(self) -> QPixmap:
+        if not self._background:
+            self._background = QPixmap('resources/map_sprite_bg.png')
+        return self._background
+
+    def build_preview(self, frame: QPixmap) -> QPixmap:
+        """Composites the animation frame onto example map tiles and an example
+        unit, placed exactly the way the engine would place them."""
+        width, height = frame.width(), frame.height()
+        if self.preview_box.edit.attached_to_unit():
+            # As in unit_sprite.add_animation -- the frame's top left corner
+            anim_offset = (-TILEWIDTH, -TILEHEIGHT)
+        else:
+            # As in animations.MapAnimation.use_center
+            anim_offset = (TILEWIDTH//2 - width//2, TILEHEIGHT//2 - height//2)
+
+        if self.preview_box.edit.show_unit():
+            unit_frame = self.preview_box.edit.get_unit_frame()
+        else:
+            unit_frame = None
+        if unit_frame:
+            # As in unit_sprite.draw
+            unit_offset = (-max(0, (unit_frame.width() - TILEWIDTH)//2), -MAP_SPRITE_TOP_OFFSET)
+
+        # Extents of everything we will draw, relative to the anchor tile's top left corner
+        lefts = [0, anim_offset[0]]
+        tops = [0, anim_offset[1]]
+        rights = [TILEWIDTH, anim_offset[0] + width]
+        bottoms = [TILEHEIGHT, anim_offset[1] + height]
+        if unit_frame:
+            lefts.append(unit_offset[0])
+            tops.append(unit_offset[1])
+            rights.append(unit_offset[0] + unit_frame.width())
+            bottoms.append(unit_offset[1] + unit_frame.height())
+
+        # Pad out to whole tiles, with a tile of margin on every side
+        left_tiles = math.ceil(max(0, -min(lefts)) / TILEWIDTH) + 1
+        right_tiles = math.ceil(max(0, max(rights) - TILEWIDTH) / TILEWIDTH) + 1
+        top_tiles = math.ceil(max(0, -min(tops)) / TILEHEIGHT) + 1
+        bottom_tiles = math.ceil(max(0, max(bottoms) - TILEHEIGHT) / TILEHEIGHT) + 1
+        num_cols = left_tiles + 1 + right_tiles
+        num_rows = top_tiles + 1 + bottom_tiles
+        # Where the anchor tile's top left corner ends up on the canvas
+        anchor = (left_tiles * TILEWIDTH, top_tiles * TILEHEIGHT)
+
+        image = QImage(num_cols * TILEWIDTH, num_rows * TILEHEIGHT, QImage.Format_ARGB32)
+        image.fill(QColor(0, 0, 0, 0))
+        painter = QPainter()
+        painter.begin(image)
+
+        if self.preview_box.edit.show_tiles():
+            painter.fillRect(image.rect(), QBrush(self.get_background()))
+
+        if self.preview_box.edit.show_grid():
+            painter.setPen(QPen(QColor(0, 0, 0, 219), 1))
+            for col in range(num_cols + 1):
+                x = utils.clamp(col * TILEWIDTH, 0, image.width() - 1)
+                painter.drawLine(x, 0, x, image.height() - 1)
+            for row in range(num_rows + 1):
+                y = utils.clamp(row * TILEHEIGHT, 0, image.height() - 1)
+                painter.drawLine(0, y, image.width() - 1, y)
+            # Mark the tile the animation is actually anchored to
+            painter.setPen(QPen(QColor(248, 248, 64), 1))
+            painter.drawRect(anchor[0], anchor[1], TILEWIDTH - 1, TILEHEIGHT - 1)
+
+        if unit_frame:
+            painter.drawImage(anchor[0] + unit_offset[0], anchor[1] + unit_offset[1], unit_frame)
+
+        painter.drawImage(anchor[0] + anim_offset[0], anchor[1] + anim_offset[1], frame.toImage())
+        painter.end()
+
+        return QPixmap.fromImage(image)
+
+    def preview_changed(self):
+        if self.current:
+            self.draw_frame()
 
     def stop(self):
         self.playing = False
