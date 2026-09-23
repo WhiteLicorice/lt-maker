@@ -295,6 +295,10 @@ class FontProperties(QWidget):
         self.outline_font_box.edit.stateChanged.connect(self._outline_font_changed)
         meta_layout.addWidget(self.outline_font_box)
 
+        self.headless_box = PropertyCheckBox("Headless", QCheckBox, self)
+        self.headless_box.edit.stateChanged.connect(self._headless_changed)
+        meta_layout.addWidget(self.headless_box)
+
         main_layout.addWidget(meta_group)
 
         # -- Palette editor --
@@ -459,4 +463,9 @@ class FontProperties(QWidget):
     def _outline_font_changed(self, state):
         if self.current:
             self.current.outline_font = bool(state)
+            self._reinit_bmp_font()
+    
+    def _headless_changed(self, state):
+        if self.current:
+            self.current.headless = bool(state)
             self._reinit_bmp_font()

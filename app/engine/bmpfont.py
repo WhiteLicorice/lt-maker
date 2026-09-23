@@ -70,6 +70,7 @@ class BmpFont():
         self.memory: Dict[str, Dict[str, Tuple[engine.Surface, int]]] = {}
 
         self.font_info = font_info
+        headless = self.font_info.headless
         self.fallback_font = None
         if self.font_info.ttf_path():
             self.fallback_font = FallbackFont(
