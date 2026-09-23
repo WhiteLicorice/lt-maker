@@ -296,6 +296,8 @@ class FontProperties(QWidget):
         meta_layout.addWidget(self.outline_font_box)
 
         self.headless_box = PropertyCheckBox("Headless", QCheckBox, self)
+        self.headless_box.edit.setToolTip(
+            "Whether this font renders on a transparent surf")
         self.headless_box.edit.stateChanged.connect(self._headless_changed)
         meta_layout.addWidget(self.headless_box)
 
