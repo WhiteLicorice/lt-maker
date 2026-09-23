@@ -128,6 +128,7 @@ class Font(WithResources, Prefab):
     fallback_size: int = 16                                                              #: what size the fallback font should be rendered at. This may well differ depending on the font, especially at these lower resolutions!
     default_color: Optional[str] = None                                                  #: The key of the default color in the palette, if any.
     outline_font: bool = False                                                           #: whether this font has an outline
+    headless: bool = False #:Whether this font renders on a transparent surf
     palettes: Dict[str, List[Color4]] = field(default_factory=dict)                      #: A dictionary of color names to the palette of the font color.
 
     def __post_init__(self):
