@@ -135,7 +135,9 @@ def import_from_legacy(current, fn):
     if not os.path.exists(index_fn):
         QMessageBox.critical(None, "Error", "Could not find associated index file: %s" % index_fn)
         return
-    images = glob.glob(fn.replace('-Script.txt', '-*.png'))
+    # glob.escape first -- a '[' or ']' anywhere in the path is a glob character class,
+    # so an unescaped path silently matches nothing. It leaves '-Script.txt' alone
+    images = glob.glob(glob.escape(fn).replace('-Script.txt', '-*.png'))
     if not images:
         QMessageBox.critical(None, "Error", "Could not find any associated palettes")
         return
@@ -200,7 +202,9 @@ def import_effect_from_legacy(fn: str):
         RESOURCES.combat_effects.append(current)
         return current
         
-    images = glob.glob(fn.replace('-Script.txt', '-*.png'))
+    # glob.escape first -- a '[' or ']' anywhere in the path is a glob character class,
+    # so an unescaped path silently matches nothing. It leaves '-Script.txt' alone
+    images = glob.glob(glob.escape(fn).replace('-Script.txt', '-*.png'))
     if not images:
         QMessageBox.critical(None, "Error", "Could not find any associated palettes")
         return

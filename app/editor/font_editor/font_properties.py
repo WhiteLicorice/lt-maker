@@ -1,3 +1,4 @@
+import logging
 import os
 import shutil
 from typing import Optional
@@ -336,6 +337,10 @@ class FontProperties(QWidget):
         self.outline_font_box.edit.setChecked(bool(current.outline_font))
         self.outline_font_box.edit.blockSignals(False)
 
+        self.headless_box.edit.blockSignals(True)
+        self.headless_box.edit.setChecked(bool(current.headless))
+        self.headless_box.edit.blockSignals(False)
+
         self.palette_editor.set_font(current)
 
         self._reinit_bmp_font()
@@ -387,7 +392,7 @@ class FontProperties(QWidget):
             try:
                 self._bmp_font = BmpFont(self.current, headless=True)
             except Exception:
-                pass
+                logging.exception("Could not build a preview font for %s", self.current.nid)
         self._update_preview()
 
     def _update_preview(self):

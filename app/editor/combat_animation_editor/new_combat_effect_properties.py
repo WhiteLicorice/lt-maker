@@ -344,9 +344,10 @@ class NewCombatEffectProperties(NewCombatAnimProperties):
             return
         self.settings.set_last_open_path(fn_dir)
         # Determine the palettes in the folder
-        palette_nid_swap = self.import_palettes(fn_dir)
+        escaped_fn_dir = glob.escape(fn_dir)
+        palette_nid_swap = self.import_palettes(escaped_fn_dir)
         # Determine the effects in the folder
-        effect_path = os.path.join(fn_dir, '*_effect.json')
+        effect_path = os.path.join(escaped_fn_dir, '*_effect.json')
         effects = sorted(glob.glob(effect_path))
         if not effects:
             QMessageBox.warning(self, "File Not Found", "Could not find any valid *_effect.json Combat Effect files.")
