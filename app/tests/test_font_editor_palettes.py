@@ -89,10 +89,11 @@ class FontPaletteEditorTests(unittest.TestCase):
             props.palette_editor._add_palette()
         default_color_names = [props.default_color_box.edit.itemText(i)
                                for i in range(props.default_color_box.edit.count())]
-        preview_names = [props.preview_color_box.itemText(i)
-                         for i in range(props.preview_color_box.count())]
         self.assertIn('red', default_color_names)
-        self.assertIn('red', preview_names)
+        # The palette list selects what it just added, and the preview follows it
+        self.assertEqual(props.palette_editor.palette_list.currentItem().text(), 'red')
+        self.assertEqual(props.preview_color, 'red')
+        self.assertEqual(props.preview_color_label.text(), 'red')
 
     def test_default_palette_cannot_be_deleted(self):
         from unittest.mock import patch

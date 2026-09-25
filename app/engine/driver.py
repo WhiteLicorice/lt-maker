@@ -147,8 +147,15 @@ def run(game):
                 _soft_reset_start_time = None
                 _error_mode = False
                 game.memory.clear()
+                # Drop the stack instead of stacking the title screen on top of it,
+                # and apply that here rather than through update(). Updating runs the
+                # state underneath one last time, and its transitions queue up behind
+                # ours: a move finishing mid-reset calls back() and pops the title
+                # straight off again, leaving the game running with memory wiped,
+                # while a clear() takes the title with it and empties the stack.
+                game.state.clear()
                 game.state.change('title_start')
-                game.state.update([], surf)
+                game.state.process_temp_state()
                 continue
         else:
             _soft_reset_start_time = None

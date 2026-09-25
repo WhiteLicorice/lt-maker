@@ -275,7 +275,6 @@ class Dialog:
         width = 0
         current_line = ""
         preceded_by_wait: bool = False
-        waiting_cursor = False
         for command in self.text_commands:
             if command in ("{br}", "{break}", "{clear}", "{sub_break}"):
                 if not preceded_by_wait or not self.attempt_split:
@@ -286,8 +285,7 @@ class Dialog:
                 current_width = text_funcs.get_max_width(self.font_type,
                                                          split_lines)
                 width = max(width, current_width)
-                if len(split_lines) == 1:
-                    waiting_cursor = True
+                width = self._reserve_cursor_width(current_line, width)
                 current_line = ""
                 preceded_by_wait = False
             elif command in ("{w}", "{wait}"):
@@ -303,11 +301,31 @@ class Dialog:
                 split_lines = self.get_lines_from_block(current_line, 1)
             current_width = text_funcs.get_max_width(self.font_type, split_lines)
             width = max(width, current_width)
-            if len(split_lines) == 1:
-                waiting_cursor = True
-        if waiting_cursor:
-            if len(split_lines) == 1:
-                width += utils.clamp(current_width - width + 16, 0, 16)
+            width = self._reserve_cursor_width(current_line, width)
+        return width
+
+    def _reserve_cursor_width(self, block: str, width: int) -> int:
+        """
+        Grow *width* until the waiting cursor fits beside the last line of *block*.
+
+        The width above comes from a balanced split, but the box wraps greedily as
+        it types, so the line the cursor ends up on is whichever one `line_wrap`
+        finishes with -- ask it rather than assume the two agree. Without this the
+        box is built to a width the typing wrap then refuses to use, and the last
+        word drops to a line of its own with the rest of the box left empty.
+        """
+        if not self.draw_cursor_flag or width <= 0 or not block.strip():
+            return width
+        allowance = self.cursor_gap + self.cursor.get_width()
+        ceiling = WINWIDTH - 32  # determine_size clamps to this anyway
+        # Widening can pull a word back up, lengthening the last line again, so
+        # settle it rather than growing once
+        for _ in range(4):
+            lines = text_funcs.line_wrap(self.font_type, block, width)
+            needed = text_funcs.get_max_width(self.font_type, lines[-1:]) + allowance
+            if needed <= width or width >= ceiling:
+                break
+            width = min(needed, ceiling)
         return width
 
     def determine_height(self):

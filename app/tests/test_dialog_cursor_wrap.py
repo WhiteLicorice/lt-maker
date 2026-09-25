@@ -45,6 +45,21 @@ class DialogCursorWrapTests(unittest.TestCase):
         before_wait = box.tagged_text[box.text_indices[1].start:len(FULL_LINE)].width()
         self.assertLessEqual(self._cursor_right_edge(box, before_wait), box.text_width)
 
+    def test_autosized_box_is_built_wide_enough_for_the_cursor(self):
+        '''
+        Windward 9/24/26: an autosized box sized itself from a balanced split that
+        knew nothing about the cursor, so the typing wrap dropped the last word to
+        a line of its own and left the rest of the box empty
+        '''
+        for text in ("All right, back into the fray! Let's go, Franz!",
+                     'She seems very...sincere.'):
+            with self.subTest(text=text):
+                box = self._process(text, autosize=True)
+                widths = self._line_widths(box)
+                bare = self._line_widths(self._process(text, autosize=True, draw_cursor=False))
+                self.assertEqual(len(widths), len(bare))
+                self.assertLessEqual(self._cursor_right_edge(box, widths[-1]), box.text_width)
+
     def test_no_room_reserved_without_cursor(self):
         self.assertEqual(len(self._line_widths(self._process(FULL_LINE, draw_cursor=False))), 1)
         self.assertEqual(len(self._line_widths(self._process(FULL_LINE + "{no_wait}"))), 1)

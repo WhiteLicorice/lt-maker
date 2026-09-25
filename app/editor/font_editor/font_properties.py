@@ -15,12 +15,13 @@ from app.data.resources.fonts import Font
 from app.engine.bmpfont import BmpFont
 from app.engine import engine
 from app.extensions.custom_gui import ComboBox, PropertyBox, PropertyCheckBox
-from app.editor.font_editor.font_model import seed_default_palette
+from app.editor.font_editor.font_model import detect_base_palette, seed_default_palette
 from app.editor.settings import MainSettingsController
 
 
 class PaletteEditor(QWidget):
     palette_changed = pyqtSignal()
+    palette_selected = pyqtSignal(str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -35,9 +36,9 @@ class PaletteEditor(QWidget):
         list_panel.setSpacing(2)
         self.palette_list = QListWidget()
         self.palette_list.setFixedWidth(90)
-        self.palette_list.setToolTip("The default palette holds the sprite sheet's own colors and is read-only; "
+        self.palette_list.setToolTip("The sheet palette holds the sprite sheet's own colors and is read-only; "
                                      "every other palette remaps it color for color")
-        self.palette_list.currentTextChanged.connect(self._rebuild_swatches)
+        self.palette_list.currentTextChanged.connect(self._palette_selected)
         list_panel.addWidget(self.palette_list)
         list_btns = QHBoxLayout()
         list_btns.setSpacing(2)
@@ -101,10 +102,17 @@ class PaletteEditor(QWidget):
 
     def set_font(self, font: Optional[Font]):
         self._font = font
-        self._repopulate_list()
+        # Open on the font's default color rather than whichever palette happens to
+        # be listed first, so the list agrees with the preview from the start
+        self._repopulate_list(select=font.default_color if font else None)
         self._rebuild_swatches()
 
     # -- internal --
+
+    def _palette_selected(self, palette_name: str):
+        self._rebuild_swatches()
+        # Editing a palette is easier when the preview is showing the one being edited
+        self.palette_selected.emit(palette_name)
 
     def _repopulate_list(self, select: str = None):
         self.palette_list.blockSignals(True)
@@ -112,11 +120,11 @@ class PaletteEditor(QWidget):
         if self._font:
             for name in self._font.palettes:
                 self.palette_list.addItem(name)
-        if select:
-            items = self.palette_list.findItems(select, Qt.MatchExactly)
-            if items:
-                self.palette_list.setCurrentItem(items[0])
+        items = self.palette_list.findItems(select, Qt.MatchExactly) if select else []
+        if items:
+            self.palette_list.setCurrentItem(items[0])
         elif self.palette_list.count():
+            # A name that no longer lists, or none asked for, still leaves a selection
             self.palette_list.setCurrentRow(0)
         self.palette_list.blockSignals(False)
 
@@ -135,26 +143,27 @@ class PaletteEditor(QWidget):
         if not palette_name or palette_name not in self._font.palettes:
             self._label_palette.setText("")
             return
-        is_default = palette_name == self._font.default_color
+        base_nid = self._font.base_palette_nid
+        is_base = palette_name == base_nid
         self._label_palette.setText(
-            (palette_name + " (read-only — these are the sprite sheet's colors)") if is_default else palette_name)
-        # The reference row would only repeat the palette itself when it *is* the default
-        self._label_default.setText("" if is_default else "Default")
+            (palette_name + " (read-only — these are the sprite sheet's colors)") if is_base else palette_name)
+        # The reference row would only repeat the palette itself when it *is* the sheet's
+        self._label_default.setText("" if is_base else "Sheet")
 
-        default_palette = self._font.palettes.get(self._font.default_color, [])
+        base_palette = self._font.palettes.get(base_nid, [])
         edit_palette = self._font.palettes[palette_name]
 
         for i, color in enumerate(edit_palette):
-            if not is_default and i < len(default_palette):
-                r, g, b, *_ = default_palette[i]
+            if not is_base and i < len(base_palette):
+                r, g, b, *_ = base_palette[i]
                 ref = QLabel()
                 ref.setFixedSize(24, 24)
                 ref.setStyleSheet(f"background-color: rgb({r},{g},{b}); border: 1px solid #666;")
-                ref.setToolTip(f"Default: ({r},{g},{b})")
+                ref.setToolTip(f"Sheet: ({r},{g},{b})")
                 self._default_swatch_layout.addWidget(ref)
 
             r, g, b, *_ = color
-            if is_default:
+            if is_base:
                 swatch = QLabel()
                 swatch.setToolTip(f"({r},{g},{b})")
             else:
@@ -168,10 +177,10 @@ class PaletteEditor(QWidget):
     def _add_palette(self):
         if not self._font:
             return
-        # A palette is a remap of the default one, so the font needs a default first
+        # A palette is a remap of the sheet's own colors, so the font needs those first
         seed_default_palette(self._font)
-        default_palette = self._font.palettes.get(self._font.default_color)
-        if not default_palette:
+        base_palette = self._font.palettes.get(self._font.base_palette_nid)
+        if not base_palette:
             QMessageBox.warning(
                 self, "No Default Palette",
                 "Could not read any colors from this font's PNG, so there is "
@@ -183,10 +192,13 @@ class PaletteEditor(QWidget):
         name = name.strip()
         if name in self._font.palettes:
             return
-        self._font.palettes[name] = default_palette.copy()
+        self._font.palettes[name] = base_palette.copy()
         self._repopulate_list(select=name)
         self._rebuild_swatches()
         self.palette_changed.emit()
+        # _repopulate_list selects the new palette with signals off, so say so
+        # here -- otherwise the preview stays on the palette being replaced
+        self.palette_selected.emit(name)
 
     def _delete_palette(self):
         if not self._font:
@@ -194,11 +206,11 @@ class PaletteEditor(QWidget):
         item = self.palette_list.currentItem()
         if not item:
             return
-        if item.text() == self._font.default_color:
+        if item.text() == self._font.base_palette_nid:
             QMessageBox.warning(
-                self, "Cannot Delete Default Palette",
-                "'%s' is this font's default palette. Every other palette is "
-                "defined as a recoloring of it." % item.text())
+                self, "Cannot Delete Sheet Palette",
+                "'%s' holds this font's sprite sheet colors. Every other palette "
+                "is defined as a recoloring of it." % item.text())
             return
         self._font.palettes.pop(item.text(), None)
         self._repopulate_list()
@@ -243,11 +255,13 @@ class FontProperties(QWidget):
         self.preview_input.setText("What? How?")
         self.preview_input.textChanged.connect(self._update_preview)
         input_row.addWidget(self.preview_input)
-        self.preview_color_box = ComboBox()
-        self.preview_color_box.setFixedWidth(90)
-        self.preview_color_box.setToolTip("Preview palette")
-        self.preview_color_box.currentTextChanged.connect(self._update_preview)
-        input_row.addWidget(self.preview_color_box)
+        # The palette list below is what picks this; the label only reports it
+        self.preview_color: Optional[str] = None
+        self.preview_color_label = QLabel()
+        self.preview_color_label.setFixedWidth(90)
+        self.preview_color_label.setAlignment(Qt.AlignCenter)
+        self.preview_color_label.setToolTip("Previewing the palette selected below")
+        input_row.addWidget(self.preview_color_label)
         self.bg_color_button = QPushButton()
         self.bg_color_button.setFixedWidth(28)
         self.bg_color_button.setToolTip("Pick background color")
@@ -288,7 +302,7 @@ class FontProperties(QWidget):
 
         self.default_color_box = PropertyBox("Default Color", ComboBox, self)
         self.default_color_box.edit.setToolTip(
-            "Which palette holds the sprite sheet's own colors")
+            "Which palette text renders in when it asks for no color of its own")
         self.default_color_box.edit.currentTextChanged.connect(self._default_color_changed)
         meta_layout.addWidget(self.default_color_box)
 
@@ -310,6 +324,7 @@ class FontProperties(QWidget):
         palette_group.setLayout(palette_group_layout)
         self.palette_editor = PaletteEditor(self)
         self.palette_editor.palette_changed.connect(self._on_palette_changed)
+        self.palette_editor.palette_selected.connect(self._on_palette_selected)
         palette_group_layout.addWidget(self.palette_editor)
         main_layout.addWidget(palette_group)
 
@@ -321,6 +336,12 @@ class FontProperties(QWidget):
             self.setEnabled(False)
             return
         self.setEnabled(True)
+
+        # Fonts predating base_color never recorded which palette is the sheet's.
+        # Read it off the PNG once and pin it, so moving the default color later
+        # cannot mistake the outgoing default for the sheet
+        if current.palettes and not current.base_color:
+            current.base_color = detect_base_palette(current) or current.default_color
 
         ttf_basename = os.path.basename(current.fallback_ttf) if current.fallback_ttf else ""
         self.fallback_ttf_box.edit.blockSignals(True)
@@ -345,7 +366,7 @@ class FontProperties(QWidget):
 
         self._reinit_bmp_font()
 
-    def _refresh_color_boxes(self):
+    def _refresh_color_boxes(self, keep_preview_color: bool = False):
         """Rebuild both palette drop-downs from the font's current palettes."""
         current = self.current
         if not current:
@@ -353,7 +374,8 @@ class FontProperties(QWidget):
 
         self.default_color_box.edit.blockSignals(True)
         self.default_color_box.edit.clear()
-        self.default_color_box.edit.addItem("")
+        # No blank entry: a default that names no palette leaves the engine with
+        # nothing to render, so the only honest choices are the palettes themselves
         for color_name in current.palettes:
             self.default_color_box.edit.addItem(color_name)
         if current.default_color:
@@ -363,25 +385,37 @@ class FontProperties(QWidget):
             self.default_color_box.edit.setCurrentIndex(
                 self.default_color_box.edit.findText(current.default_color))
         else:
+            # Without the blank entry there is no way to show "no default", so
+            # record the one being displayed rather than letting the two disagree
             self.default_color_box.edit.setCurrentIndex(0)
+            current.default_color = self.default_color_box.edit.currentText() or None
         self.default_color_box.edit.blockSignals(False)
 
-        preview_color = self.preview_color_box.currentText()
-        self.preview_color_box.blockSignals(True)
-        self.preview_color_box.clear()
-        for color_name in current.palettes:
-            self.preview_color_box.addItem(color_name)
-        idx = self.preview_color_box.findText(preview_color)
-        if idx < 0:
-            idx = self.preview_color_box.findText(current.default_color or "")
-        self.preview_color_box.setCurrentIndex(max(idx, 0))
-        self.preview_color_box.blockSignals(False)
+        # Carrying the color over only makes sense while staying on one font --
+        # a font just opened should preview in its own default, not in whatever
+        # the last font happened to be showing
+        preview_color = self.preview_color if keep_preview_color else None
+        if preview_color not in current.palettes:
+            preview_color = current.default_color
+        if preview_color not in current.palettes:
+            preview_color = next(iter(current.palettes), None)
+        self._set_preview_color(preview_color)
 
     def _on_palette_changed(self):
         if not self.current:
             return
-        self._refresh_color_boxes()
+        self._refresh_color_boxes(keep_preview_color=True)
         self._reinit_bmp_font()
+
+    def _on_palette_selected(self, palette_name: str):
+        """Follow the palette list with the preview, so edits are seen as they are made."""
+        if self.current and palette_name in self.current.palettes:
+            self._set_preview_color(palette_name)
+
+    def _set_preview_color(self, palette_name: Optional[str]):
+        self.preview_color = palette_name
+        self.preview_color_label.setText(palette_name or "")
+        self._update_preview()
 
     def _reinit_bmp_font(self):
         self._bmp_font = None
@@ -405,7 +439,7 @@ class FontProperties(QWidget):
             w = max(self._bmp_font.width(text), 1) + 10
             h = self._bmp_font.height + 3
             surf = pygame.Surface((w, h), pygame.SRCALPHA, 32)
-            color = self.preview_color_box.currentText() or None
+            color = self.preview_color or None
             self._bmp_font.blit(text, surf, color=color)
             raw = engine.surf_to_raw(surf, 'RGBA')
             img = QImage(raw, w, h, QImage.Format_RGBA8888)
@@ -461,9 +495,13 @@ class FontProperties(QWidget):
             self._reinit_bmp_font()
 
     def _default_color_changed(self, text):
-        if self.current:
-            self.current.default_color = text if text else None
-            # The default palette is the read-only reference row, so the swatches change with it
+        if self.current and text:
+            # set_current pins this, but a font with no palettes at all reaches
+            # here unpinned the moment its first palette is added
+            if not self.current.base_color:
+                self.current.base_color = detect_base_palette(self.current) or self.current.default_color
+            self.current.default_color = text
+            # The sheet palette is the read-only reference row, so the swatches change with it
             self.palette_editor.set_font(self.current)
             self._reinit_bmp_font()
 

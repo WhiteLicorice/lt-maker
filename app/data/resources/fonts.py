@@ -126,14 +126,25 @@ class Font(WithResources, Prefab):
     nid: str                                                                             #: NID of the font.
     fallback_ttf: str = None                                                             #: name of the .ttf file (in this directory) to be used as a fallback if the main font cannot render anything
     fallback_size: int = 16                                                              #: what size the fallback font should be rendered at. This may well differ depending on the font, especially at these lower resolutions!
-    default_color: Optional[str] = None                                                  #: The key of the default color in the palette, if any.
+    default_color: Optional[str] = None                                                  #: The palette text is rendered in when no color is asked for.
     outline_font: bool = False                                                           #: whether this font has an outline
     headless: bool = False #:Whether this font renders on a transparent surf
+    base_color: Optional[str] = None                                                     #: The palette holding the sprite sheet's own colors. None falls back to `default_color`.
     palettes: Dict[str, List[Color4]] = field(default_factory=dict)                      #: A dictionary of color names to the palette of the font color.
 
     def __post_init__(self):
         self.file_name: str = None                                                       #: Root path without file ending, e.g. `project.ltproj/resources/convo`.
         self._font_index: Optional['FontIndex'] = None
+
+    @property
+    def base_palette_nid(self) -> Optional[str]:
+        """Palette whose colors are the ones actually in the PNG.
+
+        Every other palette is an index-for-index remap of it, so this is what a
+        recoloring reads *from* -- which is not necessarily the palette text
+        happens to default to rendering *in* (:attr:`default_color`).
+        """
+        return self.base_color or self.default_color
 
     @property
     def font_index(self) -> Optional['FontIndex']:
