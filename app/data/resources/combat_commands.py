@@ -67,10 +67,7 @@ def generate_text(command: CombatAnimationCommand) -> str:
         for idx, attr in enumerate(command.attr):
             if command.value[idx] is not None:
                 if attr == 'color':  # Remove extraneous parentheses around the tuple
-                    for val in command.value[idx][:-1]:
-                        s.append(str(val))  
-                        s.append(",")
-                    s.append(str(command.value[idx][-1]))
+                    s.append(','.join(str(val) for val in command.value[idx]))
                 else:
                     s.append(str(command.value[idx]))
     return ';'.join(s)

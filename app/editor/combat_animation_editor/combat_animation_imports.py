@@ -19,9 +19,13 @@ import app.editor.utilities as editor_utilities
 
 import logging
 
+def image_palette_name(image_fn: str) -> str:
+    # Legacy palette images are named {nid}-{weapon}-{palette_name}.png
+    return os.path.split(image_fn)[-1][:-4].split('-')[-1]
+
 def populate_palettes(current, images, nid):
     for image_fn in images:
-        palette_name = os.path.split(image_fn)[-1][:-4].split('-')[-1]
+        palette_name = image_palette_name(image_fn)
         palette_nid = nid + '_' + palette_name
         logging.debug("palette_nid: %s", palette_nid)
         palette_names = [_[0] for _ in current.palettes]
@@ -56,14 +60,18 @@ def add_frames(index_fn, current, new_weapon, images):
         index_lines = [line.strip() for line in index_fp.readlines()]
         index_lines = [line.split(';') for line in index_lines]
 
-    # Use the first palette
-    palette_name, palette_nid = current.palettes[0]
+    # Cut the frames from one palette image and convert them with that same image's palette.
+    # Prefer the image for the animation's first palette
+    palette_names = [name for name, nid in current.palettes]
+    image_fn = next((fn for fn in images if image_palette_name(fn) == palette_names[0]), images[0])
+    palette_name = image_palette_name(image_fn)
+    palette_nid = current.palettes[palette_names.index(palette_name)][1]
     palette = RESOURCES.combat_palettes.get(palette_nid)
 
     # Need to convert to universal coord palette
     convert_dict = editor_utilities.get_color_conversion(palette)
     logging.debug("Add Frames: Palette Name: %s, Palette Nid: %s, Conversion Dict: %s", palette_name, palette_nid, editor_utilities.human_readable(convert_dict))
-    main_pixmap = QPixmap(images[0])
+    main_pixmap = QPixmap(image_fn)
     for i in index_lines:
         # Only accepts length 4 lines
         if len(i) != 4:
@@ -152,8 +160,6 @@ def import_from_legacy(current, fn):
     # Need to build full image file now
     build_full_image(main_pixmap, new_weapon)
     # print(id(new_weapon), new_weapon.nid, id(new_weapon.pixmap), new_weapon.pixmap.width(), new_weapon.pixmap.height())
-    main_pixmap.save("main_pixmap.png")
-    new_weapon.pixmap.save("new_weapon_pixmap.png")
 
     add_poses(fn, new_weapon)
     # Actually add weapon to current
