@@ -86,7 +86,7 @@ class PortraitPrefab(WithResources, Prefab):
 
     def get_blink_frame(self, idx: int) -> Rect:
         return (self.full_size[0] - self.blink_size[0],
-                self.full_size[1] - self.mouth_size[1]*2 - self.blink_size[1]*(self.blink_frames-idx),
+                self.full_size[1] - self.mouth_size[1]*2 - self.blink_size[1]*(idx+1),
                 *self.blink_size)
 
     def get_mouth_frame(self, idx: int, smile: bool = False) -> Rect:

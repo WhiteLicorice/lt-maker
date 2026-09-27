@@ -24,9 +24,9 @@ class InfoMenuPortrait():
     def create_image(self):
         main_image = self.main_portrait.copy()
 
-        if self.should_blink and self.blink_counter.count:
+        if self.should_blink and not self.blink_counter.is_open_eyes():
             blink_image = engine.subsurface(self.portrait.image,
-                                self.portrait.get_blink_frame(self.blink_counter.count-1))
+                                self.portrait.get_blink_frame(self.blink_counter.get_blink_index()))
             main_image.blit(blink_image, self.portrait.get_blink_coord())
 
         main_image.blit(self.mouth_section, self.portrait.get_mouth_coord())

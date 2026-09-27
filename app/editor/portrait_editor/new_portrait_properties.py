@@ -22,6 +22,8 @@ import app.editor.utilities as editor_utilities
 
 from typing import Callable, Optional
 
+TIME_PER_BLINK_FRAME = 60 # ms
+
 class NewPortraitProperties(QWidget):
     title = "Unit Portrait"
 
@@ -211,12 +213,12 @@ class NewPortraitProperties(QWidget):
 
         # Blink
         time_passed = time.time()*1000 - self.blink_update
-        blink_state = int(time_passed) // 60
+        blink_state = (int(time_passed) // TIME_PER_BLINK_FRAME) + 1
         if self.blink_on:
-            idx = min(blink_state, self.current.blink_frames-1)
+            idx = max(self.current.blink_frames - blink_state, 0)
             blink_image = self.current.pixmap.copy(*self.current.get_blink_frame(idx))
         elif blink_state < self.current.blink_frames:
-            idx = self.current.blink_frames - blink_state - 1
+            idx = blink_state
             blink_image = self.current.pixmap.copy(*self.current.get_blink_frame(idx))
         else:
             blink_image = None

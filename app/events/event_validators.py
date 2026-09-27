@@ -575,7 +575,7 @@ class ExpressionList(SequenceValidator):
     desc = ("expects a comma-delimited list of expressions. "
             "Valid expressions are: (`NoSmile`, `Smile`, `NormalBlink`, `CloseEyes`, `HalfCloseEyes`, `LeftWink`, `RightWink`, `FarWink`, `NearWink`, `OpenEyes`, `OpenMouth`). "
             "Expressions can also be of patterns: `BlinkFrameX` and `MouthFrameX` where X is a non-negative whole number "
-            "(BlinkFrame0 is top blink frame, and MouthFrame0 is rightmost mouth frame). "
+            "(BlinkFrame0 is bottom blink frame, and MouthFrame0 is rightmost mouth frame). "
             "Example: `Smile,LeftWink,MouthFrame12,HalfCloseEyes`")
 
     def validate(self, text, level):

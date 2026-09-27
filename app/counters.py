@@ -3,7 +3,6 @@ from __future__  import annotations
 from typing import Callable, List, Union
 
 from app.constants import FRAMERATE
-from app.engine import engine
 
 
 class generic3counter():
@@ -188,3 +187,9 @@ class BlinkCounter():
         self.count = 0
         self.last_update = 0
         self.reverse = False
+
+    def get_blink_index(self):
+        return self.max_count - self.count
+
+    def is_open_eyes(self):
+        return self.count == 0

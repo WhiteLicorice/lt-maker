@@ -168,7 +168,7 @@ class EventPortrait():
                 if expression.startswith('MouthFrame'):
                     # `expression` should be a str of format 'MouthFrameX' where X is a non-negative integer,
                     #  so get X using string slice at 10th index `expression[10:]`
-                    idx = min(int(expression[10:]), self.portrait.mouth_frames-1)
+                    idx = int(expression[10:])
                     break
         mouth_image = engine.subsurface(self.portrait.image,
             self.portrait.get_mouth_frame(idx, smile="Smile" in self.expressions))
@@ -183,13 +183,13 @@ class EventPortrait():
         elif "OpenEyes" in self.expressions:
             idx = None
         else:
-            if self.blink_counter.count:
-                idx = self.blink_counter.count - 1
+            if not self.blink_counter.is_open_eyes():
+                idx = self.blink_counter.get_blink_index()
             for expression in self.expressions:
                 if expression.startswith('BlinkFrame'):
                     # `expression` should be a str of format 'BlinkFrameX' where X is a non-negative integer,
                     #  so get X using string slice at 10th index `expression[10:]`
-                    idx = min(int(expression[10:]), self.portrait.blink_frames-1)
+                    idx = int(expression[10:])
                     break
         if idx is not None:
             blink_image = engine.subsurface(self.portrait.image, self.portrait.get_blink_frame(idx))
