@@ -89,10 +89,14 @@ speak;Eirika;Oh no!
 remove_portrait;Eirika
 ```
 
-There are many event commands available, and it is not expected that you will remember them all off the top of your head. A searchable index of event commands is available within the event editor.
+There are many event commands available, and it is not expected that you will remember them all off the top of your head. A searchable index of event commands is available within the event editor by pressing the Show Commands button.
 
 ![Screenshot of list of event commands](images/EventEditorShowCommandsList.png)
 
 Feel free to check out the events that already exist in the default project or the Lion Throne project. They can and should be used freely as reference.
 
 Also, [Miscellaneous Events](Miscellaneous-Events) contains additional information on how to set up certain kinds of events.
+
+## Show Map Button
+
+Pressing the Show Map Button displays a preview window of the current level's tilemap. This can be changed to any tilemap within your project via the dropdown menu. Clicking on a point in the map will insert that point's coordinates into the event editor for easy placement for commands such as `move_unit` or `show_map_anim`.
