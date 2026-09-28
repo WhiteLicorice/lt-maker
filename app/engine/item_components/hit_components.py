@@ -44,7 +44,7 @@ class PermanentStatChange(ItemComponent):
         if self._hit_count > 0:
             stat_changes = {k: v*self._hit_count for (k, v) in self.value}
             # clamp stat changes
-            stat_changes = {k: utils.clamp(v, -target.stats[k], unit.get_stat_cap(k) - target.stats[k]) for k, v in stat_changes.items()}
+            stat_changes = {k: utils.clamp(v, -target.stats[k], target.get_stat_cap(k) - target.stats[k]) for k, v in stat_changes.items()}
             action.do(action.ApplyStatChanges(target, stat_changes))
             if any(v != 0 for v in stat_changes.values()):
                 game.memory['stat_changes'] = stat_changes
