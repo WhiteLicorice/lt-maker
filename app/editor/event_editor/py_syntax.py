@@ -4,6 +4,7 @@ import logging
 from dataclasses import dataclass
 from PyQt5 import QtCore, QtGui
 from app import dark_theme
+from app.editor.event_editor.event_highlighter import brace_spans
 from app.events.event_prefab import get_event_version
 from app.events.python_eventing.compiler import VERSION_MAP
 
@@ -138,14 +139,25 @@ class PythonHighlighter(QtGui.QSyntaxHighlighter):
             # special formatting for speak
             if command == 'speak':
                 if i == 2:
-                    self.setFormat(idx, len(tok), format(self.event_style.text_color))
+                    self.format_dialog(idx, tok)
             # special formatting for say, same as speak
             elif command == 'say':
                 arg = tok.strip()
                 if i > 1 and arg:
                     quote = arg[0]
                     if quote in ('"', "'") and arg.endswith(quote):
-                        self.setFormat(idx, len(tok), format(self.event_style.text_color))
+                        self.format_dialog(idx, tok)
+
+    def format_dialog(self, idx: int, text: str):
+        """Dialog text, with its dialog commands ({w}, {eval:...}) and line breaks (|)
+        picked out the same way as in a regular event"""
+        self.setFormat(idx, len(text), format(self.event_style.text_color))
+        special_format = format(self.event_style.special_text_color)
+        for start, length in brace_spans(text):
+            self.setFormat(idx + start, length, special_format)
+        for char_idx, char in enumerate(text):
+            if char == '|':
+                self.setFormat(idx + char_idx, 1, special_format)
 
     def highlightBlock(self, text):
         """Apply syntax highlighting to the given block of text.
