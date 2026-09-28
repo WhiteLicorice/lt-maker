@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+from typing import Sequence
+
 from app.constants import WINWIDTH, WINHEIGHT
 from app.engine import engine
 from app.engine import config as cf
+from app.engine import joy_bindings
 
 class InputManager():
     def __init__(self):
-        self.init_joystick()
+        self.refresh_gamepads()
 
         self.buttons = ('UP', 'DOWN', 'LEFT', 'RIGHT', 'SELECT', 'BACK', 'INFO', 'AUX', 'START')
         self.toggle_buttons = self.buttons[4:]  # These buttons cause state to change
@@ -18,7 +21,7 @@ class InputManager():
         self.joys_pressed = {}
         self.reset_keys_pressed()
 
-        self.update_joystick_control()
+        self.update_joy_map()
 
         self.key_up_events = []
         self.key_down_events = []
@@ -27,23 +30,49 @@ class InputManager():
 
         self.unavailable_button = None
 
-    # The joystick needs be plugged in before this method is called
-    def init_joystick(self):
-        if engine.joystick_avail():
-            joystick = engine.get_joystick()
-            joystick.init()
-            self.joystick = joystick
-            self.joystick_name = joystick.get_name()
-            print("Joystick Controller: %s" % self.joystick_name)
-        else:
-            self.joystick = None
-            self.joystick_name = None
+        # Controller rebinding: the action being rebound, if any. Inputs held
+        # when the prompt opened must be released and pressed again to count
+        self.capture_action: str | None = None
 
-    def get_joystick_init(self) -> bool:
-        return self.joystick and self.joystick.get_init()
+        # Which kind of device last pressed a button: keyboard, controller or joystick.
+        # Button prompts name the button on this device
+        self.last_input_device = 'keyboard'
+        self.capture_baseline: set[joy_bindings.ControllerBinding] = set()
+        self.captured_binding: joy_bindings.ControllerBinding | None = None
+
+    def refresh_gamepads(self):
+        self.controllers, self.joysticks = engine.get_gamepads()
+        for pad in self.controllers:
+            print("Game Controller: %s" % pad.name)
+        for pad in self.joysticks:
+            print("Joystick: %s" % pad.get_name())
 
     def set_change_keymap(self, val):
         self.change_keymap_mode = val
+
+    def start_joymap_capture(self, action: str):
+        self.capture_action = action
+        self.capture_baseline = self.get_active_capture_inputs()
+
+    def stop_joymap_capture(self):
+        self.capture_action = None
+        # Absorb whatever is still held (like the button just captured)
+        # so it doesn't fire under its new binding next frame
+        for button in self.buttons:
+            self.joys_pressed[button] = self.is_gamepad_pushed(button)
+
+    def rebind_controller(self, action: str, binding: joy_bindings.ControllerBinding):
+        """
+        Makes binding the only controller input for action,
+        taking it away from any other action that had it
+        """
+        for other in joy_bindings.REBINDABLE_ACTIONS:
+            bindings = joy_bindings.parse_bindings(cf.SETTINGS['joy_' + other])
+            if other != action and binding in bindings:
+                bindings.remove(binding)
+                cf.SETTINGS['joy_' + other] = joy_bindings.serialize_bindings(bindings)
+        cf.SETTINGS['joy_' + action] = binding.serialize()
+        self.update_joy_map()
 
     def reset_keys_pressed(self):
         for button in self.buttons:
@@ -103,7 +132,7 @@ class InputManager():
 
     def update(self):
         self.update_key_map()
-        self.update_joystick_control()
+        self.update_joy_map()
 
     def update_key_map(self):
         self.key_map = {}
@@ -119,24 +148,11 @@ class InputManager():
 
         self.map_keys = {v: k for k, v in self.key_map.items()}
 
-    def update_joystick_control(self):
-        self.joystick_control = {}
-
-        self.joystick_control['SELECT'] = [('is_button', 0)]  # A
-        self.joystick_control['BACK'] = [('is_button', 1)]  # B
-        self.joystick_control['START'] = [('is_button', 3), ('is_button', 6), ('is_button', 7)]  # Y, Select, Start
-        self.joystick_control['INFO'] = [('is_button', 2), ('is_button', 5), ('is_axis', 2, -0.5, 4)] # X, RB, R2
-        self.joystick_control['AUX'] = [('is_button', 4), ('is_axis', 2, 0.5, 5)] # LB, L2
-        # hat
-        self.joystick_control['LEFT'] = [('is_hat', 0, 'x', -1, 0), ('is_axis', 0, -0.5, 0)]
-        self.joystick_control['RIGHT'] = [('is_hat', 0, 'x', 1, 1), ('is_axis', 0, 0.5, 1)]
-        self.joystick_control['UP'] = [('is_hat', 0, 'y', 1, 2), ('is_axis', 1, -0.5, 2)]
-        self.joystick_control['DOWN'] = [('is_hat', 0, 'y', -1, 3), ('is_axis', 1, 0.5, 3)]
-
-        # handle buttons that need to know when they were last pressed
-        self.button_state = {k: False for k in range(10)}
-        self.hat_state = {k: False for k in range(4)}
-        self.axis_state = {k: False for k in range(6)}
+    def update_joy_map(self):
+        self.controller_map: dict[str, Sequence[joy_bindings.ControllerBinding]] = {}
+        for button in joy_bindings.REBINDABLE_ACTIONS:
+            self.controller_map[button] = joy_bindings.parse_bindings(cf.SETTINGS['joy_' + button])
+        self.controller_map.update(joy_bindings.CONTROLLER_DIRECTIONS)
 
     def process_input(self, events):
         self.key_up_events.clear()
@@ -155,12 +171,13 @@ class InputManager():
                         self.key_up_events.append(button)
                     else:
                         self.key_down_events.append(button)
+                        self.last_input_device = 'keyboard'
                 elif self.change_keymap_mode and event.type == engine.KEYDOWN:
                     self.unavailable_button = event.key
                     return 'NEW'
 
         # Check mouse
-        if not self.change_keymap_mode and cf.SETTINGS['mouse']:
+        if not self.change_keymap_mode and not self.capture_action and cf.SETTINGS['mouse']:
             self.current_mouse_position = None
             for event in events:
                 if event.type == engine.MOUSEBUTTONDOWN:
@@ -189,16 +206,18 @@ class InputManager():
                     position = event.pos
                     self.current_mouse_position = position
 
-        # Check game pad
-        if not self.joystick:
-            self.init_joystick()
-        # Need to re-init joystick if we closed and then
-        # re-opened the engine from the editor
-        if self.joystick and not self.get_joystick_init():
-            self.init_joystick()
+        # Check game pads
+        # SDL also reports every already-connected pad as added when it
+        # starts, which covers re-opening the engine from the editor
+        if any(event.type in (engine.JOYDEVICEADDED, engine.JOYDEVICEREMOVED) for event in events):
+            self.refresh_gamepads()
 
-        if self.joystick and not self.change_keymap_mode:
-            self.handle_joystick()
+        if self.capture_action:
+            if self.capture_controller_input():
+                return 'NEW'
+        else:
+            # Still read pads while rebinding a key, so a pad can back out
+            self.handle_gamepads()
 
         # Return the correct event for this frame
         # Gives priority to later inputs
@@ -210,45 +229,68 @@ class InputManager():
         if self.key_down_events:
             return self.key_down_events[-1]
 
-    def handle_joystick(self):
-        def update_state(pushed, state, button_id, button):
-            # If state change
-            if pushed != state[button_id]:
+    def is_controller_pushed(self, button: str) -> bool:
+        return any(binding.is_active(pad)
+                   for pad in self.controllers
+                   for binding in self.controller_map[button])
+
+    def is_joystick_pushed(self, button: str) -> bool:
+        return any(binding.is_active(pad)
+                   for pad in self.joysticks
+                   for binding in joy_bindings.RAW_JOYSTICK_BINDINGS[button])
+
+    def is_gamepad_pushed(self, button: str) -> bool:
+        return self.is_controller_pushed(button) or self.is_joystick_pushed(button)
+
+    def handle_gamepads(self):
+        for button in self.buttons:
+            controller_pushed = self.is_controller_pushed(button)
+            pushed = controller_pushed or self.is_joystick_pushed(button)
+            if pushed != self.joys_pressed[button]:
                 self.joys_pressed[button] = pushed
-                state[button_id] = pushed
                 if pushed:
                     self.key_down_events.append(button)
+                    self.last_input_device = 'controller' if controller_pushed else 'joystick'
                 else:
                     self.key_up_events.append(button)
-                return True
+
+    def get_button_name(self, button: str) -> str:
+        """
+        Name of the input for button on the device last used. Raw joysticks
+        have no standard button names, so they get the keyboard's
+        """
+        if self.last_input_device == 'controller':
+            # Only the first binding, since prompts have little room
+            return self.controller_map[button][0].display_name()
+        return engine.get_key_name(self.key_map[button])
+
+    def get_active_capture_inputs(self) -> set[joy_bindings.ControllerBinding]:
+        return {binding for pad in self.controllers
+                for binding in joy_bindings.CAPTURE_CANDIDATES if binding.is_active(pad)}
+
+    def capture_controller_input(self) -> bool:
+        """
+        Returns True and sets captured_binding if a new controller input
+        was pressed that can be moved to capture_action: one that is unbound,
+        already capture_action's, or one of several bound to another action.
+        Otherwise the input fires the action it is bound to, like an already
+        bound key does in keymap mode.
+        """
+        active = self.get_active_capture_inputs()
+        self.capture_baseline &= active
+        new_inputs = active - self.capture_baseline
+        if not new_inputs:
             return False
-
-        for button in self.buttons:
-            controls = self.joystick_control.get(button)
-            for control in reversed(controls):
-                # If the button behaves like a normal button
-                if control[0] == 'is_button' and self.joystick.get_numbuttons() > control[1]:
-                    pushed = self.joystick.get_button(control[1])
-                    update_state(pushed, self.button_state, control[1], button)
-
-                # If the button is controlured to a hat direction
-                elif control[0] == 'is_hat' and self.joystick.get_numhats() > control[1]:
-                    status = self.joystick.get_hat(control[1])
-                    if control[2] == 'x':  # Which axis
-                        amount = status[0]
-                    else:  # 'y'
-                        amount = status[1]
-                    pushed = amount == control[3]  # Binary amounts
-                    update_state(pushed, self.hat_state, control[4], button)
-
-                # If the button is controlured to a joystick
-                elif control[0] == 'is_axis' and self.joystick.get_numaxes() > control[1]:
-                    amount = self.joystick.get_axis(control[1])
-                    if control[2] < 0:
-                        pushed = amount < control[2]
-                    elif control[2] > 0:
-                        pushed = amount > control[2]
-                    update_state(pushed, self.axis_state, control[3], button)
+        binding = next(b for b in joy_bindings.CAPTURE_CANDIDATES if b in new_inputs)
+        self.capture_baseline.add(binding)
+        for button, bindings in self.controller_map.items():
+            if binding in bindings:
+                rebindable = button in joy_bindings.REBINDABLE_ACTIONS
+                if not rebindable or (button != self.capture_action and len(bindings) == 1):
+                    self.key_down_events.append(button)
+                    return False
+        self.captured_binding = binding
+        return True
 
 INPUT: InputManager = None
 def get_input_manager() -> InputManager:

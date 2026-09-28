@@ -5,6 +5,7 @@ from enum import Enum
 import pygame
 import pygame.image
 import pygame.time
+from pygame._sdl2 import controller
 
 from app.constants import WINWIDTH, WINHEIGHT, FPS
 from app.engine import config as cf
@@ -25,6 +26,8 @@ def init():
     pygame.mixer.pre_init(44100, -16, 2, 128 * 2**cf.SETTINGS['sound_buffer_size'])
     pygame.init()
     pygame.font.init()
+    # pygame.init does not start the game controller subsystem
+    controller.init()
     logging.info("Engine Init Completed")
 
 def simple_init():
@@ -302,15 +305,28 @@ KEYDOWN = pygame.KEYDOWN
 MOUSEBUTTONDOWN = pygame.MOUSEBUTTONDOWN
 MOUSEBUTTONUP = pygame.MOUSEBUTTONUP
 MOUSEMOTION = pygame.MOUSEMOTION
+JOYDEVICEADDED = pygame.JOYDEVICEADDED
+JOYDEVICEREMOVED = pygame.JOYDEVICEREMOVED
 
 def get_pressed():
     return pygame.key.get_pressed()
 
-def joystick_avail() -> bool:
-    return pygame.joystick.get_init() and pygame.joystick.get_count()
-
-def get_joystick():
-    return pygame.joystick.Joystick(0)
+def get_gamepads() -> tuple[list[controller.Controller], list[pygame.joystick.JoystickType]]:
+    """
+    Returns every connected pad, split into those SDL recognizes as
+    game controllers and raw joysticks it does not.
+    """
+    controllers, joysticks = [], []
+    if not pygame.joystick.get_init() or not controller.get_init():
+        return controllers, joysticks
+    for idx in range(pygame.joystick.get_count()):
+        if controller.is_controller(idx):
+            controllers.append(controller.Controller(idx))
+        else:
+            joystick = pygame.joystick.Joystick(idx)
+            joystick.init()
+            joysticks.append(joystick)
+    return controllers, joysticks
 
 def get_mouse_pos():
     return pygame.mouse.get_pos()

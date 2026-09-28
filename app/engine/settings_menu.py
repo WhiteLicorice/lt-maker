@@ -6,7 +6,7 @@ from app.engine.sprites import SPRITES
 from app.engine.fonts import FONT
 from app.engine.game_menus import menu_options
 from app.engine import text_funcs, image_mods, \
-    gui, base_surf, help_menu, engine, menus
+    gui, base_surf, help_menu, engine, menus, joy_bindings
 
 class ControlOption(menu_options.BasicOption):
     def __init__(self, idx, name, icon):
@@ -34,8 +34,31 @@ class ControlOption(menu_options.BasicOption):
             key_font = 'text-yellow'
         surf.blit(self.icon, (x + 32 - self.icon.get_width()//2, y + 8 - self.icon.get_height()//2))
         FONT[name_font].blit(self.display_name, surf, (x + 56, y))
-        key_name = engine.get_key_name(cf.SETTINGS[self.name])
-        FONT[key_font].blit(key_name, surf, (x + 128, y))
+        FONT[key_font].blit(self.get_binding_name(), surf, (x + 128, y))
+
+    def get_binding_name(self) -> str:
+        return engine.get_key_name(cf.SETTINGS[self.name])
+
+class JoyControlOption(ControlOption):
+    def get_binding_name(self) -> str:
+        return joy_bindings.display_bindings(joy_bindings.parse_bindings(cf.SETTINGS[self.name]))
+
+class FixedControlOption(ControlOption):
+    """
+    A read-only row for a control that cannot be rebound
+    """
+    def __init__(self, idx, name, binding_name, icon):
+        super().__init__(idx, name, icon)
+        self.binding_name = binding_name
+        self.ignore = True
+
+    def get_binding_name(self) -> str:
+        return self.binding_name
+
+    def draw(self, surf, x, y, active=False, get_input=False):
+        surf.blit(self.icon, (x + 32 - self.icon.get_width()//2, y + 8 - self.icon.get_height()//2))
+        FONT['text-grey'].blit(self.display_name, surf, (x + 56, y))
+        FONT['text-grey'].blit(self.binding_name, surf, (x + 128, y))
 
 class ConfigOption(menu_options.BasicOption):
     def __init__(self, idx, name, values, icon):
@@ -244,6 +267,9 @@ class BoolOption(ConfigOption):
         off_font.blit(text_funcs.translate('OFF'), surf, (x + 112 + on_font.width(on_str), y))
 
 class Controls(menus.Simple):
+    # Top edge of the menu, leaving room for the tabs above it
+    top = 32
+
     def __init__(self, owner, options, background, icons, info=None):
         self.icons = icons
         super().__init__(owner, options, None, background, info)
@@ -266,8 +292,11 @@ class Controls(menus.Simple):
     def move_next(self):
         pass
 
+    def get_topleft(self):
+        return ((WINWIDTH - self.get_menu_width()) // 2, self.top)
+
     def draw(self, surf, get_input=False):
-        topleft = ((WINWIDTH - self.get_menu_width()) // 2, (WINHEIGHT - self.get_menu_height()) // 2 + 8)
+        topleft = self.get_topleft()
         bg_surf = base_surf.create_base_surf(self.get_menu_width(), self.get_menu_height(), self.background)
         bg_surf = image_mods.make_translucent(bg_surf, .1)
         surf.blit(bg_surf, topleft)
@@ -296,7 +325,7 @@ class Controls(menus.Simple):
         return surf
 
     def get_rects(self):
-        topleft = (8, 34)
+        topleft = self.get_topleft()
         end_index = self.scroll + self.limit
         choices = self.options[self.scroll:end_index]
         running_height = 0
@@ -310,6 +339,20 @@ class Controls(menus.Simple):
 
             running_height += choice.height()
         return idxs, rects
+
+class JoyControls(Controls):
+    def __init__(self, owner, options, background, icons, fixed_options, fixed_icons):
+        # (name, binding_name) rows shown after the rebindable ones
+        self.fixed_options = fixed_options
+        self.fixed_icons = fixed_icons
+        super().__init__(owner, options, background, icons)
+
+    def create_options(self, options, info_descs=None):
+        self.options.clear()
+        for idx, option in enumerate(options):
+            self.options.append(JoyControlOption(idx, option, self.icons[idx]))
+        for (name, binding_name), icon in zip(self.fixed_options, self.fixed_icons):
+            self.options.append(FixedControlOption(len(self.options), name, binding_name, icon))
 
 class Config(Controls):
     def __init__(self, owner, options, background, icons, info=None):

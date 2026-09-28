@@ -13,6 +13,7 @@ from app.engine.combat import interaction
 from app.engine.fluid_scroll import FluidScroll
 from app.engine.fonts import FONT
 from app.engine.game_state import game
+from app.engine.input_manager import get_input_manager
 from app.engine.sound import get_sound_thread
 from app.engine.sprites import SPRITES
 from app.engine.state import MapState, State
@@ -666,7 +667,7 @@ class PrepFormationMenuState(MapState):
 
 def draw_funds(surf):
     # Draw R: Info display
-    helper = engine.get_key_name(cf.SETTINGS['key_INFO']).upper()
+    helper = get_input_manager().get_button_name('INFO').upper()
     FONT['text-yellow'].blit(helper, surf, (123, 143))
     FONT['text'].blit(': Info', surf, (123 + FONT['text-blue'].width(helper), 143))
     # Draw Funds display

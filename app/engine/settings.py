@@ -6,7 +6,7 @@ from app.engine.fonts import FONT
 from app.engine.sound import get_sound_thread
 from app.engine.input_manager import get_input_manager
 from app.engine.state import State
-from app.engine import engine, background, banner, menus, settings_menu, base_surf, text_funcs
+from app.engine import engine, background, banner, menus, settings_menu, base_surf, text_funcs, joy_bindings
 from app.engine.game_state import game
 from app.engine.fluid_scroll import FluidScroll
 
@@ -46,27 +46,59 @@ config = [('animation', ['Always', 'Your Turn', 'Combat Only', 'Never'], 0),
 
 config_icons = [engine.subsurface(SPRITES.get('settings_icons'), (0, c[2] * 16, 16, 16)) for c in config]
 
+joy_control_order = tuple('joy_' + action for action in joy_bindings.REBINDABLE_ACTIONS)
+joy_fixed_controls = [('Move', 'D-Pad / L-Stick')]
+joy_fixed_icons = [engine.subsurface(SPRITES.get('buttons'), (0, 192, 16, 16))]  # D-pad
+
+tabs = ('config', 'keyboard', 'controller')
+tab_names = {'config': 'Config', 'keyboard': 'Keyboard', 'controller': 'Controller'}
+
+# The controls tabs show fewer rows than config to make room
+# for the reset button beneath them
+CONTROLS_LIMIT = 5
+RESET_BUTTON_RECT = (64, 120, 112, 24)
+
+def in_rect(position, rect) -> bool:
+    x, y, width, height = rect
+    return x <= position[0] <= x + width and y <= position[1] <= y + height
+
 class SettingsMenuState(State):
     name = 'settings_menu'
     in_level = False
-    header_width = 112
+    header_width = 76
 
     def start(self):
         self.fluid = FluidScroll(128)
         self.bg = background.create_background('settings_background')
-        # top_menu_left, top_menu_right, config, controls, get_input
-        self.state = 'top_menu_left'
-
-        control_options = control_order
-        control_icons = [controls[c] for c in control_options]
-        self.controls_menu = settings_menu.Controls(None, control_options, 'menu_bg_base', control_icons)
-        self.controls_menu.takes_input = False
+        self.tab = 'config'
+        # top_menu, menu, reset_button, reset_confirm, get_input
+        self.state = 'top_menu'
 
         config_options = [(c[0], c[1]) for c in config]
         self.config_menu = settings_menu.Config(None, config_options, 'menu_bg_base', config_icons)
         self.config_menu.takes_input = False
 
+        keyboard_icons = [controls[c] for c in control_order]
+        self.keyboard_menu = settings_menu.Controls(None, control_order, 'menu_bg_base', keyboard_icons)
+        self.keyboard_menu.set_limit(CONTROLS_LIMIT)
+        self.keyboard_menu.takes_input = False
+
+        joy_icons = [controls['key_' + action] for action in joy_bindings.REBINDABLE_ACTIONS]
+        self.controller_menu = settings_menu.JoyControls(
+            None, joy_control_order, 'menu_bg_base', joy_icons, joy_fixed_controls, joy_fixed_icons)
+        self.controller_menu.set_limit(CONTROLS_LIMIT)
+        self.controller_menu.takes_input = False
+
         self.top_cursor = menus.Cursor()
+        self.reset_cursor = menus.Cursor()
+
+        self.confirm_menu = menus.Choice(None, ['Yes', 'No'], 'center', None)  # Clear background
+        self.confirm_menu.set_horizontal(True)
+        header = text_funcs.translate('Reset controls to defaults?')
+        width = sum(option.width() + 8 for option in self.confirm_menu.options) + 16
+        header_width = FONT['text'].width(header) + 8
+        self.confirm_bg = base_surf.create_base_surf(max(width, header_width), 40)
+        FONT['text'].blit(header, self.confirm_bg, (self.confirm_bg.get_width()//2 - header_width//2 + 4, 4))
 
         game.state.change('transition_in')
         return 'repeat'
@@ -76,40 +108,37 @@ class SettingsMenuState(State):
 
     @property
     def current_menu(self):
-        if self.state in ('top_menu_left', 'config'):
-            return self.config_menu
-        else:
-            return self.controls_menu
+        return {'config': self.config_menu,
+                'keyboard': self.keyboard_menu,
+                'controller': self.controller_menu}[self.tab]
+
+    def get_tab_center(self, tab) -> int:
+        return WINWIDTH * (2 * tabs.index(tab) + 1) // (2 * len(tabs))
+
+    def get_tab_rect(self, tab):
+        return (self.get_tab_center(tab) - self.header_width//2, 4, self.header_width, 24)
 
     def handle_mouse(self):
         mouse_position = get_input_manager().get_mouse_position()
-        if mouse_position:
-            mouse_x, mouse_y = mouse_position
-            top_left_rect = (4, 4, self.header_width, 24)
-            top_right_rect = (WINWIDTH//2 + 4, 4, self.header_width, 24)
-            # Test left rect
-            x, y, width, height = top_left_rect
-            if x <= mouse_x <= x + width and y <= mouse_y <= y + height:
+        if not mouse_position:
+            return
+        for tab in tabs:
+            if in_rect(mouse_position, self.get_tab_rect(tab)):
                 self.current_menu.takes_input = False
-                self.state = 'top_menu_left'
+                self.tab = tab
+                self.state = 'top_menu'
                 return
-            # Test right rect
-            x, y, width, height = top_right_rect
-            if x <= mouse_x <= x + width and y <= mouse_y <= y + height:
-                self.current_menu.takes_input = False
-                self.state = 'top_menu_right'
+        if self.tab != 'config' and in_rect(mouse_position, RESET_BUTTON_RECT):
+            self.current_menu.takes_input = False
+            self.state = 'reset_button'
+            return
+        current_idxs, current_option_rects = self.current_menu.get_rects()
+        for idx, option_rect in zip(current_idxs, current_option_rects):
+            if in_rect(mouse_position, option_rect) and not self.current_menu.options[idx].ignore:
+                self.state = 'menu'
+                self.current_menu.takes_input = True
+                self.current_menu.move_to(idx)
                 return
-            current_idxs, current_option_rects = self.current_menu.get_rects()
-            for idx, option_rect in zip(current_idxs, current_option_rects):
-                x, y, width, height = option_rect
-                if x <= mouse_x <= x + width and y <= mouse_y <= y + height:
-                    if self.state in ('top_menu_left', 'config'):
-                        self.state = 'config'
-                    else:
-                        self.state = 'controls'
-                    self.current_menu.takes_input = True
-                    self.current_menu.move_to(idx)
-                    return
 
     def take_input(self, event):
         first_push = self.fluid.update()
@@ -118,55 +147,86 @@ class SettingsMenuState(State):
         if self.state == 'get_input':
             if event == 'BACK':
                 get_sound_thread().play_sfx('Select 4')
-                self.state = 'controls'
-                get_input_manager().set_change_keymap(False)
+                self.end_get_input()
             elif event == 'NEW':
                 get_sound_thread().play_sfx('Select 1')
-                self.state = 'controls'
                 selection = self.current_menu.get_current()
-                cf.SETTINGS[selection] = get_input_manager().unavailable_button
-                get_input_manager().set_change_keymap(False)
-                get_input_manager().update_key_map()
+                if self.tab == 'keyboard':
+                    cf.SETTINGS[selection] = get_input_manager().unavailable_button
+                    get_input_manager().update_key_map()
+                else:
+                    get_input_manager().rebind_controller(selection[len('joy_'):], get_input_manager().captured_binding)
+                self.end_get_input()
             elif event:
                 get_sound_thread().play_sfx('Select 4')
-                self.state = 'controls'
-                get_input_manager().set_change_keymap(False)
-                text = 'Invalid Choice!'
-                game.alerts.append(banner.Custom(text))
-                game.state.change('alert')
+                self.end_get_input()
+                self.alert('Invalid Choice!')
 
-        elif self.state in ('top_menu_left', 'top_menu_right'):
+        elif self.state == 'reset_confirm':
+            self.confirm_menu.handle_mouse()
+            if event == 'RIGHT':
+                if self.confirm_menu.move_down():
+                    get_sound_thread().play_sfx('Select 6')
+            elif event == 'LEFT':
+                if self.confirm_menu.move_up():
+                    get_sound_thread().play_sfx('Select 6')
+            elif event == 'BACK':
+                get_sound_thread().play_sfx('Select 4')
+                self.state = 'reset_button'
+            elif event == 'SELECT':
+                if self.confirm_menu.get_current() == 'Yes':
+                    get_sound_thread().play_sfx('Select 1')
+                    self.reset_current_tab()
+                else:
+                    get_sound_thread().play_sfx('Select 4')
+                self.state = 'reset_button'
+
+        elif self.state == 'top_menu':
             self.handle_mouse()
+            idx = tabs.index(self.tab)
             if event == 'DOWN' or event == 'SELECT':
                 get_sound_thread().play_sfx('Select 6')
-                if self.state == 'top_menu_left':
-                    self.state = 'config'
-                else:
-                    self.state = 'controls'
+                self.state = 'menu'
                 self.current_menu.takes_input = True
             elif event == 'LEFT':
-                if self.state == 'top_menu_right':
+                if idx > 0:
                     get_sound_thread().play_sfx('Select 6')
-                    self.state = 'top_menu_left'
+                    self.tab = tabs[idx - 1]
             elif event == 'RIGHT':
-                if self.state == 'top_menu_left':
+                if idx < len(tabs) - 1:
                     get_sound_thread().play_sfx('Select 6')
-                    self.state = 'top_menu_right'
+                    self.tab = tabs[idx + 1]
+            elif event == 'BACK':
+                self.back()
+
+        elif self.state == 'reset_button':
+            self.handle_mouse()
+            if event == 'UP':
+                get_sound_thread().play_sfx('Select 6')
+                self.state = 'menu'
+                self.current_menu.takes_input = True
+            elif event == 'SELECT':
+                get_sound_thread().play_sfx('Select 1')
+                self.confirm_menu.set_selection('No')
+                self.state = 'reset_confirm'
             elif event == 'BACK':
                 self.back()
 
         else:
             self.handle_mouse()
             if 'DOWN' in directions:
-                if self.current_menu.move_down(first_push):
+                at_last_row = self.current_menu.get_current_option() is self.current_menu.get_last_option()
+                if self.tab != 'config' and at_last_row:
+                    if first_push:
+                        get_sound_thread().play_sfx('Select 6')
+                        self.current_menu.takes_input = False
+                        self.state = 'reset_button'
+                elif self.current_menu.move_down(first_push):
                     get_sound_thread().play_sfx('Select 6')
             elif 'UP' in directions:
                 if self.current_menu.get_current_index() <= 0:
                     self.current_menu.takes_input = False
-                    if self.state == 'config':
-                        self.state = 'top_menu_left'
-                    else:
-                        self.state = 'top_menu_right'
+                    self.state = 'top_menu'
                     get_sound_thread().play_sfx('Select 6')
                 else:
                     if self.current_menu.move_up(first_push):
@@ -186,14 +246,39 @@ class SettingsMenuState(State):
                 self.back()
 
             elif event == 'SELECT':
-                if self.state == 'controls':
+                if self.tab == 'keyboard':
                     get_sound_thread().play_sfx('Select 1')
                     self.state = 'get_input'
                     get_input_manager().set_change_keymap(True)
-                elif self.state == 'config':
+                elif self.tab == 'controller':
+                    if get_input_manager().controllers:
+                        get_sound_thread().play_sfx('Select 1')
+                        self.state = 'get_input'
+                        get_input_manager().start_joymap_capture(self.current_menu.get_current()[len('joy_'):])
+                    else:
+                        get_sound_thread().play_sfx('Select 4')
+                        self.alert('No controller detected!')
+                else:
                     self.current_menu.move_next()
                     self.update_volume_option()
                     get_sound_thread().play_sfx('Select 6')
+
+    def alert(self, text):
+        game.alerts.append(banner.Custom(text_funcs.translate(text)))
+        game.state.change('alert')
+
+    def end_get_input(self):
+        self.state = 'menu'
+        get_input_manager().set_change_keymap(False)
+        get_input_manager().stop_joymap_capture()
+
+    def reset_current_tab(self):
+        if self.tab == 'keyboard':
+            cf.reset_settings(control_order)
+            get_input_manager().update_key_map()
+        else:
+            cf.reset_settings(joy_control_order)
+            get_input_manager().update_joy_map()
 
     def update_volume_option(self):
         if self.current_menu.get_current_option().name in ('music_volume', 'sound_volume'):
@@ -214,38 +299,57 @@ class SettingsMenuState(State):
     def update(self):
         self.current_menu.update()
         self.top_cursor.update()
+        self.reset_cursor.update()
+        if self.state == 'reset_confirm':
+            self.confirm_menu.update()
 
     def draw_top_menu(self, surf):
         bg = base_surf.create_base_surf(self.header_width, 24, 'menu_bg_clear')
-        offset = (WINWIDTH // 2 - self.header_width) // 2
-        surf.blit(bg, (offset, 4))
-        surf.blit(bg, (WINWIDTH//2 + offset, 4))
-        if self.current_menu is self.config_menu:
-            FONT['text-yellow'].blit_center('Config', surf, (offset + self.header_width//2, 8))
-            FONT['text-grey'].blit_center('Controls', surf, (WINWIDTH//2 + offset + self.header_width//2, 8))
-            if self.state in ('top_menu_left', 'top_menu_right'):
-                self.top_cursor.draw(surf, self.header_width//2 - 16, 8)
-        else:
-            FONT['text-grey'].blit_center('Config', surf, (offset + self.header_width/2, 8))
-            FONT['text-yellow'].blit_center('Controls', surf, (WINWIDTH//2 + offset + self.header_width//2, 8))
-            if self.state in ('top_menu_left', 'top_menu_right'):
-                self.top_cursor.draw(surf, WINWIDTH//2 + 2 + self.header_width//2 - 16, 8)
+        for tab in tabs:
+            x, y, _, _ = self.get_tab_rect(tab)
+            surf.blit(bg, (x, y))
+            center = self.get_tab_center(tab)
+            name = text_funcs.translate(tab_names[tab])
+            font = FONT['text-yellow'] if tab == self.tab else FONT['text-grey']
+            font.blit_center(name, surf, (center, 8))
+            if tab == self.tab and self.state == 'top_menu':
+                self.top_cursor.draw(surf, center - font.width(name)//2 - 5, 8)
+
+    def draw_reset_button(self, surf):
+        x, y, width, height = RESET_BUTTON_RECT
+        surf.blit(base_surf.create_base_surf(width, height, 'menu_bg_green'), (x, y))
+        text = text_funcs.translate('Reset to Defaults')
+        focused = self.state in ('reset_button', 'reset_confirm')
+        font = FONT['text-yellow'] if focused else FONT['text']
+        font.blit_center(text, surf, (x + width//2, y + 4))
+        if focused:
+            self.reset_cursor.draw(surf, x + width//2 - font.width(text)//2 - 5, y + 4)
+
+    def draw_confirm(self, surf):
+        surf.blit(self.confirm_bg, (WINWIDTH//2 - self.confirm_bg.get_width()//2, WINHEIGHT//2 - 28))
+        self.confirm_menu.draw(surf)
 
     def draw_info_banner(self, surf):
         height = 16
         bg = base_surf.create_base_surf(WINWIDTH + 16, height, 'menu_bg_clear')
         surf.blit(bg, (-8, WINHEIGHT - height))
-        if self.state == 'top_menu_left':
-            text = 'config_desc'
-        elif self.state == 'top_menu_left':
-            text = 'controls_desc'
-        elif self.state == 'config':
-            idx = self.config_menu.get_current_index()
-            text = config[idx][0] + '_desc'
+        if self.state in ('reset_button', 'reset_confirm'):
+            text = 'Restore the default bindings.'
         elif self.state == 'get_input':
-            text = 'get_input_desc'
-        else:
+            if self.tab == 'keyboard':
+                text = 'get_input_desc'
+            else:
+                text = 'Press a new button (or BACK to quit)'
+        elif self.tab == 'config':
+            if self.state == 'top_menu':
+                text = 'config_desc'
+            else:
+                idx = self.config_menu.get_current_index()
+                text = config[idx][0] + '_desc'
+        elif self.tab == 'keyboard':
             text = 'keymap_desc'
+        else:
+            text = 'Change controller bindings.'
         text = text_funcs.translate(text)
         FONT['text'].blit_center(text, surf, (WINWIDTH//2, WINHEIGHT - height))
 
@@ -261,10 +365,15 @@ class SettingsMenuState(State):
             self.current_menu.draw(surf, True)
         else:
             self.current_menu.draw(surf)
+        if self.tab != 'config':
+            self.draw_reset_button(surf)
         self.draw_info_banner(surf)
+        if self.state == 'reset_confirm':
+            self.draw_confirm(surf)
 
         return surf
 
     def finish(self):
         # Just to make sure!
         get_input_manager().set_change_keymap(False)
+        get_input_manager().stop_joymap_capture()
