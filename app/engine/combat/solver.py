@@ -55,11 +55,10 @@ class AttackerState(SolverState):
 
         can_double_in_pairup = not DB.constants.value('limit_attack_stance')
 
-        if solver.attacker_alive() and (not solver.defender or solver.defender_alive()):
+        if solver.attacker_alive() and solver.targets_remain():
             if command == '--':
                 # Calculate the number of phases in this combat
-                attacker_num_phases = combat_calcs.compute_attack_phases(
-                    solver.attacker, solver.defender, solver.main_item, solver.def_item, 'attack', solver.get_attack_info())
+                attacker_num_phases = solver.attacker_num_phases()
                 if solver.defender:
                     defender_num_phases = combat_calcs.compute_attack_phases(
                         solver.defender, solver.attacker, solver.def_item, solver.main_item, 'defense', solver.get_defense_info())
@@ -100,6 +99,8 @@ class AttackerState(SolverState):
         # Check attack proc
         skill_system.start_sub_combat(actions, playback, solver.attacker, solver.main_item, solver.defender, resolve_weapon(solver.defender),  'attack', attack_info)
         for idx, item in enumerate(solver.items):
+            if solver.skip_target(idx, solver.num_attacks):
+                continue
             defender = solver.defenders[idx]
             if DB.constants.value('double_splash'):
                 splash = solver.splashes[idx]
@@ -143,12 +144,11 @@ class AttackerPartnerState(SolverState):
     def get_next_state(self, solver):
         command = solver.get_script()
 
-        if solver.attacker_alive() and (not solver.defender or solver.defender_alive()):
+        if solver.attacker_alive() and solver.targets_remain():
             if command == '--':
                 
                 # Calculate the number of phases in this combat
-                attacker_num_phases = combat_calcs.compute_attack_phases(
-                    solver.attacker, solver.defender, solver.main_item, solver.def_item, 'attack', solver.get_attack_info())
+                attacker_num_phases = solver.attacker_num_phases()
                 if solver.defender:
                     defender_num_phases = combat_calcs.compute_attack_phases(
                         solver.defender, solver.attacker, solver.def_item, solver.main_item, 'defense', solver.get_defense_info())
@@ -185,6 +185,9 @@ class AttackerPartnerState(SolverState):
         attack_info = solver.get_attack_info()
         skill_system.start_sub_combat(actions, playback, atk_p, solver.main_item, solver.defender, resolve_weapon(solver.defender), 'attack', attack_info)
         for idx, item in enumerate(solver.items):
+            # The main attacker has already completed this phase, so num_attacks is one past it
+            if solver.skip_target(idx, solver.num_attacks - 1):
+                continue
             defender = solver.defenders[idx]
             splash = solver.splashes[idx]
             target_pos = solver.target_positions[idx]
@@ -220,7 +223,7 @@ class DefenderState(SolverState):
             if command == '--':
 
                 # Calculate the number of phases in this combat
-                attacker_num_phases = combat_calcs.compute_attack_phases(solver.attacker, solver.defender, solver.main_item, solver.def_item, 'attack', solver.get_attack_info())
+                attacker_num_phases = solver.attacker_num_phases()
                 defender_num_phases = combat_calcs.compute_attack_phases(solver.defender, solver.attacker, solver.def_item, solver.main_item, 'defense', solver.get_defense_info())
 
                 if solver.defender.strike_partner and solver.defender_partner_alive() \
@@ -284,7 +287,7 @@ class DefenderPartnerState(SolverState):
             if command == '--':
                 
                 # Calculate the number of phases in this combat
-                attacker_num_phases = combat_calcs.compute_attack_phases(solver.attacker, solver.defender, solver.main_item, solver.def_item, 'attack', solver.get_attack_info())
+                attacker_num_phases = solver.attacker_num_phases()
                 defender_num_phases = combat_calcs.compute_attack_phases(solver.defender, solver.attacker, solver.def_item, solver.main_item, 'defense', solver.get_defense_info())
 
                 if solver.allow_counterattack() and solver.defender_partner_alive() \
@@ -559,6 +562,44 @@ class CombatPhaseSolver():
 
     def defender_alive(self):
         return self.defender and (self.defender.get_hp() > 0 or skill_system.ignore_dying_in_combat(self.defender))
+
+    def targets_remain(self) -> bool:
+        """Whether the attacker still has something to strike.
+        Multi-target combats (no single defender) continue while any targeted unit lives;
+        with no targeted units at all (tile targets), there is always something to strike"""
+        if self.defender:
+            return self.defender_alive()
+        targeted_units = [defender for defender in self.defenders if defender]
+        if targeted_units:
+            return any(self.unit_alive(defender) for defender in targeted_units)
+        return True
+
+    def unit_alive(self, unit) -> bool:
+        return unit.get_hp() > 0 or skill_system.ignore_dying_in_combat(unit)
+
+    def attacker_phases_vs(self, idx: int) -> int:
+        defender = self.defenders[idx]
+        return combat_calcs.compute_attack_phases(
+            self.attacker, defender, self.main_item, resolve_weapon(defender), 'attack', self.get_attack_info())
+
+    def attacker_num_phases(self) -> int:
+        if self.defender:
+            return combat_calcs.compute_attack_phases(
+                self.attacker, self.defender, self.main_item, self.def_item, 'attack', self.get_attack_info())
+        # Multi-target: the combat lasts as long as the attacker keeps striking any living target
+        return max((self.attacker_phases_vs(idx) for idx in range(len(self.defenders)) if not self.target_dead(idx)), default=0)
+
+    def target_dead(self, idx: int) -> bool:
+        defender = self.defenders[idx]
+        return bool(defender) and not self.unit_alive(defender)
+
+    def skip_target(self, idx: int, phase: int) -> bool:
+        """Whether the attacker's strike in this phase should pass over the target at idx.
+        Dead targets are never struck again. In a multi-target combat, each target
+        is only struck for as many phases as the attacker gets against it (ie, doubling)"""
+        if self.target_dead(idx):
+            return True
+        return not self.defender and phase >= self.attacker_phases_vs(idx)
 
     def attacker_partner_alive(self):
         return self.attacker.strike_partner \
