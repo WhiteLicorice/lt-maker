@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import random
-from typing import List, Optional
+from typing import Dict, List, Optional, Tuple
 
 import logging
 
@@ -132,6 +132,9 @@ class AnimationCombat(BaseCombat, MockCombat):
         self.rp_battle_anim = None
         self.left_partner = None
         self.right_partner = None
+        # Tints that hits have left on a unit's battle anim, kept for the rest of the combat.
+        # Held here rather than on the battle anims, since a transform replaces those mid-combat
+        self.battle_anim_tints: Dict[NID, Tuple[int, int, int]] = {}
 
         if DB.constants.value('pairup'):
             if self.left.strike_partner:
@@ -236,6 +239,11 @@ class AnimationCombat(BaseCombat, MockCombat):
         if self.rp_battle_anim:
             self.rp_battle_anim.pair(self, self.left_battle_anim, True, self.at_range, 14, right_pos)
             self.rp_battle_anim.entrance_counter = entrance_frames
+        self.apply_battle_anim_tints()
+
+    def apply_battle_anim_tints(self):
+        self.left_battle_anim.hit_tint = self.battle_anim_tints.get(self.left.nid)
+        self.right_battle_anim.hit_tint = self.battle_anim_tints.get(self.right.nid)
 
     def ui_should_be_hidden(self):
         return game.game_vars.get("_hide_ui")
@@ -757,6 +765,9 @@ class AnimationCombat(BaseCombat, MockCombat):
                     self.state = 'combat_hit'
             elif brush.nid in hit_brushes:
                 self.add_proc_icon(brush.unit, brush.skill)
+            elif brush.nid == 'battle_anim_tint':
+                self.battle_anim_tints[brush.unit.nid] = brush.color
+                self.apply_battle_anim_tints()
             elif brush.nid == 'hit_sound' and sound and not brush.map_only:
                 play_sound = brush.sound
                 if play_sound == 'Attack Miss 2':

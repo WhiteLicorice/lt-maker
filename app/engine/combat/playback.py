@@ -404,6 +404,17 @@ class UnitTintSub(PlaybackBrush):
 
 
 @dataclass
+class BattleAnimTint(PlaybackBrush):
+    """
+    Aesthetic brush for tinting a unit's battle animation for the rest of the combat
+    Processed by an Animation Combat only
+    """
+    nid: ClassVar[str] = 'battle_anim_tint'
+    unit: UnitObject
+    color: Tuple[int, int, int]
+
+
+@dataclass
 class CritTint(PlaybackBrush):
     """
     Aesthetic brush for adding a brightening tint to unit's sprite that mimics the GBA critical effect

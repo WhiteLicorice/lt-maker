@@ -98,6 +98,17 @@ class MapCastPose(ItemComponent):
     def map_cast_pose(self, unit, item):
         return True
 
+class BattleHitTint(ItemComponent):
+    nid = 'battle_hit_tint'
+    desc = "When this item hits in a combat animation, the target's battle animation stays tinted this color until the combat ends. Useful for effects like petrify, where a spell's own Tint Enemy command would wear off before the combat does."
+    tag = ItemTags.AESTHETIC
+
+    expose = ComponentType.Color3
+    value = (0, 0, 0)
+
+    def on_hit(self, actions, playback, unit, item, target, item2, target_pos, mode, attack_info):
+        playback.append(pb.BattleAnimTint(target, self.value))
+
 class BattleCastAnim(ItemComponent):
     nid = 'battle_cast_anim'
     desc = "Adds a specific animation effect when the item is used. This does not change the battle animation used, think instead of the spell's effect."
