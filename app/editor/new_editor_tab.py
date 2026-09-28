@@ -47,7 +47,8 @@ class NewEditorTab(QWidget, Generic[T]):
         self.tree_list = LTNestedList(self, self.data.keys(), self.categories, self.allow_rename,
                                       self.allow_duplicate, self.get_icon, self.get_foreground,
                                       self.on_select, self.resort_db, self.on_begin_rename,
-                                      self.delete_from_db, self.create_new, self.duplicate, self.rename)
+                                      self.delete_from_db, self.create_new, self.duplicate, self.rename,
+                                      self.get_search_text)
         left_frame_layout.setContentsMargins(0, 0, 0, 0)
         left_frame_layout.setSpacing(0)
         left_frame_layout.addWidget(self.tree_list)
@@ -225,6 +226,10 @@ class NewEditorTab(QWidget, Generic[T]):
 
     def get_foreground(self, unit_nid: NID) -> Optional[QBrush]:
         return None
+
+    def get_search_text(self, nid: NID) -> str:
+        """All the text the search box matches against for this entry"""
+        return nid
 
     def import_xml(self):
         raise NotImplementedError

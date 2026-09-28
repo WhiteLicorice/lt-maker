@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, Iterator, List, Optional, Tuple
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QSize, QItemSelection, QModelIndex
@@ -81,6 +81,8 @@ class LTNestedList(QWidget):
                                             If callback returns True, implies insertion was successful and the NestedList will insert a new entry.
         attempt_rename (function(new_nid) -> bool): Callback is called with the new nid on rename. Callback is expected to handle initialization in the DB.
                                             If callback returns True, implies rename was successful and the NestedList will trigger a rename on the entry.
+        get_search_text (function(nid) -> str): Callback returns all the text the search box should match against for an entry.
+                                            Defaults to just the NID.
 
     """
     def __init__(self, parent=None,
@@ -97,6 +99,7 @@ class LTNestedList(QWidget):
                  attempt_new: Optional[Callable[[NID], bool]]=None,
                  attempt_duplicate: Optional[Callable[[NID, NID], bool]]=None,
                  attempt_rename: Optional[Callable[[NID, NID], bool]]=None,
+                 get_search_text: Optional[Callable[[NID], str]]=None,
                  ) -> None:
         super().__init__(parent)
         self.allow_rename = allow_rename
@@ -110,6 +113,7 @@ class LTNestedList(QWidget):
         self.attempt_new = attempt_new
         self.attempt_duplicate = attempt_duplicate
         self.attempt_rename = attempt_rename
+        self.get_search_text = get_search_text or (lambda nid: nid)
         self.old_nid = None
 
         layout = QVBoxLayout()
@@ -263,10 +267,8 @@ class LTNestedList(QWidget):
 
     def on_filter_changed(self, text: str):
         if text:
-            filtered_items = self.tree_widget.findItems(text, QtCore.Qt.MatchContains | QtCore.Qt.MatchRecursive)
-            # Only real entries can be selected, and a folder is allowed to share an entry's name,
-            # so folders must be kept out of the icons as well or they overwrite the entry's own
-            entries = [item for item in filtered_items if not item.data(0, IsCategoryRole)]
+            text = text.lower()
+            entries = [item for item in self.iter_entries() if text in self.get_search_text(item.text(0)).lower()]
             item_icons = {item.text(0): item.icon(0) for item in entries}
             self.search_list.clear()
             for item_nid, icon in item_icons.items():
@@ -277,6 +279,17 @@ class LTNestedList(QWidget):
         else:
             self.search_list.hide()
             self.tree_widget.show()
+
+    def iter_entries(self) -> Iterator[QTreeWidgetItem]:
+        """Every real entry in the tree, in tree order. Folders are never entries, even empty ones"""
+        def recurse(root: QTreeWidgetItem) -> Iterator[QTreeWidgetItem]:
+            for i in range(root.childCount()):
+                child = root.child(i)
+                if child.data(0, IsCategoryRole):
+                    yield from recurse(child)
+                else:
+                    yield child
+        return recurse(self.tree_widget.invisibleRootItem())
 
     def update_nid(self, old_nid: NID, new_nid: NID):
         """Since this is a list that should reflect db changes,

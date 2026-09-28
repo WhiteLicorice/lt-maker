@@ -41,6 +41,9 @@ class NewClassDatabase(NewEditorTab):
                 return QIcon(pix.scaled(32, 32))
         return None
 
+    def get_search_text(self, nid: NID) -> str:
+        return '%s\n%s' % (nid, self.data.get(nid).name)
+
     def create_new(self, nid):
         if self.data.get(nid):
             QMessageBox.warning(self, 'Warning', 'ID %s already in use' % nid)

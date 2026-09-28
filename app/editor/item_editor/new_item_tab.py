@@ -13,7 +13,7 @@ from app.data.database.components import swap_values, ComponentType
 from app.editor import timer
 from app.editor.data_editor import SingleDatabaseEditor
 from app.editor.item_editor import item_import, item_model
-from app.editor.component_editor_properties import NewComponentProperties
+from app.editor.component_editor_properties import NewComponentProperties, component_search_text
 from app.editor.settings.main_settings_controller import MainSettingsController
 from app.editor.new_editor_tab import NewEditorTab
 from app.extensions.custom_gui import DeletionTab, DeletionDialog
@@ -49,6 +49,9 @@ class NewItemDatabase(NewEditorTab):
         if pix:
             return QIcon(pix.scaled(32, 32))
         return None
+
+    def get_search_text(self, nid: NID) -> str:
+        return component_search_text(self.data.get(nid))
 
     def _on_delete(self, nid: NID) -> bool:
         """

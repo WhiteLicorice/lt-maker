@@ -73,8 +73,7 @@ class FilterIgnoresFoldersTests(unittest.TestCase):
         return self.build(['Eirika', 'Seth'], {'Eirika': ['Eirika']})
 
     def folder_follows_its_namesake(self):
-        # The 'Eirika' entry sits at the root, so findItems reaches it before the
-        # nested 'Eirika' folder -- the order in which the folder wins the icon.
+        # The 'Eirika' entry sits at the root, ahead of the nested 'Eirika' folder.
         # The folder cannot be a sibling of the entry: _treeify keys a node's
         # children by nid, so same-named siblings overwrite each other
         return self.build(['Eirika', 'Seth'], {'Seth': ['Chapter 1', 'Eirika']})
@@ -108,6 +107,53 @@ class FilterIgnoresFoldersTests(unittest.TestCase):
                                    list_categories={'Seth': ['Knights']},
                                    get_icon=lambda nid: QIcon())
         self.assertEqual([], self.search(widget, 'Knights'))
+
+
+class SearchTextTests(unittest.TestCase):
+    '''
+    The search box matches whatever text the owning tab supplies for an entry, so an item
+    or skill can be found by its name, description, components, or component values
+    '''
+
+    def setUp(self) -> None:
+        import sys
+        from PyQt5.QtWidgets import QApplication
+        self.app = QApplication.instance() or QApplication(sys.argv)
+
+        from app.editor.lib.components.nested_list import LTNestedList
+        self.LTNestedList = LTNestedList
+
+    def search(self, widget, text):
+        widget.on_filter_changed(text)
+        return [widget.search_list.item(i).text() for i in range(widget.search_list.count())]
+
+    def test_defaults_to_matching_the_nid(self):
+        widget = self.LTNestedList(None, list_entries=['Iron Sword', 'Steel Sword', 'Vulnerary'],
+                                   list_categories={'Steel Sword': ['Swords']})
+        self.assertEqual(['Iron Sword', 'Steel Sword'], self.search(widget, 'sword'))
+
+    def test_matches_the_supplied_search_text(self):
+        search_text = {'Iron Sword': 'Iron Sword\nweapon', 'Nosferatu': 'Nosferatu\nlifelink\n0.5',
+                       'Vulnerary': 'Vulnerary\nheal'}
+        widget = self.LTNestedList(None, list_entries=list(search_text),
+                                   list_categories={'Nosferatu': ['Tomes']},
+                                   get_search_text=search_text.get)
+        self.assertEqual(['Nosferatu'], self.search(widget, 'LIFELINK'))
+        self.assertEqual(['Iron Sword', 'Vulnerary'], self.search(widget, 'ea'))
+
+    def test_component_search_text(self):
+        from types import SimpleNamespace
+        from app.editor.component_editor_properties import component_search_text
+        skill = SimpleNamespace(nid='Hex', name='Hex Aura', desc='Lowers enemy avoid.',
+                                components=[SimpleNamespace(nid='aura', name='Aura', value='Hex_Child'),
+                                            SimpleNamespace(nid='combat_condition', name='Combat Condition',
+                                                            value="unit.team == 'player'"),
+                                            SimpleNamespace(nid='hidden', name='Hidden', value=None)])
+        text = component_search_text(skill)
+        for snippet in ('Hex Aura', 'enemy avoid', 'aura', 'Hex_Child', "unit.team == 'player'", 'hidden',
+                        'Combat Condition'):
+            self.assertIn(snippet, text)
+        self.assertNotIn('None', text)
 
 
 class InsertionRowTests(unittest.TestCase):
