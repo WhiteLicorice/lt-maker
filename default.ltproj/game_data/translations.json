@@ -100,6 +100,10 @@
         "text": "Show tutorial popups."
     },
     {
+        "nid": "rumble_desc",
+        "text": "Whether the controller can rumble."
+    },
+    {
         "nid": "confirm_end_desc",
         "text": "Ask again before manually ending turn?"
     },
