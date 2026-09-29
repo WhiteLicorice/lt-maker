@@ -263,7 +263,7 @@ def draw_stat(surf: engine.Surface, stat_nid: str, unit: unit.UnitObject,
             draw_glow(surf, FONT['small-red'], str(bonus), topright)
 
 def draw_growth(surf: engine.Surface, stat_nid: str, unit: unit.UnitObject,
-                topright: Tuple[int, int], compact:bool=False) -> None:
+                topright: Tuple[int, int], compact:bool=False, percent: bool = False) -> None:
     if stat_nid not in DB.stats:
         FONT['text-yellow'].blit_right('--', surf, topright)
         return
@@ -274,10 +274,15 @@ def draw_growth(surf: engine.Surface, stat_nid: str, unit: unit.UnitObject,
         pass
     else:
         FONT['text-blue'].blit_right(str(value), surf, topright)
+        # The bonus follows the percent sign
+        bonus_pos = topright
+        if percent:
+            FONT['text-blue'].blit('%', surf, topright)
+            bonus_pos = (topright[0] + FONT['text-blue'].width('%'), topright[1])
         if bonus > 0:
-            FONT['small-green'].blit("+%d" % bonus, surf, topright)
+            FONT['small-green'].blit("+%d" % bonus, surf, bonus_pos)
         elif bonus < 0:
-            FONT['small-red'].blit(str(bonus), surf, topright)
+            FONT['small-red'].blit(str(bonus), surf, bonus_pos)
 
 def draw_glow(surf: engine.Surface, font_obj: BmpFont, text: str, topright: Tuple[int, int],
               align: HAlignment = HAlignment.LEFT, color: str = None) -> engine.Surface:

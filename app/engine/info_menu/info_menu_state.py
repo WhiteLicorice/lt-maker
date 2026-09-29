@@ -127,6 +127,8 @@ class InfoMenuState(State):
     def reset_surfs(self, keep_last_info_graph_aabb=False):
         self.info_graph.clear(keep_last_aabb=keep_last_info_graph_aabb)
         self.portrait_surf = None
+        self.hp_surf: engine.Surface = None
+        self.hp_growth_surf: engine.Surface = None
         self.current_portrait = None
 
         self.personal_data_surf: engine.Surface = None
@@ -419,6 +421,14 @@ class InfoMenuState(State):
         if not self.portrait_surf:
             self.portrait_surf = self.create_portrait_section()
         portrait_surf = self.portrait_surf.copy()
+        if self.state == 'personal_data' and self.growth_flag:
+            if not self.hp_growth_surf:
+                self.hp_growth_surf = self.create_hp_section(growths=True)
+            portrait_surf.blit(self.hp_growth_surf, (8, 136))
+        else:
+            if not self.hp_surf:
+                self.hp_surf = self.create_hp_section()
+            portrait_surf.blit(self.hp_surf, (8, 136))
 
         # If no portrait for this unit, either create one or default to class card using icons.get_portrait
         if not self.current_portrait:
@@ -476,7 +486,10 @@ class InfoMenuState(State):
 
     def create_portrait_section(self):
         surf = engine.create_surface((96, WINHEIGHT), transparent=True)
-        surf.blit(SPRITES.get('info_unit'), (8, 122))
+        # The HP row's slash belongs to the HP section, since growths leave it out
+        info_unit = SPRITES.get('info_unit')
+        surf.blit(engine.subsurface(info_unit, (0, 0, 40, 14)), (8, 122))  # Lv and E
+        surf.blit(engine.subsurface(info_unit, (0, 14, 24, 14)), (8, 136))  # HP
 
         render_text(surf, ['text'], [self.unit.name], ['white'], (48, 80), HAlignment.CENTER)
         unit_desc = text_funcs.translate_and_text_evaluate(self.unit.desc, self=self.unit, unit=self.unit)
@@ -492,18 +505,8 @@ class InfoMenuState(State):
         desc = text_funcs.translate_and_text_evaluate('Exp_desc', unit=self.unit)
         self.info_graph.register((38, 120, 30, 16), desc, 'all')
         
-        # Draw HP
-        current_hp = str(self.unit.get_hp())
-        max_hp = str(self.unit.get_max_hp())
-        # 14 pixels is width of space available to draw current_hp or max_hp
-        if text_width('text', current_hp) > 14 or text_width('text', max_hp) > 14:
-            hp_font = 'narrow'
-        else:
-            hp_font = 'text'
-        render_text(surf, [hp_font], [current_hp], ['blue'], (39, 136), HAlignment.RIGHT)
         desc = text_funcs.translate_and_text_evaluate('HP_desc', unit=self.unit)
         self.info_graph.register((8, 136, 72, 16), desc, 'all')
-        render_text(surf, [hp_font], [str(max_hp)], ['blue'], (63, 136), HAlignment.RIGHT)
 
         # Blit the white status platform
         surf.blit(SPRITES.get('status_platform'), (66, 131))
@@ -513,6 +516,29 @@ class InfoMenuState(State):
             icons.draw_item(surf, affinity, (78, 81))
             affinity_desc = text_funcs.translate_and_text_evaluate(affinity.desc, self=affinity, unit=self.unit)
             self.info_graph.register((76, 80, 16, 16), affinity_desc, 'all')
+        return surf
+
+    def create_hp_section(self, growths=False):
+        """
+        The values on the HP row beneath the portrait: the unit's HP growth
+        when growths are shown, otherwise its current and max HP
+        """
+        surf = engine.create_surface((64, 16), transparent=True)
+        if growths:
+            # Leaves room for three digits
+            icons.draw_growth(surf, 'HP', self.unit, (39, 0), percent=True)
+            return surf
+
+        surf.blit(engine.subsurface(SPRITES.get('info_unit'), (24, 14, 16, 14)), (24, 0))  # Slash
+        current_hp = str(self.unit.get_hp())
+        max_hp = str(self.unit.get_max_hp())
+        # 14 pixels is width of space available to draw current_hp or max_hp
+        if text_width('text', current_hp) > 14 or text_width('text', max_hp) > 14:
+            hp_font = 'narrow'
+        else:
+            hp_font = 'text'
+        render_text(surf, [hp_font], [current_hp], ['blue'], (31, 0), HAlignment.RIGHT)
+        render_text(surf, [hp_font], [max_hp], ['blue'], (55, 0), HAlignment.RIGHT)
         return surf
 
     def draw_top_arrows(self, surf):
@@ -696,36 +722,27 @@ class InfoMenuState(State):
                 self.info_graph.register((96 + 72, 16 * true_idx + 24, 64, 16), desc, state)
 
             elif stat == 'AID':
-                if growths:
-                    icons.draw_growth(surf, 'HP', self.unit, (111, 16 * true_idx + 24))
-                    color = 'yellow'
-                    if DB.stats.get('HP').growth_colors and self.unit.team == 'player':
-                        color = self.growth_colors(unit_funcs.growth_rate(self.unit, 'HP'))
-                    render_text(surf, ['text'], [text_funcs.translate('HP')], [color], (72, 16 * true_idx + 24))
-                    desc = text_funcs.translate_and_text_evaluate('HP_desc', unit=self.unit)
-                    self.info_graph.register((96 + 72, 16 * true_idx + 24, 64, 16), desc, state)
-                else:
-                    aid = equations.parser.rescue_aid(self.unit)
-                    render_text(surf, ['text'], [str(aid)], ['blue'], (111, 16 * true_idx + 24), HAlignment.RIGHT)
+                aid = equations.parser.rescue_aid(self.unit)
+                render_text(surf, ['text'], [str(aid)], ['blue'], (111, 16 * true_idx + 24), HAlignment.RIGHT)
 
-                    # Mount Symbols
-                    for tag in self.unit.tags:
-                        if ('aid_icon_%s' % tag) in SPRITES:
-                            aid_surf = SPRITES.get('aid_icon_%s' % tag)
-                            break
+                # Mount Symbols
+                for tag in self.unit.tags:
+                    if ('aid_icon_%s' % tag) in SPRITES:
+                        aid_surf = SPRITES.get('aid_icon_%s' % tag)
+                        break
+                else:
+                    if 'Dragon' in self.unit.tags:
+                        aid_surf = engine.subsurface(SPRITES.get('aid_icons'), (0, 48, 16, 16))
+                    elif 'Flying' in self.unit.tags:
+                        aid_surf = engine.subsurface(SPRITES.get('aid_icons'), (0, 32, 16, 16))
+                    elif 'Mounted' in self.unit.tags:
+                        aid_surf = engine.subsurface(SPRITES.get('aid_icons'), (0, 16, 16, 16))
                     else:
-                        if 'Dragon' in self.unit.tags:
-                            aid_surf = engine.subsurface(SPRITES.get('aid_icons'), (0, 48, 16, 16))
-                        elif 'Flying' in self.unit.tags:
-                            aid_surf = engine.subsurface(SPRITES.get('aid_icons'), (0, 32, 16, 16))
-                        elif 'Mounted' in self.unit.tags:
-                            aid_surf = engine.subsurface(SPRITES.get('aid_icons'), (0, 16, 16, 16))
-                        else:
-                            aid_surf = engine.subsurface(SPRITES.get('aid_icons'), (0, 0, 16, 16))
-                    surf.blit(aid_surf, (112, 16 * true_idx + 24))
-                    render_text(surf, ['text'], [text_funcs.translate('Aid')], ['yellow'], (72, 16 * true_idx + 24))
-                    desc = text_funcs.translate_and_text_evaluate('Aid_desc', unit=self.unit)
-                    self.info_graph.register((96 + 72, 16 * true_idx + 24, 64, 16), desc, state)
+                        aid_surf = engine.subsurface(SPRITES.get('aid_icons'), (0, 0, 16, 16))
+                surf.blit(aid_surf, (112, 16 * true_idx + 24))
+                render_text(surf, ['text'], [text_funcs.translate('Aid')], ['yellow'], (72, 16 * true_idx + 24))
+                desc = text_funcs.translate_and_text_evaluate('Aid_desc', unit=self.unit)
+                self.info_graph.register((96 + 72, 16 * true_idx + 24, 64, 16), desc, state)
 
             elif stat == 'RAT':
                 rat = str(equations.parser.rating(self.unit))
@@ -742,21 +759,11 @@ class InfoMenuState(State):
                 self.info_graph.register((96 + 72, 16 * true_idx + 24, 64, 16), desc, state)
 
             elif stat == 'GAUGE':
-                if growths: #GAUGE replaces AID when pair up is in use.  HP growth will replace one of the two.
-                    #Since AID and GAUGE are mutually exclusive, we shouldn't need to worry about ever displaying the growth twice.
-                    icons.draw_growth(surf, 'HP', self.unit, (111, 16 * true_idx + 24))
-                    color = 'yellow'
-                    if DB.stats.get('HP').growth_colors and self.unit.team == 'player':
-                        color = self.growth_colors(unit_funcs.growth_rate(self.unit, 'HP'))
-                    render_text(surf, ['text'], [text_funcs.translate('HP')], [color], (72, 16 * true_idx + 24))
-                    desc = text_funcs.translate_and_text_evaluate('HP_desc', unit=self.unit)
-                    self.info_graph.register((96 + 72, 16 * true_idx + 24, 64, 16), desc, state)
-                else:
-                    gge = str(self.unit.get_guard_gauge())
-                    render_text(surf, ['text'], [gge], ['blue'], (111, 16 * true_idx + 24), HAlignment.RIGHT)
-                    render_text(surf, ['text'], [text_funcs.translate('GAUGE')], ['yellow'], (72, 16 * true_idx + 24))
-                    desc = text_funcs.translate_and_text_evaluate('GAUGE_desc', unit=self.unit)
-                    self.info_graph.register((96 + 72, 16 * true_idx + 24, 64, 16), desc, state)
+                gge = str(self.unit.get_guard_gauge())
+                render_text(surf, ['text'], [gge], ['blue'], (111, 16 * true_idx + 24), HAlignment.RIGHT)
+                render_text(surf, ['text'], [text_funcs.translate('GAUGE')], ['yellow'], (72, 16 * true_idx + 24))
+                desc = text_funcs.translate_and_text_evaluate('GAUGE_desc', unit=self.unit)
+                self.info_graph.register((96 + 72, 16 * true_idx + 24, 64, 16), desc, state)
 
             elif stat == 'TALK':
                 if (len([talk for talk in game.talk_options if talk[0] == self.unit.nid and talk not in game.talk_hidden]) != 0):
