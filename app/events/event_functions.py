@@ -17,6 +17,7 @@ from app.engine import (action, background, banner, base_surf, dialog, engine,
                         save, skill_system, unit_funcs)
 from app.engine.game_board import FogOfWarType
 from app.engine.fog_of_war import FogOfWarColor
+from app.engine.input_manager import get_input_manager
 from app.engine.achievements import ACHIEVEMENTS
 from app.engine.animations import MapAnimation
 from app.engine.combat import interaction
@@ -589,6 +590,14 @@ def screen_shake_end(self: Event, flags=None):
         self.game.camera.reset_shake()
     if self.background:
         self.background.reset_shake()
+
+def rumble(self: Event, duration: int, low_frequency: float = None, high_frequency: float = None, flags=None):
+    low_frequency = 0.5 if low_frequency is None else low_frequency
+    high_frequency = 0.5 if high_frequency is None else high_frequency
+    get_input_manager().rumble(low_frequency, high_frequency, duration)
+
+def rumble_end(self: Event, flags=None):
+    get_input_manager().stop_rumble()
 
 def game_var(self: Event, nid, expression, flags=None):
     val = self._eval_expr(expression, 'from_python' in flags)

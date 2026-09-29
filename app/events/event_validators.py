@@ -379,6 +379,14 @@ class Time(Integer):
 class Volume(Float):
     desc = "A number between 0 and 1 (0 is muted, 1 is current volume)"
 
+class Intensity(Float):
+    desc = "A number between 0 and 1 (0 is off, 1 is full strength)"
+
+    def validate(self, text, level):
+        if str_utils.is_float(text) and 0 <= float(text) <= 1:
+            return text
+        return None
+
 class String(Validator):
     """
     Any string will do

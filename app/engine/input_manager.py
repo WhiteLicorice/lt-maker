@@ -47,6 +47,21 @@ class InputManager():
         for pad in self.joysticks:
             print("Joystick: %s" % pad.get_name())
 
+    def rumble(self, low_frequency: float, high_frequency: float, duration: int):
+        """
+        Rumbles every connected pad for duration ms, or until stop_rumble if 0.
+        low_frequency drives the heavy motor and high_frequency the light one,
+        each from 0 to 1. Does nothing if the player turned rumble off
+        """
+        if not cf.SETTINGS['rumble']:
+            return
+        for pad in self.controllers + self.joysticks:
+            pad.rumble(low_frequency, high_frequency, duration)
+
+    def stop_rumble(self):
+        for pad in self.controllers + self.joysticks:
+            pad.stop_rumble()
+
     def set_change_keymap(self, val):
         self.change_keymap_mode = val
 

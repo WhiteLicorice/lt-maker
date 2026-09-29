@@ -42,7 +42,8 @@ config = [('animation', ['Always', 'Your Turn', 'Combat Only', 'Never'], 0),
           ('grid_opacity', [int(255 * x / 10.0) for x in range(11)], 7),
           ('autoend_turn', bool, 14),
           ('confirm_end', bool, 14),
-          ('display_hints', bool, 3)]
+          ('display_hints', bool, 3),
+          ('rumble', bool, 15)]
 
 config_icons = [engine.subsurface(SPRITES.get('settings_icons'), (0, c[2] * 16, 16, 16)) for c in config]
 
@@ -233,13 +234,13 @@ class SettingsMenuState(State):
                         get_sound_thread().play_sfx('Select 6')
             elif 'LEFT' in directions:
                 did_change = self.current_menu.move_left()
-                self.update_volume_option()
                 if did_change:
+                    self.apply_option_change()
                     get_sound_thread().play_sfx('Select 6')
             elif 'RIGHT' in directions:
                 did_change = self.current_menu.move_right()
-                self.update_volume_option()
                 if did_change:
+                    self.apply_option_change()
                     get_sound_thread().play_sfx('Select 6')
 
             elif event == 'BACK':
@@ -259,8 +260,8 @@ class SettingsMenuState(State):
                         get_sound_thread().play_sfx('Select 4')
                         self.alert('No controller detected!')
                 else:
-                    self.current_menu.move_next()
-                    self.update_volume_option()
+                    if self.current_menu.move_next():
+                        self.apply_option_change()
                     get_sound_thread().play_sfx('Select 6')
 
     def alert(self, text):
@@ -280,9 +281,12 @@ class SettingsMenuState(State):
             cf.reset_settings(joy_control_order)
             get_input_manager().update_joy_map()
 
-    def update_volume_option(self):
-        if self.current_menu.get_current_option().name in ('music_volume', 'sound_volume'):
+    def apply_option_change(self):
+        name = self.current_menu.get_current_option().name
+        if name in ('music_volume', 'sound_volume'):
             self.update_sound()
+        elif name == 'rumble':
+            self.update_rumble()
 
     def back(self):
         get_sound_thread().play_sfx('Select 4')
@@ -295,6 +299,13 @@ class SettingsMenuState(State):
     def update_sound(self):
         get_sound_thread().set_music_volume(cf.SETTINGS['music_volume'])
         get_sound_thread().set_sfx_volume(cf.SETTINGS['sound_volume'])
+
+    def update_rumble(self):
+        if cf.SETTINGS['rumble']:
+            # Lets the player feel that rumble is on
+            get_input_manager().rumble(0.5, 0.5, 250)
+        else:
+            get_input_manager().stop_rumble()
 
     def update(self):
         self.current_menu.update()

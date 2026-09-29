@@ -34,6 +34,7 @@ def base_config() -> OrderedDict:
                         ('hp_map_team', 'All'),
                         ('hp_map_cull', 'All'),
                         ('display_hints', 0),
+                        ('rumble', 1),
                         ('key_SELECT', 'K_x'),
                         ('key_BACK', 'K_z'),
                         ('key_INFO', 'K_c'),

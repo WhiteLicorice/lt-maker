@@ -835,6 +835,33 @@ class ScreenShakeEnd(EventCommand):
 Ends any extant screen shake command if there is one present
         """
 
+class Rumble(EventCommand):
+    nid = 'rumble'
+    tag = Tags.MISCELLANEOUS
+
+    desc =         """
+Rumbles the player's controller for *Duration* milliseconds.
+Set *Duration* to 0 to make the rumble last until a `rumble_end` command.
+
+*LowFrequency* sets the strength of the heavy, low-frequency motor and
+*HighFrequency* the light, high-frequency motor, each from 0 to 1. Both default to 0.5.
+
+Does nothing if the player has turned rumble off in the settings,
+or if their controller cannot rumble. Does not block the event.
+        """
+
+    keywords = ["Duration"]
+    optional_keywords = ["LowFrequency", "HighFrequency"]
+    keyword_types = ["Time", "Intensity", "Intensity"]
+
+class RumbleEnd(EventCommand):
+    nid = 'rumble_end'
+    tag = Tags.MISCELLANEOUS
+
+    desc =         """
+Stops any rumble started by a `rumble` command
+        """
+
 class GameVar(EventCommand):
     nid = 'game_var'
     nickname = 'gvar'
