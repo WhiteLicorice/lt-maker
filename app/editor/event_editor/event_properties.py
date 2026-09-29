@@ -116,7 +116,18 @@ class EventCollection(QWidget):
         grid.addWidget(self.view, 1, 0, 1, 3)
         grid.addWidget(self.button, 2, 0, 1, 3)
 
-        if self.current_level:
+        # Reopen on the event that was open when the editor last closed
+        self.last_event: Optional[EventPrefab] = None
+        last = self.settings.component_controller.get_property(self.__class__.__name__, 'last_event')
+        if last:
+            project, event_nid, level_filter = last
+            if project == self.settings.get_current_project():
+                self.last_event = DB.events.get_from_nid(event_nid)
+        if self.last_event:
+            if level_filter != "All":
+                level_filter = self.last_event.level_nid or "Global"
+            self.level_filter_box.edit.setValue(level_filter)
+        elif self.current_level:
             self.level_filter_box.edit.setValue(self.current_level.nid)
         else:
             self.level_filter_box.edit.setValue("All")
@@ -231,8 +242,14 @@ class EventCollection(QWidget):
 
     def set_display(self, disp):
         self.display = disp
-        first_index = self.level_filtered_model.index(0, 0)
-        self.view.setCurrentIndex(first_index)
+        if self.last_event:
+            source_index = self.model.index(self._data.index(self.last_event.nid), 0)
+            index = self.level_filtered_model.mapFromSource(self.name_filtered_model.mapFromSource(source_index))
+            self.view.setCurrentIndex(index)
+            self.view.scrollTo(index, QAbstractItemView.PositionAtCenter)
+        else:
+            first_index = self.level_filtered_model.index(0, 0)
+            self.view.setCurrentIndex(first_index)
 
         self.display.setEnabled(False)
         if self.level_filtered_model.rowCount() > 0:
@@ -295,6 +312,17 @@ class EventCollection(QWidget):
         sort_col = self.view.horizontalHeader().sortIndicatorSection()
         self.settings.component_controller.set_sort(self.__class__.__name__, (sort_col, sort_dir))
         return super().leaveEvent(event)
+
+    def hideEvent(self, event) -> None:
+        # Saved on close rather than on selection, so that renaming
+        # the open event doesn't leave a stale nid behind
+        current = self.display.current if self.display else None
+        project = self.settings.get_current_project()
+        if current and current.nid and project:
+            self.settings.component_controller.set_property(
+                self.__class__.__name__, 'last_event',
+                [project, current.nid, self.level_filter_box.edit.currentText()])
+        return super().hideEvent(event)
 
 class EventProperties(QWidget):
     def __init__(self, parent, current=None):
