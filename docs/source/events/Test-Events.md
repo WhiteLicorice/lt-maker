@@ -30,6 +30,7 @@ These are the **ONLY** commands that will run:
 "multi_remove_portrait"
 "move_portrait"
 "mirror_portrait"
+"replace_portrait"
 "bop_portrait"
 "expression"
 "speak_style"

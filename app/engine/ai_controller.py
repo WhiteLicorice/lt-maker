@@ -760,7 +760,11 @@ class SecondaryAI():
         if self.available_targets:
             target = self.available_targets.pop()
             # Find a path to the target
-            path = self.get_path(target)
+            path = self.get_path(target, through_enemies=False)
+            blocked = not path
+            if blocked:
+                # Enemies are in the way, so find the path we would take if they weren't
+                path = self.get_path(target, through_enemies=True)
             if not path:
                 logging.info("No valid path to %s.", target)
                 return False, None
@@ -770,6 +774,9 @@ class SecondaryAI():
             if tp is not None and (self.max_tp is None or tp > self.max_tp):
                 self.max_tp = tp
                 self.best_target = target
+                if blocked:
+                    logging.info("Path to %s is blocked by an enemy.", target)
+                    path = self.stop_before_blocker(path)
                 self.best_path = path
 
         elif self.best_target:
@@ -788,7 +795,11 @@ class SecondaryAI():
                 return True, None
         return False, None
 
-    def get_path(self, goal_pos):
+    def get_path(self, goal_pos, through_enemies: bool) -> List[Pos]:
+        """
+        Args:
+            through_enemies: If set, enemy units do not block the path
+        """
         self.pathfinder.set_goal_pos(goal_pos)
 
         if self.behaviour.target == 'Event':
@@ -801,13 +812,27 @@ class SecondaryAI():
             adj_good_enough = True
 
         limit = self.get_limit()
-        if skill_system.pass_through(self.unit):
+        if through_enemies or skill_system.pass_through(self.unit):
             can_move_through = lambda adj: True
         else:
             can_move_through = functools.partial(game.board.can_move_through, self.unit.team)
         max_movement_limit = self.unit.get_movement()
         path = self.pathfinder.process(can_move_through, adj_good_enough=adj_good_enough, limit=limit, max_movement_limit=max_movement_limit)
         self.pathfinder.reset()
+        return path
+
+    def stop_before_blocker(self, path: List[Pos]) -> List[Pos]:
+        """
+        Cuts a path short so that it ends on the last position
+        we can reach before an enemy unit is in the way
+
+        Args:
+            path: The path, with the goal position first and the start position last
+        """
+        # Travel backwards from the position after the start position
+        for idx in range(len(path) - 2, -1, -1):
+            if not game.board.can_move_through(self.unit.team, path[idx]):
+                return path[idx + 1:]
         return path
 
     def default_priority(self, enemy):
