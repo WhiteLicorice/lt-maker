@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import math
 import random
 from typing import Optional, Tuple
@@ -67,6 +69,9 @@ class EventPortrait():
         self.talk_on = False
         self.remove = False
 
+        # The portrait this one is fading in over the top of, while it is crossfading
+        self.outgoing: Optional[EventPortrait] = None
+
         # For moving
         self.moving = False
         self.orig_position = None
@@ -112,6 +117,11 @@ class EventPortrait():
 
     def desaturate(self):
         self.saturation_direction = -1
+
+    def crossfade_from(self, outgoing: EventPortrait):
+        self.outgoing = outgoing
+        self.transition = True
+        self.transition_update = engine.get_time()
 
     def bop(self, num: int = 2, height: int = 2, speed: int = utils.frames2ms(8)):
         self.bop_time = speed
@@ -236,6 +246,7 @@ class EventPortrait():
             self.transition_progress = perc
             if perc > 1 or perc < 0:
                 self.transition = False
+                self.outgoing = None
                 self.transition_progress = utils.clamp(perc, 0, 1)
                 if self.remove:
                     return True
@@ -277,7 +288,8 @@ class EventPortrait():
 
         return False
 
-    def draw(self, surf):
+    def get_image(self):
+        """The portrait as it appears once it has finished transitioning"""
         image = self.create_image()
         if self.mirror:
             image = engine.flip_horiz(image)
@@ -285,9 +297,15 @@ class EventPortrait():
         if self.saturation < 1:
             blackness = 0.5 * (1 - self.saturation)
             image = image_mods.make_black_colorkey(image, blackness)
+        return image
+
+    def draw(self, surf):
+        image = self.get_image()
 
         if self.transition:
-            if self.slide:
+            if self.outgoing:
+                image = image_mods.make_translucent(image.convert_alpha(), 1 - self.transition_progress)
+            elif self.slide:
                 image = image_mods.make_translucent(image.convert_alpha(), 1 - self.transition_progress)
             else:
                 image = image_mods.make_black_colorkey(image, 1 - self.transition_progress)
@@ -303,9 +321,12 @@ class EventPortrait():
         if self.bop_state:
             position = position[0], position[1] + self.bop_height
 
+        if self.outgoing:
+            surf.blit(self.outgoing.get_image(), position)
         surf.blit(image, position)
 
     def end(self, speed_mult=1, slide: Optional[str] = None):
+        self.outgoing = None
         self.transition = True
         self.remove = True
         if slide:  # Use the existing slide if not specified

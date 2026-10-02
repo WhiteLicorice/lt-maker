@@ -527,6 +527,27 @@ The direction of the portrait is flipped across the Y axis.
     keyword_types = ['Portrait', 'Float']
     _flags = ["no_block", "fade"]
 
+class ReplacePortrait(EventCommand):
+    nid = "replace_portrait"
+    tag = Tags.PORTRAIT
+
+    desc = \
+        """
+Swaps the on-screen *Portrait* for *NewPortrait*. The new portrait keeps the position, facing, priority,
+saturation and expressions of the one it replaces, and fades in over the top of it.
+
+Afterwards the portrait is referred to as *NewPortrait* by other commands, such as `speak` or `remove_portrait`.
+
+Extra flags:
+
+1. *immediate*: Portrait will be swapped instantly and will not fade.
+2. *no_block*: Portrait will fade, but will not pause execution of event script while doing so.
+        """
+
+    keywords = ['Portrait', 'NewPortrait']
+    keyword_types = ['Portrait', 'Portrait']
+    _flags = ["immediate", "no_block"]
+
 class Expression(EventCommand):
     nid = "expression"
     nickname = "e"

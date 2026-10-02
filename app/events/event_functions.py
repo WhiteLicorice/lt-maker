@@ -286,6 +286,50 @@ def mirror_portrait(self: Event, portrait, speed_mult: float = 1.0, flags=None):
                 self.wait_time = engine.get_time() + event_portrait.transition_speed + 33
                 self.state = 'waiting'
 
+def replace_portrait(self: Event, portrait, new_portrait, flags=None):
+    flags = flags or set()
+
+    _, name = self._get_portrait(portrait)
+    event_portrait = self.portraits.get(name)
+    if not event_portrait or event_portrait.remove:
+        return False
+
+    portrait_prefab, new_name = self._get_portrait(new_portrait)
+    if not portrait_prefab:
+        self.logger.error("replace_portrait: Couldn't find portrait %s" % new_name)
+        return False
+    if new_name != name and new_name in self.portraits and not self.portraits[new_name].remove:
+        self.logger.error("replace_portrait: Portrait %s is already on screen" % new_name)
+        return False
+
+    replacement = \
+        EventPortrait(
+            portrait_prefab,
+            event_portrait.position,
+            event_portrait.priority,
+            False, None, event_portrait.mirror,
+            new_name, event_portrait.expressions.copy())
+    replacement.saturation = event_portrait.saturation
+    replacement.saturation_direction = event_portrait.saturation_direction
+    replacement.talk_on = event_portrait.talk_on
+    if event_portrait.moving:
+        replacement.moving = True
+        replacement.next_position = event_portrait.next_position
+        replacement.travel_speed_mult = event_portrait.travel_speed_mult
+    if self.text_boxes and self.text_boxes[-1].portrait == event_portrait:
+        self.text_boxes[-1].portrait = replacement
+
+    del self.portraits[name]
+    self.portraits[new_name] = replacement
+
+    if 'immediate' in flags or self.do_skip:
+        return True
+    replacement.crossfade_from(event_portrait)
+    if 'no_block' not in flags:
+        self.wait_time = engine.get_time() + replacement.transition_speed + 33
+        self.state = 'waiting'
+    return True
+
 def bop_portrait(self: Event, portrait, num_bops: int = 2, time: int = utils.frames2ms(8), flags=None):
     flags = flags or set()
 
