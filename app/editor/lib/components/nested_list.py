@@ -5,7 +5,7 @@ from typing import Callable, Dict, Iterator, List, Optional, Tuple
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QSize, QItemSelection, QModelIndex
-from PyQt5.QtGui import QFont, QIcon, QBrush, QImage, QPainter, QPixmap
+from PyQt5.QtGui import QFont, QFontMetrics, QIcon, QBrush, QImage, QPainter, QPixmap
 from PyQt5.QtWidgets import (QAction, QMenu, QPushButton, QStyledItemDelegate,
                              QTreeWidget, QTreeWidgetItem, QVBoxLayout, QLineEdit, QListWidget, QListWidgetItem,
                              QWidget)
@@ -19,12 +19,12 @@ def create_empty_icon(w: int, h: int):
     pixmap.fill(QtCore.Qt.transparent)
     return QIcon(pixmap)
 
-def create_folder_icon(contents_icon: Optional[QIcon]) -> QIcon:
-    folder_sprite = QPixmap(QImage('resources/editor_folder.png')).scaled(32, 32)
+def create_folder_icon(contents_icon: Optional[QIcon], size: int) -> QIcon:
+    folder_sprite = QPixmap(QImage('resources/editor_folder.png')).scaled(size, size)
     if contents_icon:
-        contents_pixmap = contents_icon.pixmap(QSize(16, 16))
+        contents_pixmap = contents_icon.pixmap(QSize(size // 2, size // 2))
         painter = QPainter(folder_sprite)
-        painter.drawPixmap(8, 8, contents_pixmap)
+        painter.drawPixmap(size // 4, size // 4, contents_pixmap)
         painter.end()
     icon = QIcon(folder_sprite)
     return icon
@@ -36,6 +36,10 @@ class NestedListStyleDelegate(QStyledItemDelegate):
     itemStoppedEditing = QtCore.pyqtSignal(str)
     _current_index: Optional[QModelIndex] = None
 
+    def __init__(self, parent, row_height: int):
+        super().__init__(parent)
+        self.row_height = row_height
+
     def paint(self, painter, option, index):
         # decide here if item should be bold and set font weight to bold if needed
         if index.data(IsCategoryRole):
@@ -44,7 +48,7 @@ class NestedListStyleDelegate(QStyledItemDelegate):
 
     def sizeHint(self, option, index) -> QtCore.QSize:
         osize = super().sizeHint(option, index)
-        osize.setHeight(32)
+        osize.setHeight(self.row_height)
         return osize
 
     def setModelData(self, editor, model, index):
@@ -83,6 +87,8 @@ class LTNestedList(QWidget):
                                             If callback returns True, implies rename was successful and the NestedList will trigger a rename on the entry.
         get_search_text (function(nid) -> str): Callback returns all the text the search box should match against for an entry.
                                             Defaults to just the NID.
+        icon_size (int): Width and height in pixels of the icon beside each entry and folder.
+                                            Lists whose entries have no icon of their own can use a small size to save space.
 
     """
     def __init__(self, parent=None,
@@ -100,11 +106,13 @@ class LTNestedList(QWidget):
                  attempt_duplicate: Optional[Callable[[NID, NID], bool]]=None,
                  attempt_rename: Optional[Callable[[NID, NID], bool]]=None,
                  get_search_text: Optional[Callable[[NID], str]]=None,
+                 icon_size: int=32,
                  ) -> None:
         super().__init__(parent)
+        self.icon_size = icon_size
         self.allow_rename = allow_rename
         self.allow_duplicate = allow_duplicate
-        self.get_icon = get_icon or (lambda nid: create_empty_icon(32, 32))
+        self.get_icon = get_icon or (lambda nid: create_empty_icon(self.icon_size, self.icon_size))
         self.get_foreground = get_foreground or (lambda nid: None)
         self.on_click_item = on_click_item
         self.on_rearrange_items = on_rearrange_items
@@ -247,14 +255,16 @@ class LTNestedList(QWidget):
     def build_tree_widget(self, tree_widget: QTreeWidget, list_entries: Optional[List[NID]], list_categories: Optional[Categories]):
         self._build_tree_widget_in_place(list_entries, list_categories, tree_widget.invisibleRootItem())
         self.regenerate_icons(initial_generation=True)
-        delegate = NestedListStyleDelegate(self)
+        # Rows are as tall as their icon, but never too short for their text
+        row_height = max(self.icon_size, QFontMetrics(tree_widget.font()).height() + 4)
+        delegate = NestedListStyleDelegate(self, row_height)
         delegate.beforeItemChanged.connect(self.before_data_changed)
         delegate.itemStoppedEditing.connect(self.done_editing)
         tree_widget.setItemDelegate(delegate)
         tree_widget.setUniformRowHeights(True)
         tree_widget.setDragDropMode(QTreeWidget.InternalMove)
         tree_widget.setHeaderHidden(True)
-        tree_widget.setIconSize(QSize(32, 32))
+        tree_widget.setIconSize(QSize(self.icon_size, self.icon_size))
         tree_widget.originalDropEvent = tree_widget.dropEvent
         tree_widget.dropEvent = self.on_drag_drop
         tree_widget.originalMousePressEvent = tree_widget.mousePressEvent
@@ -325,7 +335,7 @@ class LTNestedList(QWidget):
         sibling_names = {closest_category.child(i).data(0, 0)
                          for i in range(closest_category.childCount())}
         new_category_name = str_utils.get_next_name("New Category", sibling_names)
-        new_category = self.create_tree_entry(new_category_name, create_empty_icon(32, 32), True)
+        new_category = self.create_tree_entry(new_category_name, create_empty_icon(self.icon_size, self.icon_size), True)
         row = self._determine_insertion_row(item)
         closest_category.insertChild(row, new_category)
         self.regenerate_icons(new_category)
@@ -342,7 +352,7 @@ class LTNestedList(QWidget):
 
     def insert_item(self, new_nid, item: Optional[QTreeWidgetItem], icon: Optional[QIcon] = None):
         if icon is None:
-            icon = create_empty_icon(32, 32)
+            icon = create_empty_icon(self.icon_size, self.icon_size)
         closest_category = self._determine_category_parent(item)
         new_item = self.create_tree_entry(new_nid, icon, False)
         row = self._determine_insertion_row(item)
@@ -486,7 +496,7 @@ class LTNestedList(QWidget):
         def recurse_get_icon(node: QTreeWidgetItem) -> Optional[QIcon]:
             if not node.data(0, IsCategoryRole) and not node == self.tree_widget.invisibleRootItem(): # is an item
                 if initial_generation: # if initial, create icons before returning them
-                    icon = self.get_icon(node.data(0, 0)) or create_empty_icon(32, 32)
+                    icon = self.get_icon(node.data(0, 0)) or create_empty_icon(self.icon_size, self.icon_size)
                     node.setIcon(0, icon)
                 return node.icon(0)
             else: # is a category, fish for child icons
@@ -497,7 +507,7 @@ class LTNestedList(QWidget):
                         icon = recurse_get_icon(child)
                     else:
                         recurse_get_icon(child)
-                node.setIcon(0, create_folder_icon(icon) or create_empty_icon(32, 32))
+                node.setIcon(0, create_folder_icon(icon, self.icon_size) or create_empty_icon(self.icon_size, self.icon_size))
                 return icon
         self.tree_widget.blockSignals(True)
         recurse_get_icon(root)
@@ -609,7 +619,7 @@ class LTNestedList(QWidget):
             return root
         def _build_tree_widget(root: LTNestedList.ListNode, parent: QTreeWidgetItem):
             for node in root.children.values():
-                item = self.create_tree_entry(node.nid, create_empty_icon(32, 32), node.is_category)
+                item = self.create_tree_entry(node.nid, create_empty_icon(self.icon_size, self.icon_size), node.is_category)
                 foreground = self.get_foreground(node.nid)
                 if foreground:
                     item.setForeground(0, foreground)

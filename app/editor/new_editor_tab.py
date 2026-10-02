@@ -33,6 +33,8 @@ class NewEditorTab(QWidget, Generic[T]):
     allow_import_from_xml = False
     allow_import_from_csv = False
     allow_copy_and_paste = False
+    # Size of the icon beside each entry in the list. Shrink for data that has no icons
+    icon_size = 32
 
     def __init__(self, parent, database: Database, resources: Resources = None) -> None:
         QWidget.__init__(self, parent)
@@ -48,7 +50,7 @@ class NewEditorTab(QWidget, Generic[T]):
                                       self.allow_duplicate, self.get_icon, self.get_foreground,
                                       self.on_select, self.resort_db, self.on_begin_rename,
                                       self.delete_from_db, self.create_new, self.duplicate, self.rename,
-                                      self.get_search_text)
+                                      self.get_search_text, icon_size=self.icon_size)
         left_frame_layout.setContentsMargins(0, 0, 0, 0)
         left_frame_layout.setSpacing(0)
         left_frame_layout.addWidget(self.tree_list)

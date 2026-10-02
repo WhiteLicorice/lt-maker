@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
-from app.utilities.data import Data, Prefab
+from app.data.category import CategorizedCatalog
+from app.utilities.data import Prefab
 from app.utilities import str_utils
 
 @dataclass
@@ -11,7 +12,7 @@ class Lore(Prefab):
     category: str = "Character"
     text: str = ""
 
-class LoreCatalog(Data[Lore]):
+class LoreCatalog(CategorizedCatalog[Lore]):
     datatype = Lore
 
     def create_new(self, db):

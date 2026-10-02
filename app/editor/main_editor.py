@@ -63,7 +63,7 @@ from app.editor.mcost_dialog import McostDialog
 from app.editor.translation_widget import TranslationDialog
 from app.editor.equation_widget import EquationDialog
 from app.editor.event_editor.event_tab import EventDatabase
-from app.editor.lore_editor.lore_tab import LoreDatabase
+from app.editor.lore_editor.new_lore_tab import NewLoreDatabase
 from app.editor.raw_editor.raw_data_tab import RawDataDatabase
 from app.editor.credit_editor.new_credit_tab import NewCreditDatabase
 
@@ -255,7 +255,7 @@ class MainEditor(QMainWindow):
                             _("Constants"): ConstantDatabase.edit,
                             _("Difficulty Modes"): DifficultyModeDatabase.edit,
                             _("Supports"): self.edit_supports,
-                            _("Lore"): LoreDatabase.edit,
+                            _("Lore"): NewLoreDatabase.edit,
                             _("Raw Data"): RawDataDatabase.edit,
                             _("Translations"): self.edit_translations,
                             _("Credit"): NewCreditDatabase.edit
