@@ -50,22 +50,41 @@ class SkillDescriptionEvaluationTests(unittest.TestCase):
             build_help_box()
         self.assertEqual(self.help_dialog.call_args.args[0], EVALUATED)
 
-    def test_basic_skill_option(self):
+    def assert_help_box_name(self, name):
+        """The name the help box was built with, whether passed by keyword or left off"""
+        self.assertEqual(self.help_dialog.call_args.kwargs.get('name', ''), name)
+
+    def build_basic_skill_option(self, display_value):
         from app.engine.game_menus.icon_options import BasicSkillOption
         option = BasicSkillOption.__new__(BasicSkillOption)
         option._value = self.skill
+        option._disp_value = display_value
         option._help_box = None
+        return option
+
+    def test_basic_skill_option(self):
+        option = self.build_basic_skill_option(self.skill.name)
         self.assert_help_box_text(option.get_help_box)
+        # The option already shows the skill's name
+        self.assert_help_box_name('')
+
+    def test_basic_skill_option_with_custom_label(self):
+        option = self.build_basic_skill_option('Heal Over Time')
+        self.assert_help_box_text(option.get_help_box)
+        # The option shows something else, so the help box is where the name appears
+        self.assert_help_box_name(self.skill.name)
 
     def test_skill_menu_option(self):
         from app.engine.game_menus.menu_options import SkillOption
         self.assert_help_box_text(SkillOption(0, self.skill).get_help_box)
+        self.assert_help_box_name('')
 
     def test_feat_choice_option(self):
         from app.engine import feat_choice
         option = feat_choice.SkillOption.__new__(feat_choice.SkillOption)
         option.skill = self.skill
         self.assert_help_box_text(option.get_help_box)
+        self.assert_help_box_name('')
 
     def test_player_choice_skill(self):
         from app.engine import player_choice

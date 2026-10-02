@@ -50,7 +50,8 @@ class SkillOption(menu_options.BasicOption):
             unit=game.get_unit(self.skill.owner_nid),
             self=self.skill,
             local_args={'skill': self.skill})
-        return help_menu.HelpDialog(text, name=self.skill.name)
+        # The option draws the skill's name itself, so the help box does not need to
+        return help_menu.HelpDialog(text)
 
     def draw(self, surf, x, y):
         icon = icons.get_icon(self.skill)

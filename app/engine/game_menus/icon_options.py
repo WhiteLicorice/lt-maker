@@ -322,7 +322,13 @@ class BasicSkillOption(BaseOption[SkillObject]):
     def get_help_box(self):
         if not self._help_box:
             text = text_funcs.translate_and_text_evaluate(self._value.desc, self=self._value, local_args={'skill': self._value})
-            self._help_box = help_menu.HelpDialog(text, name=self._value.name)
+            # The option draws its display text itself, so the help box only needs
+            # the skill's name when the option is labelled with something else
+            if self._disp_value == text_funcs.translate(self._value.name):
+                name = ''
+            else:
+                name = self._value.name
+            self._help_box = help_menu.HelpDialog(text, name=name)
         return self._help_box
 
     def draw(self, surf, x, y):
