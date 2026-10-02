@@ -185,6 +185,8 @@ anim_commands = Data([
     CombatAnimationCommand('platform_shake', 'Shake Platform', None, None, 'aesthetic2'),
     CombatAnimationCommand('screen_shake', 'Shake Screen (Light)', None, None, 'aesthetic2'),
     CombatAnimationCommand('screen_shake_2', 'Shake Screen (Heavy)', None, None, 'aesthetic2'),
+    CombatAnimationCommand('rumble', 'Rumble Controller (Light)', None, None, 'aesthetic2'),
+    CombatAnimationCommand('rumble_2', 'Rumble Controller (Heavy)', None, None, 'aesthetic2'),
     CombatAnimationCommand('hit_spark', 'Show Hit Spark', None, None, 'aesthetic2'),
     CombatAnimationCommand('crit_spark', 'Show Crit Spark', None, None, 'aesthetic2'),
     CombatAnimationCommand('darken', 'Darken Background', None, None, 'aesthetic2'),

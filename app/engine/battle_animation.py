@@ -7,6 +7,7 @@ from app.data.database.database import DB
 
 from app.engine.sprites import SPRITES
 from app.engine.sound import get_sound_thread
+from app.engine.input_manager import get_input_manager
 from app.engine.game_state import game
 from app.engine import engine, image_mods, item_system, item_funcs, skill_system
 
@@ -668,6 +669,10 @@ class BattleAnimation():
             self.owner._shake(1)
         elif command.nid == 'screen_shake_2':
             self.owner._shake(4)
+        elif command.nid == 'rumble':
+            get_input_manager().rumble(0.5, 0.5, 150)
+        elif command.nid == 'rumble_2':
+            get_input_manager().rumble(1, 1, 500)
         elif command.nid == 'darken':
             self.owner.darken()
         elif command.nid == 'lighten':
