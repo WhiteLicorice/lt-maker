@@ -121,7 +121,7 @@ class AttackerState(SolverState):
                 skill_system.end_sub_combat(actions, playback, target, None, solver.attacker, solver.main_item, 'defense', attack_info)
             # Make sure that we run on_hit even if otherwise unavailable
             if not defender and not splash:
-                solver.simple_process(actions, playback, solver.attacker, solver.attacker, target_pos, item, None, None, None)
+                solver.simple_process(actions, playback, solver.attacker, solver.attacker, target_pos, item, None, 'attack', attack_info)
 
         solver.num_subattacks += 1
         self.num_multiattacks = combat_calcs.compute_multiattacks(solver.attacker, solver.defender, solver.main_item, 'attack', attack_info)
@@ -203,7 +203,7 @@ class AttackerPartnerState(SolverState):
                 skill_system.end_sub_combat(actions, playback, target, None, atk_p, solver.main_item, 'defense', attack_info)
             # Make sure that we run on_hit even if otherwise unavailable
             if not defender and not splash:
-                solver.simple_process(actions, playback, atk_p, atk_p, target_pos, item, None, None, None)
+                solver.simple_process(actions, playback, atk_p, atk_p, target_pos, item, None, 'attack', attack_info)
 
         solver.num_subattacks += 1
         self.num_multiattacks = combat_calcs.compute_multiattacks(atk_p, solver.defender, resolve_weapon(atk_p), 'attack', attack_info)
@@ -553,7 +553,7 @@ class CombatPhaseSolver():
         # Is the item I am processing the first one?
         first_item = item is self.main_item or item is self.items[0]
 
-        item_system.on_hit(actions, playback, attacker, item, defender, resolve_weapon(defender), def_pos, mode, (0, 0), first_item)
+        item_system.on_hit(actions, playback, attacker, item, defender, resolve_weapon(defender), def_pos, mode, attack_info, first_item)
         if defender:
             playback.append(pb.MarkHit(attacker, defender, self.attacker, item, False))
 
