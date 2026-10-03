@@ -122,6 +122,9 @@ def compute_advantage_attr(attacker, defender, weapon, def_weapon, attribute: st
     return mod
 
 def can_counterattack(attacker, aweapon, defender, dweapon) -> bool:
+    # A unit that targets itself is not its own enemy
+    if defender is attacker:
+        return False
     if not dweapon:
         return False
     if not item_funcs.available(defender, dweapon):

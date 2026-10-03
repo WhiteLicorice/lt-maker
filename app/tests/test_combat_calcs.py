@@ -149,3 +149,13 @@ class CombatCalcTests(unittest.TestCase):
         self.check_counter(False, "Should not counter without LOS")
         DB.constants.get("line_of_sight").set_value(False)
         self.check_counter(True, "Should counter if LOS is disabled, even if no LOS")
+
+    def test_unit_does_not_counter_itself(self):
+        # A weapon that can target allies, with a range that includes the user's own tile
+        self.dweapon.min_range = 0
+        self.dweapon.max_range = 3
+        self.defender = self.attacker
+        self.aweapon = self.dweapon
+        self.check_counter(False, "Should not counter yourself, even with yourself in range")
+        self.defender.distant_counter = True
+        self.check_counter(False, "Should not counter yourself, even with distant counter")
