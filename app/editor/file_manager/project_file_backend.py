@@ -10,8 +10,8 @@ from datetime import datetime
 import traceback
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
-from PyQt5.QtCore import QDir, Qt
-from PyQt5.QtWidgets import QFileDialog, QMessageBox, QProgressDialog, QVBoxLayout, QLabel, QDialogButtonBox, QCheckBox
+from PyQt5.QtCore import QDir, Qt, QTimer
+from PyQt5.QtWidgets import QApplication, QFileDialog, QMessageBox, QProgressDialog, QVBoxLayout, QLabel, QDialogButtonBox, QCheckBox
 
 from app.constants import VERSION
 from app.data.database.database import DB, Database
@@ -71,6 +71,9 @@ class FatalErrorDialog(SimpleDialog):
         self.main_window_ref._error_window_ref = show_error_report()
         self.close()
 
+# How long to wait before checking again whether an autosave can go ahead
+AUTOSAVE_RETRY_MS = 5000
+
 class ProjectFileBackend():
     def __init__(self, parent, app_state_manager):
         self.parent = parent
@@ -103,7 +106,8 @@ class ProjectFileBackend():
             Qt.WindowContextHelpButtonHint, False)
         self.autosave_progress.reset()
 
-        timer.get_timer().autosave_timer.timeout.connect(self.autosave)
+        self._autosave_waiting = False
+        timer.get_timer().autosave_timer.timeout.connect(self.attempt_autosave)
 
         self._do_not_show_fatal_errors = False
         timer.get_timer().autosave_timer.timeout.connect(self.refresh_do_not_show)
@@ -377,6 +381,22 @@ class ProjectFileBackend():
         self.settings.append_or_bump_project(
             DB.constants.value('title') or os.path.basename(self.current_proj), self.current_proj)
         return True
+
+    def attempt_autosave(self):
+        """Autosaves now, or as soon as no modal dialog is open"""
+        if QApplication.activeModalWidget():
+            # The autosave progress dialog is modal too, and stacking it on top of
+            # another modal dialog can leave the editor unresponsive on macOS
+            if not self._autosave_waiting:
+                logging.info("Delaying autosave until the open dialog is closed")
+                self._autosave_waiting = True
+                QTimer.singleShot(AUTOSAVE_RETRY_MS, self._retry_autosave)
+            return
+        self.autosave()
+
+    def _retry_autosave(self):
+        self._autosave_waiting = False
+        self.attempt_autosave()
 
     @save_mutex
     def autosave(self):
