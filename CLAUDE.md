@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-**Lex Talionis** is a Fire Emblem fangame engine (pygame runtime) plus **LT-maker**, a PyQt5 graphical editor built on top of it. A game is a `.ltproj` directory of JSON data + resources; the engine loads one and plays it, the editor mutates one. Two sample projects ship in-repo: `default.ltproj` (Sacred Stones) and `lion_throne.ltproj`.
+**Lex Talionis** is a Fire Emblem fangame engine (pygame runtime) plus **LT-maker**, a PyQt5 graphical editor built on top of it. A game is a `.ltproj` directory of JSON data + resources; the engine loads one and plays it, the editor mutates one. The sample project `default.ltproj` (Sacred Stones) ships in-repo.
 
 ## Commands
 
@@ -13,7 +13,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Run the map maker: `python run_map_maker.py`
 - Run all tests: `python -m unittest discover -s app/tests -p 'test*.py'` (wrapper: `./utilities/build_tools/run_tests.sh`)
 - Run one test module: `python -m unittest app.tests.test_engine`
-- Type check: `mypy app/` — config in `mypy.ini`, `strict = True`, **excludes** `app/editor`, `app/extensions`, `app/map_maker`, `app/tests`. New non-editor code is expected to pass strict typing.
 - Build docs: `./docs/make.bat html` (output in `_build/html`)
 - Install dev deps: `pip install -r requirements_dev.txt` (engine-only: `requirements_engine.txt`, editor: `requirements_editor.txt`). Python + PyQt5 + pygame-ce.
 
@@ -23,10 +22,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `app/engine/codegen/source_generator.py::generate_all()` runs at startup (both entry points) when not a built release. It generates source files; **do not hand-edit generated files**, edit the inputs:
 
-- `compile_item_system()` / `compile_skill_system()` scan `app/engine/item_components/*` and `app/engine/skill_components/*` and emit the big dispatch modules `app/engine/item_system.py` and `app/engine/skill_system.py`.
+- `compile_item_system()` / `compile_skill_system()` (in `app/engine/component_system/`) copy `item_system_base.py` / `skill_system_base.py` and emit one dispatch function per entry in the `ITEM_HOOKS` / `SKILL_HOOKS` dict, producing `app/engine/item_system.py` and `app/engine/skill_system.py` (git-ignored).
 - `generate_event_command_python_wrappers()` emits Python wrappers for event commands.
 
-If you add or change a component hook method and the engine doesn't pick it up, the generated dispatch file is stale — rerun `python -m app.engine.codegen.source_generator`.
+A new hook name needs an entry in `ITEM_HOOKS` / `SKILL_HOOKS`; a component method whose name isn't in that dict is never dispatched. After editing the dict or a base file, rerun `python -m app.engine.codegen.source_generator`.
 
 ## Architecture
 
@@ -50,7 +49,7 @@ Gotcha: **"Test Chapter"** (editor → engine via `game_state.start_level()`) by
 
 Items and skills are composed of **components**, not subclasses. A component (e.g. in `app/engine/item_components/formula_components.py`) declares `nid`, `tag`, an `expose` type for its editor field, and implements named **hook methods** like `damage_formula(unit, item)` or `on_hit(...)`. The codegen step collects all components and builds `item_system`/`skill_system` dispatch functions that fan a hook call out across whatever components an item/skill carries. To add a behavior: add a component class with the right hook method name, then regenerate. `item_component_access.py` / `skill_component_access.py` expose the catalogs.
 
-Each hook method has a **resolution policy** controlling how multiple components' return values combine: `ALL_DEFAULT_FALSE` (any False → False; e.g., `is_weapon`), `UNIQUE` (last-defined wins; e.g., `damage_formula`), `NUMERIC_ACCUM` (sum all numerics; e.g., `modify_damage`), `UNION` (merge all returned sets; e.g., `target_icon`). The policy is declared alongside the hook in the codegen templates — pick the right one when adding a new hook.
+Each hook method has a **resolution policy** controlling how multiple components' return values combine: `ALL_DEFAULT_FALSE` (any False → False; e.g., `is_weapon`), `UNIQUE` (last-defined wins; e.g., `damage_formula`), `NUMERIC_ACCUM` (sum all numerics; e.g., `modify_damage`), `UNION` (merge all returned sets; e.g., `target_icon`). The policy is the `HookInfo(args, ResolvePolicy.X)` value of the hook's entry in `ITEM_HOOKS` / `SKILL_HOOKS` (`app/engine/component_system/compile_*_system.py`) — pick the right one when adding a new hook.
 
 ### Aura system
 
@@ -80,4 +79,4 @@ Board vision is precomputed state in `game_board.fog_of_war_grids`, mutated **on
 - Tests share the **global `game` singleton** (`game_state.py::game`); its state leaks across tests within a run. A test that touches `game` must seed everything it reads (e.g. `game.game_vars = PrimitiveCounter()`, `game.target_system = …`) in `setUp` or its helper — never rely on what a prior test left behind, or you get order-dependent pass/fail that only shows up in the full suite, not when the test runs alone.
 - 🔴 The same leak bites **module-level sprite reads**. `app/engine/settings.py` builds its `controls`/`config_icons` dicts from `SPRITES.get(...)` at import time, and another test resetting the sprite dict (without re-running `sprites.load_images()`) leaves every entry's `.image` as `None` → `AttributeError: 'NoneType' object has no attribute 'get_size'`. Call `app.engine.sprites.load_images()` in `setUp` before importing such a module. Passes alone, fails in the suite — see `test_settings_menu.py`.
 - **Editor code is testable headlessly** despite being Qt-heavy: `QT_QPA_PLATFORM=offscreen` plus a `QApplication(sys.argv)` is enough to exercise models, dialogs' logic (patch `QFileDialog`/`QInputDialog`), and QPixmap work. For anything that writes, `shutil.copytree('default.ltproj', tmp)` first and load *that* — never experiment against the sample projects in-tree.
-- 🔴 Never fingerprint a QPixmap via `pixmap.toImage().bits()`: the intermediate `QImage` is a temporary that Python frees immediately, so the buffer is garbage and comparisons produce **false differences**. Keep the `QImage` in a variable and compare `QImage` objects directly (`im1 != im2`). This cost a confidently-wrong "frames are being corrupted" diagnosis.
+- 🔴 Never fingerprint a QPixmap via `pixmap.toImage().bits()`: the intermediate `QImage` is a temporary that Python frees immediately, so the buffer is garbage and comparisons produce **false differences**. Keep the `QImage` in a variable and compare `QImage` objects directly (`im1 != im2`).
