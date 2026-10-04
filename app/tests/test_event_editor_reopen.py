@@ -1,3 +1,6 @@
+import os
+import shutil
+import tempfile
 import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -35,21 +38,31 @@ class EventEditorReopenTests(unittest.TestCase):
                                if event.level_nid and event.level_nid != cls.selected_level)
 
     def setUp(self) -> None:
+        from PyQt5.QtCore import QSettings
         from app.editor.settings import MainSettingsController
+
+        # On Windows QSettings(company, product) is the registry, which every test
+        # run on the machine shares, and the settings controllers each open their
+        # own handle on one key: clearing it through one left the others on a key
+        # "marked for deletion". Each test gets its own settings file instead
+        settings_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, settings_dir, ignore_errors=True)
+
+        class TestSettings(QSettings):
+            def __init__(self, company, product):
+                super().__init__(os.path.join(settings_dir, '%s_%s.ini' % (company, product)), QSettings.IniFormat)
+
+        for module in ('main_settings_controller', 'component_settings_controller', 'project_history_controller'):
+            patcher = patch('app.editor.settings.%s.QSettings' % module, TestSettings)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+        patcher = patch('app.editor.event_editor.event_properties.MainSettingsController',
+                        lambda: MainSettingsController(TEST_COMPANY, TEST_PRODUCT))
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
         self.settings = MainSettingsController(TEST_COMPANY, TEST_PRODUCT)
-        self.clear_settings()
         self.settings.set_current_project(PROJECT)
-        self.patcher = patch('app.editor.event_editor.event_properties.MainSettingsController',
-                             lambda: MainSettingsController(TEST_COMPANY, TEST_PRODUCT))
-        self.patcher.start()
-
-    def tearDown(self) -> None:
-        self.patcher.stop()
-        self.clear_settings()
-
-    def clear_settings(self):
-        self.settings.state.clear()
-        self.settings.component_controller.state.clear()
 
     def open_editor(self):
         from PyQt5.QtWidgets import QWidget
