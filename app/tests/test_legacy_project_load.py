@@ -18,7 +18,8 @@ class LegacyProjectLoadTests(unittest.TestCase):
         logging.disable(logging.CRITICAL)
         self.tmp_dir = tempfile.mkdtemp()
         self.proj_dir = Path(self.tmp_dir, 'legacy.ltproj')
-        shutil.copytree('default.ltproj', self.proj_dir)
+        # DB.load reads only game_data, so that's all the copy needs
+        shutil.copytree(Path('testing_proj.ltproj', 'game_data'), Path(self.proj_dir, 'game_data'))
 
     def tearDown(self):
         logging.disable(logging.NOTSET)

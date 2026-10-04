@@ -123,9 +123,10 @@ class NewLoreEditorTests(unittest.TestCase):
         from app.data.serialization.versions import CURRENT_SERIALIZATION_VERSION
         tmp = os.path.join(tempfile.mkdtemp(), 'copy.ltproj')
         self.addCleanup(shutil.rmtree, os.path.dirname(tmp))
-        shutil.copytree('default.ltproj', tmp)
+        # DB.load and DB.serialize touch only game_data, so that's all the copy needs
+        shutil.copytree(os.path.join('testing_proj.ltproj', 'game_data'), os.path.join(tmp, 'game_data'))
         DB.load(tmp, CURRENT_SERIALIZATION_VERSION)
-        self.addCleanup(DB.load, 'default.ltproj', CURRENT_SERIALIZATION_VERSION)
+        self.addCleanup(DB.load, 'testing_proj.ltproj', CURRENT_SERIALIZATION_VERSION)
         # A project saved before lore had folders loads with none
         self.assertEqual(DB.lore.categories, {})
 

@@ -33,7 +33,9 @@ class TilemapEditorSaveTests(unittest.TestCase):
 
         self.tmp_dir = tempfile.mkdtemp()
         self.proj = os.path.join(self.tmp_dir, 'save_test.ltproj')
-        shutil.copytree('default.ltproj', self.proj)
+        # testing_proj, not default.ltproj: a sixth the size, so copying and
+        # loading it takes a fraction of the time
+        shutil.copytree('testing_proj.ltproj', self.proj)
 
         DB.load(self.proj, CURRENT_SERIALIZATION_VERSION)
         RESOURCES.load(self.proj, CURRENT_SERIALIZATION_VERSION)
