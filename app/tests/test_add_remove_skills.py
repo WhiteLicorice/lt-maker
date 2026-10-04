@@ -38,10 +38,10 @@ class AddRemoveSkillTests(unittest.TestCase):
         ]
         for patcher in self.patchers:
             patcher.start()
-        pass
 
     def tearDown(self):
-        pass
+        for patcher in self.patchers:
+            patcher.stop()
 
     def test_add_removable_skill(self):
         '''
