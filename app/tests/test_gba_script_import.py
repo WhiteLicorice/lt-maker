@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from unittest.mock import MagicMock, patch
 
-os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
+from app.tests import qt_headless  # noqa: F401 -- before any QApplication
 
 GREEN = (168, 208, 160)   # the frames' transparent background, which becomes LT's colorkey
 DARK = (40, 40, 40)

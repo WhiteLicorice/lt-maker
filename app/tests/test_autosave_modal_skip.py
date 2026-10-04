@@ -1,8 +1,7 @@
-import os
 import unittest
 from unittest.mock import MagicMock, patch
 
-os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
+from app.tests import qt_headless  # noqa: F401 -- before any QApplication
 
 
 class AutosaveWaitsForModalDialogTests(unittest.TestCase):

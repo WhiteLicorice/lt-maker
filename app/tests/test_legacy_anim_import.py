@@ -4,7 +4,7 @@ import sys
 import tempfile
 import unittest
 
-os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
+from app.tests import qt_headless  # noqa: F401 -- before any QApplication
 
 from PyQt5.QtGui import QImage, qRgb
 from PyQt5.QtWidgets import QApplication

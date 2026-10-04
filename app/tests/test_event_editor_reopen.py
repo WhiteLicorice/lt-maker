@@ -1,9 +1,8 @@
-import os
 import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
 
-os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
+from app.tests import qt_headless  # noqa: F401 -- before any QApplication
 
 TEST_COMPANY = 'lt_maker_tests'
 TEST_PRODUCT = 'event_editor_reopen'

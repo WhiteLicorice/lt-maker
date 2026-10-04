@@ -1,7 +1,7 @@
 import os
 import unittest
 
-os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
+from app.tests import qt_headless  # noqa: F401 -- before any QApplication
 
 
 class AssignNewColorsTests(unittest.TestCase):

@@ -1,7 +1,6 @@
-import os
 import unittest
 
-os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
+from app.tests import qt_headless  # noqa: F401 -- before any QApplication
 
 BACKGROUND = (168, 208, 160)   # the repo's transparent green, not LT's colorkey
 

@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
+from app.tests import qt_headless  # noqa: F401 -- before any QApplication
 
 MARKER = 'TEST_MARKER_TERRAIN'
 
