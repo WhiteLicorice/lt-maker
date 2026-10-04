@@ -45,6 +45,8 @@ Also: **`app/events/`** — the eventing/scripting system, including a custom Py
 
 Gotcha: **"Test Chapter"** (editor → engine via `game_state.start_level()`) bypasses new game entirely — it writes no 'start' save and leaves `current_save_slot = None`. So a first in-session save (e.g. a base/prep save) has no restart file to carry forward; `save_io` falls back to seeding the restart from that save, which is *not* a pristine chapter start. Preload saves (also `kind=='start'` only) are likewise never produced in a Test Chapter session.
 
+A save outlives the shape of the project that made it, since it refers to the DB by nid. Restore raises **`StaleSaveError`** (`app/engine/stale_save.py`) with a "no class with that nid was found in the database" style message when a save names a class, AI, weapon type (in a `ComponentType.WeaponType` item component) or tilemap the project no longer has — those used to crash later, far from the cause. Items and skills missing from the DB deliberately fall back to placeholders, and a missing overworld is skipped. `test_save_round_trip.py` covers both kinds.
+
 ### Component system
 
 Items and skills are composed of **components**, not subclasses. A component (e.g. in `app/engine/item_components/formula_components.py`) declares `nid`, `tag`, an `expose` type for its editor field, and implements named **hook methods** like `damage_formula(unit, item)` or `on_hit(...)`. The codegen step collects all components and builds `item_system`/`skill_system` dispatch functions that fan a hook call out across whatever components an item/skill carries. To add a behavior: add a component class with the right hook method name, then regenerate. `item_component_access.py` / `skill_component_access.py` expose the catalogs.

@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Optional
 
 import app.engine.item_component_access as ICA
 from app.data.database.database import DB
+from app.engine import stale_save
 from app.utilities.data import Data
 
 if TYPE_CHECKING:
@@ -130,6 +131,7 @@ class ItemObject():
         if prefab:
             components = dat.get('components', [])
             self = cls.from_prefab(prefab, components)
+            stale_save.require_weapon_types(self.components, DB.weapons, "Item '%s'" % dat['nid'])
             self.name = dat.get('name', prefab.name)
             self.desc = dat.get('desc', prefab.desc)
         else:

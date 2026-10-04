@@ -6,7 +6,7 @@ from app.utilities.data import Data, Prefab
 
 from app.data.resources.resources import RESOURCES
 
-from app.engine import engine, image_mods, particles, animations
+from app.engine import engine, image_mods, particles, animations, stale_save
 
 class LayerObject():
     transition_speed = 333
@@ -320,6 +320,7 @@ class TileMapObject(Prefab):
 
     @classmethod
     def restore(cls, s_dict):
+        stale_save.require(s_dict['nid'], RESOURCES.tilemaps, 'tilemap', 'The saved map')
         prefab = RESOURCES.tilemaps.get(s_dict['nid'])
         self = cls.from_prefab(prefab)
         self.restore_layers(s_dict['layers'])

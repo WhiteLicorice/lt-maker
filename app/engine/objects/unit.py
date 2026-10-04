@@ -7,7 +7,7 @@ from app.data.database.database import DB
 from app.data.database.level_units import GenericUnit, UniqueUnit
 from app.data.database.units import UnitPrefab
 from app.engine import (combat_calcs, equations, item_funcs, item_system,
-                        skill_system, unit_funcs)
+                        skill_system, stale_save, unit_funcs)
 from app.engine.objects.difficulty_mode import DifficultyModeObject
 from app.engine.objects.item import ItemObject
 from app.engine.objects.skill import SkillObject
@@ -949,6 +949,7 @@ class UnitObject(Prefab):
         self.team = s_dict['team']
         self.party = s_dict['party']
         self.klass = s_dict['klass']
+        stale_save.require(self.klass, DB.classes, 'class', "Unit '%s'" % self.nid)
         self.variant = s_dict['variant']
         self.level = s_dict['level']
         self.exp = s_dict['exp']
@@ -956,6 +957,8 @@ class UnitObject(Prefab):
         self.persistent = s_dict.get('persistent', not s_dict.get('generic'))
 
         self.ai = s_dict['ai']
+        if self.ai:
+            stale_save.require(self.ai, DB.ai, 'AI', "Unit '%s'" % self.nid)
         self.roam_ai = s_dict.get('roam_ai', None)
         self.ai_group = s_dict.get('ai_group', None)
 

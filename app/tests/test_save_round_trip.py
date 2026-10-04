@@ -3,6 +3,7 @@ from typing import Callable
 
 from app.data.database.database import DB
 from app.data.resources.resources import RESOURCES
+from app.engine.stale_save import StaleSaveError
 from app.tests.engine_harness import EngineHarness, EngineTestCase, diff_saves
 
 # testing_proj level 0: Eirika (4, 5) and Seth (4, 4) against the generic
@@ -86,8 +87,9 @@ def rename(catalog_name: str, nid: str, resources: bool = False) -> Callable[[],
 class StaleSaveTests(EngineTestCase):
     '''
     A save outlives the shape of the project that made it: a developer saves,
-    renames something in the editor, and loads that save. The game should load
-    it and carry on.
+    renames something in the editor, and loads that save. Where the game can
+    do without the old name it loads the save and carries on; where it can't,
+    it refuses with a StaleSaveError naming what's missing.
 
     Each test loads the same save, made after Seth's first combat, into a
     project with one thing renamed
@@ -139,6 +141,38 @@ class StaleSaveTests(EngineTestCase):
 
     def test_removed_factions(self):
         self.assertLoadsAndPlaysOn(lambda: DB.factions.clear())
+
+    def assertRefusesToLoad(self, change_project: Callable[[], None], message: str):
+        '''
+        Some things a save can't do without. Loading it anyway used to crash
+        far from the cause, so it stops at the load and says what's missing
+        '''
+        change_project()
+        with self.assertRaisesRegex(StaleSaveError, message):
+            self.harness.load(StaleSaveTests._save)
+
+    def test_renamed_player_class(self):
+        '''Used to crash drawing the map: UnitObject has no attribute sprite'''
+        self.assertRefusesToLoad(rename('classes', 'Paladin'),
+                                 "Unit 'Seth' has class 'Paladin', but no class with that nid was found in the database")
+
+    def test_renamed_enemy_class(self):
+        '''Used to crash as the units arrived: no attribute 'movement_group' '''
+        klass = DB.levels.get(LEVEL).units.get('101').klass
+        self.assertRefusesToLoad(rename('classes', klass), "has class '%s', but no class with that nid" % klass)
+
+    def test_renamed_ai(self):
+        '''Used to crash as the units arrived: no attribute 'guard_ai' '''
+        self.assertRefusesToLoad(rename('ai', 'Attack'), "has AI 'Attack', but no AI with that nid")
+
+    def test_renamed_weapon_type(self):
+        '''Used to crash when the enemy AI weighed attacking Seth: no attribute 'advantage' '''
+        self.assertRefusesToLoad(rename('weapons', 'Sword'), "weapon type 'Sword', but no weapon type with that nid")
+
+    def test_renamed_tilemap(self):
+        '''Used to crash restoring the level: no attribute 'nid' '''
+        self.assertRefusesToLoad(rename('tilemaps', 'Prologue', resources=True),
+                                 "has tilemap 'Prologue', but no tilemap with that nid")
 
 if __name__ == '__main__':
     unittest.main()
