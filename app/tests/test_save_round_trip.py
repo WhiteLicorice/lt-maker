@@ -34,6 +34,16 @@ class SaveRoundTripTests(EngineTestCase):
         before, after = self.harness.round_trip()
         self.assertEqual([], diff_saves(before, after))
 
+    def test_round_trip_at_level_start(self):
+        '''
+        GameState.load runs UpdateFogOfWar for every unit on the map, marking
+        the tiles around each one as previously visited, so the units the level
+        starts with must have done the same in level_setup, before moving
+        '''
+        self.harness.start_level(LEVEL)
+        self.harness.run_until_state('free')
+        self.assertRoundTrips()
+
     def test_round_trip_after_the_enemy_phase(self):
         play_first_combat(self.harness)
         finish_turn_1(self.harness)
@@ -64,9 +74,6 @@ class SaveRoundTripTests(EngineTestCase):
             # FreeState.begin marks the end of an action group every time it
             # begins, and it begins again on load
             del s_dict['action_log']
-            # Units the level starts with never see from their tiles until
-            # they move, and load gives every unit its vantage point
-            del s_dict['fog_state']
         self.assertEqual([], diff_saves(straight_through, with_a_load))
 
 def rename(catalog_name: str, nid: str, resources: bool = False) -> Callable[[], None]:
