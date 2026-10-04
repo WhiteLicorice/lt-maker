@@ -1,12 +1,8 @@
-import os
 import unittest
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-import pygame
-
-import app.engine.sprites as sprites
-from app.engine import action  # noqa: F401 -- avoids a circular import, see test_menu_options
+from app.tests.engine_harness import EngineTestCase
 
 def child(nid, kind, usable):
     return SimpleNamespace(nid=nid, kind=kind, usable=usable, multi_item=None)
@@ -17,23 +13,14 @@ def multi_item(hides_unusable):
         subitems=[child('Lance', 'weapon', True), child('Broken Lance', 'weapon', False),
                   child('Physic', 'spell', True), child('Sealed Physic', 'spell', False)])
 
-class MultiItemHidesUnusableChildrenTests(unittest.TestCase):
+class MultiItemHidesUnusableChildrenTests(EngineTestCase):
     '''
     Multi Item Hides Unusable Children stopped hiding them in the weapon, spell and ability
     multi item menus after cf76061bb, which dropped the availability filter from every menu
     except the item child menu
     '''
-    @classmethod
-    def setUpClass(cls):
-        # settings.py (pulled in by general_states) reads sprites at module level
-        sprites.load_images()
-        # phase.py builds surfaces at module level, which needs a display
-        os.environ.setdefault('SDL_VIDEODRIVER', 'dummy')
-        pygame.display.init()
-        if not pygame.display.get_surface():
-            pygame.display.set_mode((1, 1))
-
     def setUp(self):
+        super().setUp()
         from app.engine import general_states
         self.general_states = general_states
         self.game = SimpleNamespace(memory={}, state=MagicMock(), target_system=MagicMock())

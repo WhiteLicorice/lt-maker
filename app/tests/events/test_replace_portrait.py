@@ -1,5 +1,4 @@
 import logging
-import os
 import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -10,16 +9,11 @@ from app.data.resources.portraits import PortraitPrefab
 from app.engine import engine
 from app.events import event_functions
 from app.events.event_portrait import EventPortrait
+from app.tests.engine_harness import EngineTestCase
 
-class ReplacePortraitTests(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        os.environ.setdefault('SDL_VIDEODRIVER', 'dummy')
-        pygame.display.init()
-        if not pygame.display.get_surface():
-            pygame.display.set_mode((1, 1))
-
+class ReplacePortraitTests(EngineTestCase):
     def setUp(self):
+        super().setUp()
         self.time = 1000
         time_patch = patch.object(engine, 'get_time', lambda: self.time)
         time_patch.start()

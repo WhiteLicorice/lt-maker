@@ -1,91 +1,98 @@
-import os
 import unittest
 from unittest.mock import MagicMock, patch
 
-import pygame
-
-import app.engine.sprites as sprites
-from app.engine import action  # noqa: F401 -- avoids a circular import, see test_menu_options
+from app.engine.movement.move_selection import MoveSelection
+from app.tests.engine_harness import EngineTestCase
 
 
-class MoveSelectionLifecycleTests(unittest.TestCase):
+class MoveSelectionLifecycleTests(EngineTestCase):
     '''
     "Am I choosing a destination?" used to be encoded implicitly, as highlights['move']
     being non-empty -- hover wrote the separate light set, which check_in_move ignored,
     and the blanket remove_highlights() calls cleaned it up. Now the cursor holds a
     MoveSelection instead, so it has to be armed and cleared on exactly the same beats or
-    the cursor keeps clamping to a stale movement border
+    the cursor keeps clamping to a stale movement border.
+
+    Played in testing_proj level 0: Eirika (4, 5) and Seth (4, 4) against the
+    fighters 101 (9, 6) and 102 (8, 6). Seth is a Paladin, with Canto
     '''
 
     def setUp(self):
-        # settings.py (pulled in by general_states) reads sprites at module level
-        sprites.load_images()
-        # phase.py builds surfaces at module level, which needs a display
-        os.environ.setdefault('SDL_VIDEODRIVER', 'dummy')
-        pygame.display.init()
-        if not pygame.display.get_surface():
-            pygame.display.set_mode((1, 1))
-
-        from app.engine.movement.move_selection import MoveSelection
-        self.MoveSelection = MoveSelection
-
-    def begin_move_state(self, selection, **unit_attrs):
-        '''Runs MoveState.begin against a mocked game, and reports the state and cursor'''
-        from app.engine import general_states
-
-        move_state = general_states.MoveState.__new__(general_states.MoveState)
-        with patch.object(general_states, 'game') as mock_game, \
-                patch.object(general_states, 'phase'):
-            cur_unit = mock_game.cursor.cur_unit
-            cur_unit.is_dying = False
-            cur_unit.dead = False
-            cur_unit.position = (1, 1)
-            cur_unit.previous_position = (1, 1)
-            cur_unit.traveler = None
-            cur_unit.has_traded = False
-            cur_unit.has_attacked = False
-            for key, value in unit_attrs.items():
-                setattr(cur_unit, key, value)
-            mock_game.path_system.get_move_selection.return_value = selection
-
-            move_state.begin()
-            return move_state, mock_game
+        super().setUp()
+        self.harness = self.start_harness()
+        self.harness.start_level('0')
+        self.harness.run_until_state('free')
+        self.cursor = self.harness.game.cursor
+        self.highlights = self.harness.game.highlight.highlights
 
     def test_move_state_arms_the_cursor_with_the_selection_it_judges_against(self):
-        selection = self.MoveSelection(walkable={(1, 1), (1, 2)})
-        move_state, mock_game = self.begin_move_state(selection)
+        self.harness.select_unit('Eirika')
+        move_state = self.harness.game.state.current_state()
         # The same object, not a copy -- one truth for the border and for SELECT
-        self.assertIs(selection, move_state.move_selection)
-        self.assertIs(selection, mock_game.cursor.move_selection)
+        self.assertIs(move_state.move_selection, self.cursor.move_selection)
+        self.assertIn((5, 5), self.cursor.move_selection)
+
+    def test_the_highlights_are_drawn_from_the_selection(self):
+        self.harness.select_unit('Eirika')
+        self.assertEqual(self.cursor.move_selection.normal, self.highlights['move'])
+        # Eirika can reach the fighters, so her attack range is drawn around the moves
+        self.assertTrue(self.highlights['attack'])
 
     def test_a_traded_unit_is_armed_too_even_though_it_skips_the_attack_preview(self):
-        selection = self.MoveSelection(walkable={(1, 1), (1, 2)})
-        move_state, mock_game = self.begin_move_state(selection, has_traded=True)
-        self.assertIs(selection, mock_game.cursor.move_selection)
+        # Trading without moving, then backing out, sends a unit with canto back to move
+        self.harness.move_unit('Seth', (4, 4))
+        self.harness.choose('Trade')
+        self.harness.run_until_state('targeting')
+        self.harness.press('SELECT')
+        self.harness.run_until_state('trade')
+        # Pick up Seth's first item and hand it over
+        self.harness.press('SELECT')
+        self.harness.press('SELECT')
+        self.harness.press('BACK')
+        self.harness.run_until_state('menu')
+        self.harness.press('BACK')
+        self.harness.run_until_state('move')
+
+        self.assertTrue(self.harness.game.get_unit('Seth').has_traded)
+        self.assertIs(self.harness.game.state.current_state().move_selection, self.cursor.move_selection)
+        self.assertEqual(self.cursor.move_selection.normal, self.highlights['move'])
         # Only the moves are drawn; no attack or spell ranges for a unit that has acted
-        mock_game.highlight.display_moves.assert_called_once_with(selection.normal, light=False)
-        mock_game.highlight.display_highlights.assert_not_called()
+        self.assertEqual(set(), self.highlights['attack'])
+        self.assertEqual(set(), self.highlights['spell'])
 
-    def test_the_highlights_are_drawn_from_the_selection_rather_than_recomputing_it(self):
-        selection = self.MoveSelection(walkable={(1, 1)}, xcom={(1, 4)})
-        _, mock_game = self.begin_move_state(selection)
-        mock_game.highlight.display_highlights.assert_called_once_with(
-            mock_game.cursor.cur_unit, selection)
+    def test_backing_out_of_the_move_clears_the_cursor(self):
+        self.harness.select_unit('Eirika')
+        self.harness.press('BACK')
+        self.harness.run_until_state('free')
+        self.assertFalse(self.cursor.move_selection)
+        self.assertEqual(set(), self.highlights['move'])
 
-    def test_move_state_end_clears_the_cursor(self):
-        from app.engine import general_states
+    def test_waiting_clears_the_cursor(self):
+        self.harness.wait('Eirika', (5, 5))
+        self.harness.run_until_state('free')
+        self.assertFalse(self.cursor.move_selection)
+        self.assertEqual(set(), self.highlights['move'])
 
-        move_state = general_states.MoveState.__new__(general_states.MoveState)
-        with patch.object(general_states, 'game') as mock_game:
-            move_state.end()
-            mock_game.cursor.remove_arrows.assert_called_once()
-            mock_game.highlight.remove_highlights.assert_called_once()
+    def test_hovering_a_unit_never_arms_the_cursor(self):
+        '''
+        Hover draws the light move highlights for any unit under the cursor. It must not
+        make the cursor think the player is choosing a destination -- that used to be
+        guaranteed by hover writing 'possible_move' rather than 'move'
+        '''
+        self.harness.move_cursor_to((8, 6))
+        self.harness.step()
+        self.assertFalse(self.cursor.move_selection, 'hover armed the cursor with a movement border')
+        # It does light up the move tiles, in the light set
+        self.assertTrue(self.highlights['possible_move'])
+        self.assertEqual(set(), self.highlights['move'])
 
+
+class LevelCursorMoveSelectionTests(EngineTestCase):
     def build_cursor(self):
         from app.engine.level_cursor import LevelCursor
 
         cursor = LevelCursor.__new__(LevelCursor)
-        cursor.move_selection = self.MoveSelection()
+        cursor.move_selection = MoveSelection()
         cursor._last_valid_position = None
         cursor._display_arrows = False
         cursor.arrows = []
@@ -93,7 +100,7 @@ class MoveSelectionLifecycleTests(unittest.TestCase):
 
     def test_remove_arrows_clears_the_selection(self):
         cursor = self.build_cursor()
-        cursor.move_selection = self.MoveSelection(walkable={(1, 1)}, xcom={(1, 4)})
+        cursor.move_selection = MoveSelection(walkable={(1, 1)}, xcom={(1, 4)})
         cursor._last_valid_position = (1, 1)
         cursor._display_arrows = True
 
@@ -109,35 +116,6 @@ class MoveSelectionLifecycleTests(unittest.TestCase):
         self.assertNotIn((1, 1), cursor.move_selection)
         self.assertNotIn((0, 0), cursor.move_selection)
 
-    def test_hovering_a_unit_never_arms_the_cursor(self):
-        '''
-        Hover draws the light move highlights for any unit under the cursor. It must not
-        make the cursor think the player is choosing a destination -- that used to be
-        guaranteed by hover writing 'possible_move' rather than 'move'
-        '''
-        from app.engine import highlight
-
-        controller = highlight.HighlightController()
-        hover_unit = MagicMock()
-        hover_unit.team = 'enemy'
-        hover_unit.skills = []
-
-        with patch.object(highlight, 'game') as mock_game:
-            mock_game.cursor.get_hover.return_value = hover_unit
-            mock_game.cursor.move_selection = self.MoveSelection()
-            mock_game.path_system.get_move_selection.return_value = \
-                self.MoveSelection(walkable={(5, 5)})
-            mock_game.target_system.get_all_attackable_positions_spells.return_value = set()
-            mock_game.target_system.get_all_attackable_positions_weapons.return_value = set()
-
-            controller.handle_hover()
-
-            self.assertFalse(mock_game.cursor.move_selection,
-                             'hover armed the cursor with a movement border')
-            # It does light up the move tiles, in the light set
-            self.assertEqual({(5, 5)}, controller.highlights['possible_move'])
-            self.assertEqual(set(), controller.highlights['move'])
-
     def test_hover_asks_for_the_zero_move_clamp_only_for_units_the_player_does_not_control(self):
         from app.engine import highlight
 
@@ -148,7 +126,7 @@ class MoveSelectionLifecycleTests(unittest.TestCase):
             hover_unit.skills = []
             with patch.object(highlight, 'game') as mock_game:
                 mock_game.cursor.get_hover.return_value = hover_unit
-                mock_game.path_system.get_move_selection.return_value = self.MoveSelection()
+                mock_game.path_system.get_move_selection.return_value = MoveSelection()
                 mock_game.target_system.get_all_attackable_positions_spells.return_value = set()
                 mock_game.target_system.get_all_attackable_positions_weapons.return_value = set()
 

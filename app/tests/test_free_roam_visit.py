@@ -1,13 +1,9 @@
-import os
 import unittest
 from functools import partial
 from types import SimpleNamespace
 from unittest.mock import patch
 
-import pygame
-
-import app.engine.sprites as sprites
-from app.engine import action  # noqa: F401 -- avoids a circular import, see test_menu_options
+from app.tests.engine_harness import EngineTestCase
 from app.engine.game_state import GameState
 from app.engine.objects.region import RegionObject
 from app.events.regions import RegionType
@@ -21,16 +17,7 @@ def destroy_region() -> RegionObject:
 def visit_region() -> RegionObject:
     return RegionObject('Visit', RegionType.EVENT, VILLAGE, [1, 1], 'Visit', condition='True')
 
-class FreeRoamVisitRegionTests(unittest.TestCase):
-    def setUp(self):
-        # settings.py (pulled in by the map states) reads sprites at module level
-        sprites.load_images()
-        # phase.py builds surfaces at module level, which needs a display
-        os.environ.setdefault('SDL_VIDEODRIVER', 'dummy')
-        pygame.display.init()
-        if not pygame.display.get_surface():
-            pygame.display.set_mode((1, 1))
-
+class FreeRoamVisitRegionTests(EngineTestCase):
     def _visit_region(self, *regions, position=VILLAGE):
         from app.engine.roam import free_roam_state
         roam_unit = SimpleNamespace(nid='Eirika', team='player', position=position)

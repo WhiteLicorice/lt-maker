@@ -1,18 +1,16 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
-from app.data.serialization.versions import CURRENT_SERIALIZATION_VERSION
-from app.engine import dialog, fonts, sprites
+from app.tests.engine_harness import EngineTestCase
+from app.engine import dialog, fonts
 
 # Fits a default width text box with 3 pixels to spare -- but not with the waiting cursor after it
 FULL_LINE = "Doesn't look like you've got anything to forge."
 
-class DialogCursorWrapTests(unittest.TestCase):
+class DialogCursorWrapTests(EngineTestCase):
     def setUp(self):
-        from app.data.resources.resources import RESOURCES
-        RESOURCES.load('testing_proj.ltproj', CURRENT_SERIALIZATION_VERSION)
+        super().setUp()
         fonts.load_fonts(headless=True)
-        sprites.load_images()
 
     def _process(self, text, **kwargs) -> dialog.Dialog:
         with patch.object(dialog.engine, 'create_surface', new=MagicMock()), \

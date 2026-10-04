@@ -1,21 +1,17 @@
 import unittest
 
+from app.tests.engine_harness import EngineTestCase
 
-class SettingsMenuTests(unittest.TestCase):
+
+class SettingsMenuTests(EngineTestCase):
     def setUp(self) -> None:
-        from app.engine import sprites
-        # An earlier test may have reset the sprite dict without reloading the
-        # images, and importing settings reads sprites at module level
-        sprites.load_images()
+        # Importing settings reads sprites at module level, which EngineTestCase loads
+        super().setUp()
         from app.engine import config as cf, settings, settings_menu
         self.cf = cf
-        self.old_value = cf.SETTINGS['sound_volume']
         config_options = [(c[0], c[1]) for c in settings.config]
         self.menu = settings_menu.Config(None, config_options, 'menu_bg_base', settings.config_icons)
         self.menu.move_to([c[0] for c in settings.config].index('sound_volume'))
-
-    def tearDown(self) -> None:
-        self.cf.SETTINGS['sound_volume'] = self.old_value
 
     def test_move_reports_whether_the_value_changed(self):
         '''
@@ -43,14 +39,12 @@ class FakePad():
         self.calls.append('stop')
 
 
-class RumbleOptionTests(unittest.TestCase):
+class RumbleOptionTests(EngineTestCase):
     def setUp(self) -> None:
-        from app.engine import sprites
-        sprites.load_images()
+        super().setUp()
         from app.engine import config as cf, settings, settings_menu
         from app.engine.input_manager import get_input_manager
         self.cf = cf
-        self.old_value = cf.SETTINGS['rumble']
         self.input_manager = get_input_manager()
         self.old_pads = self.input_manager.controllers, self.input_manager.joysticks
         self.pad = FakePad()
@@ -64,8 +58,8 @@ class RumbleOptionTests(unittest.TestCase):
         self.state.config_menu.move_to([c[0] for c in settings.config].index('rumble'))
 
     def tearDown(self) -> None:
-        self.cf.SETTINGS['rumble'] = self.old_value
         self.input_manager.controllers, self.input_manager.joysticks = self.old_pads
+        super().tearDown()
 
     def toggle(self, move: str):
         if getattr(self.state.config_menu, move)():

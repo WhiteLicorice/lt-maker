@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from unittest.mock import patch
 
 from app.sprites import SpriteDict
+from app.tests.engine_harness import EngineTestCase
 
 
 @dataclass
@@ -27,12 +28,9 @@ class RecordingSprites(SpriteDict):
         return super().get(val, fallback)
 
 
-class CombatForecastBackgroundTests(unittest.TestCase):
+class CombatForecastBackgroundTests(EngineTestCase):
     def setUp(self):
-        # An earlier test may have reset the sprite dict without reloading the images
-        from app.engine import sprites
-        sprites.load_images()
-        import app.engine.action  # noqa: F401  -- untangles a circular import
+        super().setUp()
         from app.engine import ui_view
         self.ui_view = ui_view
 

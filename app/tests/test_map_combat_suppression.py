@@ -1,11 +1,7 @@
-import os
 import unittest
 from unittest.mock import MagicMock, patch
 
-import pygame
-
-import app.engine.sprites as sprites
-from app.engine import action  # noqa: F401 -- avoids a circular import, see test_menu_options
+from app.tests.engine_harness import EngineTestCase
 
 SUPPRESSION_HOOKS = ('no_map_hp_display', 'no_map_hit_flash', 'no_map_hit_sfx',
                      'no_map_combat_movement', 'no_map_damage_numbers')
@@ -47,15 +43,7 @@ class SuppressionComponentTests(unittest.TestCase):
             self.assertFalse(self.call_hook(hook, []), hook)
 
 
-class SpriteMovementSuppressionTests(unittest.TestCase):
-    def setUp(self):
-        # settings.py (pulled in by general_states) reads sprites at module level
-        sprites.load_images()
-        os.environ.setdefault('SDL_VIDEODRIVER', 'dummy')
-        pygame.display.init()
-        if not pygame.display.get_surface():
-            pygame.display.set_mode((1, 1))
-
+class SpriteMovementSuppressionTests(EngineTestCase):
     def build_sprite(self, position):
         from app.engine.unit_sprite import UnitSprite
         sprite = UnitSprite.__new__(UnitSprite)
@@ -116,17 +104,8 @@ class SpriteMovementSuppressionTests(unittest.TestCase):
         self.assertEqual('right', sprite.image_state)
 
 
-class PlaybackSuppressionTests(unittest.TestCase):
+class PlaybackSuppressionTests(EngineTestCase):
     """_handle_playback must drop the brushes the suppression hooks switch off."""
-
-    def setUp(self):
-        # gui.DamageNumber pulls its digits out of SPRITES, which another test may
-        # have emptied -- see the sprite-leak note in CLAUDE.md
-        sprites.load_images()
-        os.environ.setdefault('SDL_VIDEODRIVER', 'dummy')
-        pygame.display.init()
-        if not pygame.display.get_surface():
-            pygame.display.set_mode((1, 1))
 
     def build_combat(self, **flags):
         from app.engine.combat.map_combat import MapCombat

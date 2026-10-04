@@ -1,12 +1,8 @@
-import os
 import unittest
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-import pygame
-
-import app.engine.sprites as sprites
-from app.engine import action  # noqa: F401 -- avoids a circular import, see test_menu_options
+from app.tests.engine_harness import EngineTestCase
 from app.engine import help_menu, text_funcs
 from app.engine.game_state import game
 from app.engine.objects.skill import SkillObject
@@ -16,21 +12,13 @@ HEALER = 'Moulder'
 REGENERATION = "Recover {e:15+game.get_unit(skill.initiator_nid).get_stat('MAG')//3}% of max HP"
 EVALUATED = "Recover 17% of max HP"
 
-class SkillDescriptionEvaluationTests(unittest.TestCase):
+class SkillDescriptionEvaluationTests(EngineTestCase):
     """
     Squid: a skill description naming its skill as `skill` only evaluated in SkillHelpDialog,
     the one place that passed it, and logged "name 'skill' is not defined" everywhere else
     """
-    @classmethod
-    def setUpClass(cls):
-        # The state modules read sprites and build surfaces at import
-        sprites.load_images()
-        os.environ.setdefault('SDL_VIDEODRIVER', 'dummy')
-        pygame.display.init()
-        if not pygame.display.get_surface():
-            pygame.display.set_mode((1, 1))
-
     def setUp(self):
+        super().setUp()
         healer = MagicMock()
         healer.get_stat.return_value = 6
         for patcher in (patch.object(game, 'get_unit', lambda nid: healer if nid == HEALER else None),
