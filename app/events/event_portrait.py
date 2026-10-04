@@ -187,9 +187,9 @@ class EventPortrait():
         blink_image: Optional[engine.Surface] = None
         idx = None
         if "CloseEyes" in self.expressions:
-            idx = self.portrait.blink_frames - 1
+            idx = 0
         elif "HalfCloseEyes" in self.expressions:
-            idx = self.portrait.blink_frames // 2 - 1
+            idx = self.portrait.blink_frames // 2
         elif "OpenEyes" in self.expressions:
             idx = None
         else:
