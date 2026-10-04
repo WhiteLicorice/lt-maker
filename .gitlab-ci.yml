@@ -18,6 +18,7 @@ run_tests:
     only:
         refs:
             - merge_requests
+            - master
     before_script:
         - apt-get update
         - apt-get install -y libgl1
