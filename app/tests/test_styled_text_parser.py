@@ -8,6 +8,8 @@ from app.engine.graphics.text.tagged_text import TaggedText, TaggedTextChunk
 from app.engine.graphics.text.text_effects import TextSettings, TextEffect
 from app.engine.graphics.text.styled_text_parser import parse_styled_text
 from app.utilities.typing import NID
+from app.engine import fonts
+from app.tests.engine_harness import EngineTestCase
 
 
 class StyledTextParsingTest(unittest.TestCase):
@@ -161,7 +163,9 @@ class StyledTextParsingTest(unittest.TestCase):
         default_font = "convo"
         default_color = "white"
         test_styled_text = "some text with <???>a non-existent tag</>"
-        tagged_text = parse_styled_text(test_styled_text, default_font, default_color)
+        # The parser shows the malformed tag as plain text, and warns about it
+        with self.assertLogs(level='WARNING'):
+            tagged_text = parse_styled_text(test_styled_text, default_font, default_color)
 
         # test that the text is parsed correctly based on tags
         actual_texts = [x.text for x in tagged_text]
@@ -187,7 +191,9 @@ class StyledTextParsingTest(unittest.TestCase):
         default_font = "convo"
         default_color = "white"
         test_styled_text = "another tag <blue that is simply never closed oops</>"
-        tagged_text = parse_styled_text(test_styled_text, default_font, default_color)
+        # The parser shows the malformed tag as plain text, and warns about it
+        with self.assertLogs(level='WARNING'):
+            tagged_text = parse_styled_text(test_styled_text, default_font, default_color)
 
         # test that the text is parsed correctly based on tags
         actual_texts = [x.text for x in tagged_text]
@@ -213,7 +219,9 @@ class StyledTextParsingTest(unittest.TestCase):
         default_font = "convo"
         default_color = "white"
         test_styled_text = "some </>text with <red>extra closing tags</></>"
-        tagged_text = parse_styled_text(test_styled_text, default_font, default_color)
+        # The parser shows the malformed tag as plain text, and warns about it
+        with self.assertLogs(level='WARNING'):
+            tagged_text = parse_styled_text(test_styled_text, default_font, default_color)
 
         # test that the text is parsed correctly based on tags
         actual_texts = [x.text for x in tagged_text]
@@ -406,7 +414,11 @@ class StyledTextParsingTest(unittest.TestCase):
         self.assertEqual(len(indexed_text.chunks), 0)
 
 
-class TaggedTextCachingTest(unittest.TestCase):
+class TaggedTextCachingTest(EngineTestCase):
+    def setUp(self):
+        super().setUp()
+        # Caching measures the text, which needs its font
+        fonts.load_fonts(headless=True)
 
     def test_huge_cycle_period_does_not_cache(self):
         default_font = "convo"

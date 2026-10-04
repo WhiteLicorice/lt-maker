@@ -143,18 +143,6 @@ class WorldMakerHillPeakBandTests(unittest.TestCase):
             self.assertLessEqual(abs(sea_fraction - theme['sea_percent']), 0.02)
             self.assertLessEqual(abs(sand_fraction - theme['sand_percent']), 0.02)
 
-    def test_ascii_render_for_manual_check(self):
-        """Run with -v to eyeball ASCII renders of 5 seeds for ridge-like shapes."""
-        theme = _make_theme()
-        chars = {Terrain.SEA: '~', Terrain.SAND: '.', Terrain.NOISY_GRASS: ' ',
-                 Terrain.HILL: 'n', Terrain.MOUNTAIN: 'A', Terrain.RIVER: 'r',
-                 Terrain.CLIFF: '#', Terrain.FOREST: 'f', Terrain.THICKET: 'F'}
-        for seed in range(5):
-            tm = terrain_generation.generate_terrain(theme, seed)
-            print("\n--- seed %d ---" % seed)
-            for y in range(tm.height):
-                print(''.join(chars.get(tm.get_terrain((x, y)), '?') for x in range(tm.width)))
-
 
 def _chebyshev(a, b):
     return max(abs(a[0] - b[0]), abs(a[1] - b[1]))

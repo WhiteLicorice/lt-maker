@@ -207,12 +207,12 @@ def surf_to_raw(surf: pygame.Surface, format: str) -> str:
 
     Args:
         surf (pygame.Surface): surf to convert
-        format (str): any valid format string (https://www.pygame.org/docs/ref/image.html#pygame.image.tostring)
+        format (str): any valid format string (https://www.pygame.org/docs/ref/image.html#pygame.image.tobytes)
 
     Returns:
         str: raw byte buffer version of surf
     """
-    return pygame.image.tostring(surf, format)
+    return pygame.image.tobytes(surf, format)
 
 def raw_to_surf(raw_bytes: str, size: Tuple[int, int], format: str) -> pygame.Surface:
     """converts a raw image string into a surface.
@@ -221,12 +221,12 @@ def raw_to_surf(raw_bytes: str, size: Tuple[int, int], format: str) -> pygame.Su
         raw_bytes (str): raw data
         size (Tuple[int, int]): size of surface to be created
         format (str): the format string that was used to encode the raw data
-            (https://www.pygame.org/docs/ref/image.html#pygame.image.tostring)
+            (https://www.pygame.org/docs/ref/image.html#pygame.image.tobytes)
 
     Returns:
         pygame.Surface: the surface consisting of the raw image
     """
-    return pygame.image.fromstring(raw_bytes, size, format)
+    return pygame.image.frombytes(raw_bytes, size, format)
 
 def fill(surf, color, mask=None, blend=0):
     surf.fill(color, mask, blend)

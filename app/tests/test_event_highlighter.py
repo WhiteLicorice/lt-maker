@@ -25,19 +25,23 @@ class HighlightBlockNeverRaisesTests(unittest.TestCase):
     def _build(self):
         from PyQt5.QtWidgets import QPlainTextEdit
         self.edit = QPlainTextEdit()
-        return self.EventHighlighter(self.edit.document(), None)
+        # Validation looks up the level the window is editing; no event is open
+        return self.EventHighlighter(self.edit.document(), SimpleNamespace(current=None))
 
     def test_exception_in_match_line_does_not_escape(self):
         highlighter = self._build()
         with patch.object(self.EventSyntaxRuleHighlighter, 'match_line',
-                          side_effect=ValueError('boom')):
+                          side_effect=ValueError('boom')), \
+                self.assertLogs(level='ERROR') as logs:
             highlighter.highlightBlock('speak;Eirika;Hello, world')
+        self.assertIn('Failed to syntax highlight line', logs.output[0])
 
     def test_normal_line_still_formats(self):
         highlighter = self._build()
         formatted = []
         with patch.object(self.EventHighlighter, 'setFormat',
-                          side_effect=lambda *args: formatted.append(args)):
+                          side_effect=lambda *args: formatted.append(args)), \
+                self.assertNoLogs(level='ERROR'):
             highlighter.highlightBlock('speak;Eirika;Hello, world')
         self.assertTrue(formatted)
 

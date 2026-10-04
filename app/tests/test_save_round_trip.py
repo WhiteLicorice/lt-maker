@@ -125,7 +125,10 @@ class StaleSaveTests(EngineTestCase):
         self.assertLoadsAndPlaysOn(rename('units', 'Seth'))
 
     def test_renamed_party(self):
-        self.assertLoadsAndPlaysOn(rename('parties', 'Eirika'))
+        with self.assertLogs(level='ERROR') as logs:
+            self.assertLoadsAndPlaysOn(rename('parties', 'Eirika'))
+        # The overworld falls back to the project's first party
+        self.assertIn('cannot find party Eirika', logs.output[0])
 
     def test_renamed_team(self):
         self.assertLoadsAndPlaysOn(rename('teams', 'enemy2'))

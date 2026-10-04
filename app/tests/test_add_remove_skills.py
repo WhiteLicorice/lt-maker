@@ -77,13 +77,16 @@ class AddRemoveSkillTests(unittest.TestCase):
             AddSkill(self.test_unit, self.test_skill, source='Idaho', source_type=SourceType.TERRAIN).do()
             self.assertIn('Potatomancy', [s.nid for s in self.test_unit.all_skills])
 
-            RemoveSkill(self.test_unit, 'Potatomancy').do()
+            with self.assertLogs(level='WARNING'):
+                RemoveSkill(self.test_unit, 'Potatomancy').do()
             self.assertIn('Potatomancy', [s.nid for s in self.test_unit.all_skills])
 
-            RemoveSkill(self.test_unit, 'Potatomancy', source='Idaho', source_type=SourceType.REGION).do()
+            with self.assertLogs(level='WARNING'):
+                RemoveSkill(self.test_unit, 'Potatomancy', source='Idaho', source_type=SourceType.REGION).do()
             self.assertIn('Potatomancy', [s.nid for s in self.test_unit.all_skills])
 
-            RemoveSkill(self.test_unit, 'Potatomancy', source='Bombay', source_type=SourceType.TERRAIN).do()
+            with self.assertLogs(level='WARNING'):
+                RemoveSkill(self.test_unit, 'Potatomancy', source='Bombay', source_type=SourceType.TERRAIN).do()
             self.assertIn('Potatomancy', [s.nid for s in self.test_unit.all_skills])
 
             RemoveSkill(self.test_unit, 'Potatomancy', source='Idaho', source_type=SourceType.TERRAIN).do()
@@ -192,14 +195,17 @@ class AddRemoveSkillTests(unittest.TestCase):
             self.assertIn(test_skill_stack4, self.test_unit.all_skills)
             self.assertIn(test_skill_stack5, self.test_unit.all_skills)
 
-            RemoveSkill(self.test_unit, 'Spud_Stack', count=1).do()
+            # Every copy is tried in turn, and the aura's copy can't be removed, which warns
+            with self.assertLogs(level='WARNING'):
+                RemoveSkill(self.test_unit, 'Spud_Stack', count=1).do()
             self.assertIn(self.test_skill_stack, self.test_unit.all_skills)
             self.assertNotIn(test_skill_stack2, self.test_unit.all_skills)
             self.assertIn(test_skill_stack3, self.test_unit.all_skills)
             self.assertIn(test_skill_stack4, self.test_unit.all_skills)
             self.assertIn(test_skill_stack5, self.test_unit.all_skills)
 
-            RemoveSkill(self.test_unit, 'Spud_Stack').do()
+            with self.assertLogs(level='WARNING'):
+                RemoveSkill(self.test_unit, 'Spud_Stack').do()
             self.assertIn(self.test_skill_stack, self.test_unit.all_skills)
             self.assertNotIn(test_skill_stack2, self.test_unit.all_skills)
             self.assertNotIn(test_skill_stack3, self.test_unit.all_skills)
