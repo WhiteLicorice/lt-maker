@@ -60,7 +60,8 @@ def modify_exp(exp, attacker, defender):
         return exp
         
     exp *= float(DB.constants.value('kill_multiplier'))
-    if 'Boss' in defender.tags:
+    if 'Boss' in defender.tags and DB.constants.value('exp_formula') != ExpCalcType.CLASSIC.value:
+        # CLASSIC exp formula already added boss_bonus in a different way
         exp += int(DB.constants.value('boss_bonus') * self_mult * enemy_mult)
     return exp
 
@@ -93,7 +94,7 @@ class LevelExp(ItemComponent):
         else:
             level_diff = target.level - unit.level
         if DB.constants.value('exp_formula') == ExpCalcType.STANDARD.value:
-            return ExpCalculator.classical_curve_calculator(
+            return ExpCalculator.standard_curve_calculator(
                 level_diff,
                 DB.constants.value('exp_offset'),
                 DB.constants.value('exp_curve'),
@@ -105,6 +106,32 @@ class LevelExp(ItemComponent):
                 DB.constants.value('gexp_min'),
                 DB.constants.value('gexp_slope'),
                 DB.constants.value('gexp_intercept'))
+        elif DB.constants.value('exp_formula') == ExpCalcType.CLASSIC.value:
+            return ExpCalculator.classic_curve_calculator(
+                unit,
+                target,
+                DB.classes.get(unit.klass),
+                DB.classes.get(target.klass),
+                DB.constants.value('cexp_damage_bonus'),
+                DB.constants.value('cexp_kill_bonus'),
+                DB.constants.value('boss_bonus'),
+                DB.constants.value('cexp_thief_bonus'),
+                DB.constants.value('cexp_thief_list'),
+                DB.constants.value('cexp_class_bonus_a'),
+                DB.constants.value('cexp_class_bonus_a_tier'),
+                DB.constants.value('cexp_class_bonus_b'),
+                DB.constants.value('cexp_class_bonus_b_tier'),
+                DB.constants.value('cexp_class_bonus_b1'),
+                DB.constants.value('cexp_class_bonus_b1_list'),
+                DB.constants.value('cexp_class_power_1'),
+                DB.constants.value('cexp_class_power_1_list'),
+                DB.constants.value('cexp_class_power_1_tier'),
+                DB.constants.value('cexp_class_power_2'),
+                DB.constants.value('cexp_class_power_2_list'),
+                DB.constants.value('cexp_class_power_3'),
+                DB.constants.value('cexp_class_power_4'),
+                DB.constants.value('cexp_class_power_4_tier'),
+                DB.constants.value('cexp_mode_coeff'))
         else:
             return 0
 

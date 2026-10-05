@@ -233,7 +233,8 @@ class OverworldLevelTransition(State):
 
     def start(self):
         logging.debug("Begin Overworld-Level Transition State")
-        if not game.events.trigger(triggers.LevelSelect(), level_nid=game.overworld_controller.next_level):
+        if not game.events.trigger(triggers.LevelSelect(), level_nid=game.overworld_controller.next_level) and \
+          game.overworld_controller.node_by_level(game.overworld_controller.next_level) is not None:
             # no events, then just queue the move
             movement = OverworldMove(game.overworld_controller.selected_entity.nid,
                                      game.overworld_controller.node_by_level(game.overworld_controller.next_level).nid,
