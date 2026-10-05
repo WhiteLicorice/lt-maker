@@ -1,6 +1,7 @@
 from app.constants import TILEHEIGHT, TILEWIDTH
 from app.engine import engine, image_mods
 from app.utilities import utils
+import math
 
 # Generic Animation Object
 # Used, for instance, for miss and no damage animations
@@ -38,7 +39,7 @@ class Animation():
         self.frames_held = 0
         self.first_update = engine.get_time()
 
-    def save(self) -> tuple:
+    def save(self) -> dict:
         return {'nid': self.nid,
                 'pos': self.xy_pos,
                 'loop': self.loop,
@@ -128,7 +129,7 @@ class Animation():
             frame_counter = self.counter
         left = (frame_counter % self.frame_x) * self.width
         top = (frame_counter // self.frame_x) * self.height
-        self.image = engine.subsurface(self.sprite, (left, top, self.width, self.height))
+        self.image_update(left, top)
 
         return done
 
@@ -146,6 +147,10 @@ class Animation():
         else:
             surf.blit(image, (x, y))
         return surf
+        
+    def image_update(self, left, top):
+        self.image = engine.subsurface(self.sprite, (left, top, self.width, self.height))
+
 
 class MapAnimation(Animation):
     def __init__(self, anim, position, delay=0, loop=False, hold=False, reverse=False, speed_adj: float = 1, contingent=False):
@@ -161,3 +166,26 @@ class MapAnimation(Animation):
             return self.position[0] + offset[0] * TILEWIDTH, self.position[1] + offset[1] * TILEHEIGHT
         else:
             return self.position
+            
+class SpellAnimation(MapAnimation):
+    def __init__(self, anim, position, velocity, duration, theta = 0, delay=0, loop=False, hold=False, reverse=False, speed_adj: float = 1, contingent=False):
+        super().__init__(anim, position, delay, loop, hold, reverse, speed_adj=speed_adj, contingent=contingent)
+        self.velocity = velocity
+        self.duration = duration
+        self.theta = theta * 180 / math.pi #Why on earth is pygame's rotate using degrees
+                
+    def update(self):
+        self.position = utils.tuple_add(self.position, self.velocity)
+        super().update()
+        self.duration -= 1
+        if self.duration <= 0:
+            return True
+        return False
+        
+    def image_update(self, left, top):
+        self.image = engine.subsurface(self.sprite, (left, top, self.width, self.height))
+        self.image = engine.transform_rotate(self.image, self.theta)
+        
+    def is_done(self):
+        return (self.duration <= 0)
+
