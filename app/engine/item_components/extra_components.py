@@ -156,7 +156,7 @@ class Eclipse(ItemComponent):
     tag = ItemTags.EXTRA
 
     def on_hit(self, actions, playback, unit, item, target, item2, target_pos, mode, attack_info):
-        true_damage = damage = target.get_hp()//2
+        true_damage = damage = (target.get_hp() + 1)//2
         actions.append(action.ChangeHP(target, -damage))
 
         # For animation
@@ -171,7 +171,7 @@ class EclipseFE7(ItemComponent):
     tag = ItemTags.EXTRA
 
     def on_hit(self, actions, playback, unit, item, target, item2, target_pos, mode, attack_info):
-        true_damage = damage = target.get_hp() - 1
+        true_damage = damage = max(1, target.get_hp() - 1)
         actions.append(action.ChangeHP(target, -damage))
 
         # For animation

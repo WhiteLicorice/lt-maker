@@ -5,7 +5,8 @@ from PyQt5.QtCore import QAbstractItemModel, Qt
 from PyQt5.QtWidgets import (QDoubleSpinBox, QFormLayout, QFrame, QGridLayout,
                              QGroupBox, QHBoxLayout, QLabel, QLineEdit,
                              QPushButton, QSizePolicy, QSpinBox, QSplitter,
-                             QTreeView, QVBoxLayout, QWidget, QTabWidget)
+                             QTreeView, QVBoxLayout, QWidget, QTabWidget,
+                             QScrollArea, QLayout)
 
 from app.data.database.constants import ConstantCatalog, ConstantType, ConstantTag
 from app.data.database.database import DB
@@ -16,6 +17,7 @@ from app.editor.lib.components.validated_line_edit import NidLineEdit
 from app.engine.exp_calculator import ExpCalcType, ExpCalculator
 from app.extensions.checkable_list_dialog import ComponentModel
 from app.extensions.custom_gui import ComboBox, PropertyBox
+from app.extensions.multi_select_combo_box import MultiSelectComboBox
 from app.utilities.data import Data
 from app.utilities import str_utils
 
@@ -80,15 +82,20 @@ class MainExpEquation(QWidget):
 
         self.standard_exp_frame = self.create_standard_exp_frame()
         self.gompertz_exp_frame = self.create_gompertz_frame()
+        self.classic_exp_frame = self.create_classic_exp_frame()
         layout.addWidget(self.standard_exp_frame)
         layout.addWidget(self.gompertz_exp_frame)
+        layout.addWidget(self.classic_exp_frame)
         self.toggle_exp_frame()
 
     def toggle_exp_frame(self):
         self.standard_exp_frame.hide()
         self.gompertz_exp_frame.hide()
+        self.classic_exp_frame.hide()
         if self._data.get('exp_formula').value == ExpCalcType.GOMPERTZ.value:
             self.gompertz_exp_frame.show()
+        elif self._data.get('exp_formula').value == ExpCalcType.CLASSIC.value:
+            self.classic_exp_frame.show()
         else:
             self.standard_exp_frame.show()
 
@@ -195,6 +202,240 @@ class MainExpEquation(QWidget):
         eq_layout.addLayout(right_layout)
         gompertz_frame.setLayout(eq_layout)
         return gompertz_frame
+    
+    def create_class_list_box(self, constant):
+        # The constant holds the chosen class nids joined with commas
+        box = MultiSelectComboBox(self)
+        box.setPlaceholderText(_("No classes"))
+        box.addItems(DB.classes.keys())
+        box.setCurrentTexts(constant.value.split(','))
+        box.updated.connect(lambda: constant.set_value(','.join(box.currentText())))
+        box.setMinimumWidth(200)
+        return box
+
+    def create_classic_exp_frame(self):
+        thief_bonus = self._data.get('cexp_thief_bonus')
+        self.thief_bonus = QSpinBox(self)
+        self.thief_bonus.setValue(thief_bonus.value)
+        self.thief_bonus.setRange(0, 255)
+        self.thief_bonus.valueChanged.connect(thief_bonus.set_value)
+        thief_list = self._data.get('cexp_thief_list')
+        self.thief_list = self.create_class_list_box(thief_list)
+        damage_bonus = self._data.get('cexp_damage_bonus')
+        self.damage_bonus = QSpinBox(self)
+        self.damage_bonus.setValue(damage_bonus.value)
+        self.damage_bonus.setRange(0, 255)
+        self.damage_bonus.valueChanged.connect(damage_bonus.set_value)
+        kill_bonus = self._data.get('cexp_kill_bonus')
+        self.kill_bonus = QSpinBox(self)
+        self.kill_bonus.setValue(kill_bonus.value)
+        self.kill_bonus.setRange(0, 255)
+        self.kill_bonus.valueChanged.connect(kill_bonus.set_value)
+        mode_coeff = self._data.get('cexp_mode_coeff')
+        self.mode_coeff = QSpinBox(self)
+        self.mode_coeff.setValue(mode_coeff.value)
+        self.mode_coeff.setRange(1, 255)
+        self.mode_coeff.valueChanged.connect(mode_coeff.set_value)
+        class_bonus_a = self._data.get('cexp_class_bonus_a')
+        self.class_bonus_a = QSpinBox(self)
+        self.class_bonus_a.setValue(class_bonus_a.value)
+        self.class_bonus_a.setRange(0, 255)
+        self.class_bonus_a.valueChanged.connect(class_bonus_a.set_value)
+        class_bonus_a_tier = self._data.get('cexp_class_bonus_a_tier')
+        self.class_bonus_a_tier = QSpinBox(self)
+        self.class_bonus_a_tier.setValue(class_bonus_a_tier.value)
+        self.class_bonus_a_tier.setRange(0, 255)
+        self.class_bonus_a_tier.valueChanged.connect(class_bonus_a_tier.set_value)
+        class_bonus_b = self._data.get('cexp_class_bonus_b')
+        self.class_bonus_b = QSpinBox(self)
+        self.class_bonus_b.setValue(class_bonus_b.value)
+        self.class_bonus_b.setRange(0, 255)
+        self.class_bonus_b.valueChanged.connect(class_bonus_b.set_value)
+        class_bonus_b_tier = self._data.get('cexp_class_bonus_b_tier')
+        self.class_bonus_b_tier = QSpinBox(self)
+        self.class_bonus_b_tier.setValue(class_bonus_b_tier.value)
+        self.class_bonus_b_tier.setRange(0, 255)
+        self.class_bonus_b_tier.valueChanged.connect(class_bonus_b_tier.set_value)
+        class_bonus_b1 = self._data.get('cexp_class_bonus_b1')
+        self.class_bonus_b1 = QSpinBox(self)
+        self.class_bonus_b1.setValue(class_bonus_b1.value)
+        self.class_bonus_b1.setRange(0, 255)
+        self.class_bonus_b1.valueChanged.connect(class_bonus_b1.set_value)
+        class_bonus_b1_list = self._data.get('cexp_class_bonus_b1_list')
+        self.class_bonus_b1_list = self.create_class_list_box(class_bonus_b1_list)
+        class_power_1 = self._data.get('cexp_class_power_1')
+        self.class_power_1 = QSpinBox(self)
+        self.class_power_1.setValue(class_power_1.value)
+        self.class_power_1.setRange(1, 255)
+        self.class_power_1.valueChanged.connect(class_power_1.set_value)
+        class_power_1_tier = self._data.get('cexp_class_power_1_tier')
+        self.class_power_1_tier = QSpinBox(self)
+        self.class_power_1_tier.setValue(class_power_1_tier.value)
+        self.class_power_1_tier.setRange(0, 255)
+        self.class_power_1_tier.valueChanged.connect(class_power_1_tier.set_value)
+        class_power_1_list = self._data.get('cexp_class_power_1_list')
+        self.class_power_1_list = self.create_class_list_box(class_power_1_list)
+        class_power_2 = self._data.get('cexp_class_power_2')
+        self.class_power_2 = QSpinBox(self)
+        self.class_power_2.setValue(class_power_2.value)
+        self.class_power_2.setRange(1, 255)
+        self.class_power_2.valueChanged.connect(class_power_2.set_value)
+        class_power_2_list = self._data.get('cexp_class_power_2_list')
+        self.class_power_2_list = self.create_class_list_box(class_power_2_list)
+        class_power_3 = self._data.get('cexp_class_power_3')
+        self.class_power_3 = QSpinBox(self)
+        self.class_power_3.setValue(class_power_3.value)
+        self.class_power_3.setRange(1, 255)
+        self.class_power_3.valueChanged.connect(class_power_3.set_value)
+        class_power_4 = self._data.get('cexp_class_power_4')
+        self.class_power_4 = QSpinBox(self)
+        self.class_power_4.setValue(class_power_4.value)
+        self.class_power_4.setRange(1, 255)
+        self.class_power_4.valueChanged.connect(class_power_4.set_value)
+        class_power_4_tier = self._data.get('cexp_class_power_4_tier')
+        self.class_power_4_tier = QSpinBox(self)
+        self.class_power_4_tier.setValue(class_power_4_tier.value)
+        self.class_power_4_tier.setRange(0, 255)
+        self.class_power_4_tier.valueChanged.connect(class_power_4_tier.set_value)
+
+        layout = QVBoxLayout()
+        layout.setSpacing(6)
+        # Keeps the rows at their full width inside the scroll area
+        layout.setSizeConstraint(QLayout.SetMinimumSize)
+
+        row11 = QHBoxLayout()
+        label25 = QLabel('Note: Set kill_multiplier = 1 when using this CLASSIC exp formula.', self)
+        row11.addWidget(label25)
+
+        row0 = QHBoxLayout()
+        label0 = QLabel('damage_exp = ( ', self)
+        row0.addWidget(label0)
+        row0.addWidget(self.damage_bonus)
+        label1 = QLabel(' + (enemy_level + enemy_class_bonus_A) - (level + class_bonus_A) ) / class_power', self)
+        row0.addWidget(label1)
+        row0.addStretch(1)
+
+        row1 = QHBoxLayout()
+        label2 = QLabel('kill_exp = ( (enemy_level*enemy_class_power) + enemy_class_bonus_B ) - ( (level*class_power + class_bonus_B) / mode_ coefficient)', self)
+        row1.addWidget(label2)
+        row1.addStretch(1) # left justify
+
+        row2 = QHBoxLayout()
+        label3 = QLabel('total_exp = 1 if no damage, else damage_exp + [kill?]*max(0, ', self)
+        row2.addWidget(label3)
+        row2.addWidget(self.kill_bonus)
+        label4 = QLabel(' + kill_exp + [boss?]*boss_bonus + [thief?]*thief_bonus)', self)
+        row2.addWidget(label4)
+        row2.addStretch(1)
+
+        row3 = QHBoxLayout()
+        label6 = QLabel('class_bonus_A = ', self)
+        row3.addWidget(label6)
+        row3.addWidget(self.class_bonus_a)
+        label7 = QLabel(' if class tier >= ', self)
+        row3.addWidget(label7)
+        row3.addWidget(self.class_bonus_a_tier)
+        label8 = QLabel('else 0', self)
+        row3.addWidget(label8)
+        row3.addStretch(1)
+
+        row4 = QHBoxLayout()
+        label9 = QLabel('class_bonus_B = ', self)
+        row4.addWidget(label9)
+        row4.addWidget(self.class_bonus_b1)
+        label10 = QLabel('if class in ', self)
+        row4.addWidget(label10)
+        row4.addWidget(self.class_bonus_b1_list)
+        label11 = QLabel(', ', self)
+        row4.addWidget(label11)
+        row4.addWidget(self.class_bonus_b)
+        label12 = QLabel('if class tier >= ', self)
+        row4.addWidget(label12)
+        row4.addWidget(self.class_bonus_b_tier)
+        label13 = QLabel(', else 0', self)
+        row4.addWidget(label13)
+        row4.addStretch(1)
+
+        row5 = QHBoxLayout()
+        label14 = QLabel('class_power = ', self)
+        row5.addWidget(label14)
+        row5.addWidget(self.class_power_1)
+        label15 = QLabel('for class in ', self)
+        row5.addWidget(label15)
+        row5.addWidget(self.class_power_1_list)
+        label16 = QLabel('or class tier <= ', self)
+        row5.addWidget(label16)
+        row5.addWidget(self.class_power_1_tier)
+        row5.addStretch(1)
+
+        row6 = QHBoxLayout()
+        label17 = QLabel('                       ', self)
+        row6.addWidget(label17)
+        row6.addWidget(self.class_power_2)
+        label18 = QLabel('for class in ', self)
+        row6.addWidget(label18)
+        row6.addWidget(self.class_power_2_list)
+        row6.addStretch(1)
+
+        row7 = QHBoxLayout()
+        row7.addWidget(QLabel('                       ', self)) 
+        row7.addWidget(self.class_power_4)
+        label19 = QLabel('for class tier >= ', self)
+        row7.addWidget(label19)
+        row7.addWidget(self.class_power_4_tier)
+        row7.addStretch(1)
+
+        row8 = QHBoxLayout()
+        row8.addWidget(QLabel('                       ', self))
+        label20 = QLabel('else ')
+        row8.addWidget(label20)
+        row8.addWidget(self.class_power_3)
+        row8.addStretch(1)
+
+        row9 = QHBoxLayout()
+        label21 = QLabel('mode_coefficient = ', self)
+        row9.addWidget(label21)
+        row9.addWidget(self.mode_coeff)
+        label22 = QLabel(' if kill_exp <= 0, else 1', self)
+        row9.addWidget(label22)
+        row9.addStretch(1)
+
+        row10 = QHBoxLayout()
+        label5 = QLabel('thief_bonus = ', self)
+        row10.addWidget(label5)
+        row10.addWidget(self.thief_bonus)
+        label23 = QLabel(' if class in ', self)
+        row10.addWidget(label23)
+        row10.addWidget(self.thief_list)
+        label24 = QLabel(', else 0')
+        row10.addWidget(label24)
+        row10.addStretch(1)
+
+        layout.addLayout(row11)
+        layout.addLayout(row0)
+        layout.addLayout(row1)
+        layout.addLayout(row2)
+        layout.addLayout(row3)
+        layout.addLayout(row4)
+        layout.addLayout(row5)
+        layout.addLayout(row6)
+        layout.addLayout(row7)
+        layout.addLayout(row8)
+        layout.addLayout(row9)
+        layout.addLayout(row10)
+        
+        # push all horizontal rows up to the top so they don't stretch vertically
+        layout.addStretch(1) 
+
+        classic_exp_frame = QFrame()
+        classic_exp_frame.setLayout(layout)
+        
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setWidget(classic_exp_frame)
+        
+        return scroll_area
+
 
 class DisplayExpResults(QWidget):
     @classmethod
@@ -260,7 +501,7 @@ class DisplayExpResults(QWidget):
     def update_parameters(self, val=None):
         level_diff = self.level2.value() - self.level1.value()
         if self._data.get('exp_formula').value == ExpCalcType.STANDARD.value:
-            exp_gained = ExpCalculator.classical_curve_calculator(level_diff,
+            exp_gained = ExpCalculator.standard_curve_calculator(level_diff,
                                                                   self._data.get('exp_offset').value,
                                                                   self._data.get('exp_curve').value,
                                                                   self._data.get('exp_magnitude').value)
@@ -273,6 +514,8 @@ class DisplayExpResults(QWidget):
                                                                      self._data.get('gexp_intercept').value)
             except:
                 exp_gained = 0
+        else:
+            exp_gained = 0
         display = str(int(exp_gained)) + " (" + str(round(exp_gained, 2)) + ")"
         self.edit_box.setText(display)
 
@@ -383,8 +626,12 @@ class ExperienceWidget(QWidget):
 
         self.display_exp = DisplayExpResults.create(data, self)
         layout.addWidget(self.display_exp, 2, 0, 1, 3)
+        self.parameters_changed(0)
 
     def parameters_changed(self, val):
+        # The classic formula depends on more than the two levels
+        is_classic = self._data.get('exp_formula').value == ExpCalcType.CLASSIC.value
+        self.display_exp.setVisible(not is_classic)
         self.display_exp.update_parameters()
 
 class MiscExperienceWidget(QWidget):

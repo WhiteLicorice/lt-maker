@@ -3873,7 +3873,8 @@ def trigger_script(self: Event, event, unit1=None, unit2=None, flags=None):
 
 def trigger_script_with_args(self: Event, event: str, arg_list: Dict[str, str] = None, flags=None):
     trigger_script = event
-    valid_events = DB.events.get_by_nid_or_name(trigger_script, self.game.level.nid)
+    level_nid = None if self.game.level is None else self.game.level.nid
+    valid_events = DB.events.get_by_nid_or_name(trigger_script, level_nid)
 
     # Process Arg List into local args directory
     local_args = arg_list
