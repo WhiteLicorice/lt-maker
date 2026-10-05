@@ -6,7 +6,7 @@ from app.engine.combat.solver import CombatPhaseSolver
 from app.engine.sound import get_sound_thread
 from app.engine import engine, combat_calcs, gui, action, item_system, skill_system
 from app.engine.health_bar import MapCombatInfo
-from app.engine.animations import MapAnimation
+from app.engine.animations import MapAnimation, SpellAnimation
 from app.engine.game_state import game
 
 from app.events import triggers
@@ -186,6 +186,7 @@ class MapCombat(SimpleCombat):
                     if anim:
                         anim = MapAnimation(anim, brush.pos)
                         self.animations.append(anim)
+                        
                 self.set_state('sound')
 
         elif self.state == 'sound':
@@ -206,8 +207,53 @@ class MapCombat(SimpleCombat):
                 sound_brushes = self.get_from_playback('cast_sound')
                 for brush in sound_brushes:
                     get_sound_thread().play_sfx(brush.sound)
+                self.projectile_brushes = [brush for brush in self.playback if brush.nid in ('spell_cast_anim', 'sequential_anim')] #See if we have any projectiles to fire 
+                if item_system.wait_on_map_anim(self.attacker, self.main_item): #We should let cast anims play before proceeding
+                    self.set_state('cast_anim_wait')
+                elif self.main_item.sequence_item and any([item_system.wait_on_map_anim(self.attacker, item) for item in self.items]): #Handle sequence items
+                    self.set_state('cast_anim_wait')
+                else:
+                    if not self.projectile_brushes:
+                        self.set_state('anim')
+                    else:
+                        self.set_state('projectile_anim')
+                    
+        elif self.state == 'cast_anim_wait':
+            if self._skip or not self.animations:
+                if not self.projectile_brushes:
+                    self.set_state('anim')
+                else:
+                    self.set_state('projectile_anim')
                 
+        elif self.state == 'projectile_anim':
+            #Handle projectile animations.  Looks better here than in start anim since it occurs after the attacker's lunge
+            animation_brushes = [brush for brush in self.projectile_brushes if brush.nid == 'spell_cast_anim'] #Normal projectiles
+            for brush in animation_brushes:
+                anim = RESOURCES.animations.get(brush.anim)
+                if anim:
+                    anim = SpellAnimation(anim, brush.pos, brush.velocity, brush.duration, brush.theta, loop = brush.loop)
+                    self.animations.append(anim)
+            
+            animation_brushes = [brush for brush in self.projectile_brushes if brush.nid == 'sequential_anim'] #Sequence projectiles
+            if animation_brushes:
+                animation_brushes.reverse()
+                self.sequence_anims = animation_brushes
+            else:
+                self.sequence_anims = []
+            self.set_state('projectile_wait')
+                
+        elif self.state == 'projectile_wait':
+            if self._skip:
                 self.set_state('anim')
+            elif self.all_proj_anim_done():
+                if self.sequence_anims:
+                    brush = self.sequence_anims.pop()
+                    anim = RESOURCES.animations.get(brush.anim)
+                    if anim:
+                        anim = SpellAnimation(anim, brush.pos, brush.velocity, brush.duration, brush.theta, loop = brush.loop)
+                        self.animations.append(anim)
+                else:
+                    self.set_state('anim')
 
         elif self.state == 'anim':
             if self._skip or current_time > 83:
@@ -510,3 +556,10 @@ class MapCombat(SimpleCombat):
             hp_bar.draw(surf)
 
         return surf
+        
+    def all_proj_anim_done(self):
+        for anim in self.animations:
+            if isinstance(anim, SpellAnimation) and not anim.is_done():
+                return False
+        return True
+

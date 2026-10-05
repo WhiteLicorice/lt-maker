@@ -5,7 +5,19 @@ from app.data.database.components import ComponentType
 from app.engine.combat import playback as pb
 from app.engine import engine, image_mods, item_funcs, skill_system
 
+from app.utilities import utils
+from app.constants import TILEWIDTH, TILEHEIGHT
+
+import math
+
 import logging
+
+def get_target_position(target, target_pos, mode):
+    #Return the position of the tile we are targeting.  Splash needs a special case, because for splash attacks target_pos will always give the main target's position.
+    if mode == 'splash' and target:
+        return target.position
+    else:
+        return target_pos       
 
 class NeverUseBattleAnimation(ItemComponent):
     nid = 'never_use_battle_animation'
@@ -84,11 +96,109 @@ class MapTargetCastAnim(ItemComponent):
 
     def on_hit(self, actions, playback, unit, item, target, item2, target_pos, mode, attack_info):
         if target:
-            playback.append(pb.TargetCastAnim(self.value, target.position))
+            playback.append(pb.TargetCastAnim(self.value, get_target_position(target, target_pos, mode)))
 
     def on_miss(self, actions, playback, unit, item, target, item2, target_pos, mode, attack_info):
         if target:
-            playback.append(pb.TargetCastAnim(self.value, target.position))
+            playback.append(pb.TargetCastAnim(self.value, get_target_position(target, target_pos, mode)))
+            
+class ProjectileSpellAnim(ItemComponent):
+    nid = 'projectile_spell_anim'
+    desc = """Adds an animation which moves from the user to the target when the item is used. Relevant in map combat situations.
+    anim: The animation to be used.
+    speed: How quickly the animation will move (Must be a positive integer).
+    loop: Whether the animation should loop while moving.
+    rotate: Whether the animation should rotate to face the target.  If used, make sure your animation png is initially facing right and centered on the rotation point.
+    """
+    tag = ItemTags.AESTHETIC
+
+    expose = ComponentType.NewMultipleOptions
+    options = {
+        'anim': ComponentType.String,
+        'speed': ComponentType.Int,
+        'loop': ComponentType.Bool,
+        'rotate': ComponentType.Bool
+    }
+
+    def __init__(self, value=None):
+        self.value = {
+            'anim': None,
+            'speed': 1,
+            'loop': False,
+            'rotate': False
+        }
+        if value:
+            self.value.update(value)
+            
+    def _create_projectile(self, unit_pos, target_pos):
+        u_pos = ((unit_pos[0] * TILEWIDTH + TILEWIDTH // 2), (unit_pos[1] * TILEHEIGHT + TILEHEIGHT // 2)) #Centered unit position in pixels
+        t_pos = (target_pos[0] * TILEWIDTH + TILEWIDTH // 2, target_pos[1] * TILEHEIGHT + TILEHEIGHT // 2) #Centered target pos
+        delta = utils.tuple_sub(t_pos, u_pos)
+        distance = utils.magnitude(delta)
+        direction = utils.normalize(delta)
+        speed = max(self.value['speed'], 1) #Speed should be a positive integer.
+        theta = math.atan2(-direction[1], direction[0]) if self.value['rotate'] else 0
+        vel = utils.tmult(direction, speed)
+        anim = self._generate_anim(self.value['anim'], unit_pos, vel, distance / speed, self.value['loop'], theta)
+        return anim
+        
+    def _generate_anim(self, val, pos, vel, dur, loop, rot):
+        return pb.SpellCastAnim(val, pos, vel, dur, loop, rot)
+        
+    def on_hit(self, actions, playback, unit, item, target, item2, target_pos, mode, attack_info):
+        if unit.position != get_target_position(target, target_pos, mode):
+            playback.append(self._create_projectile(unit.position, get_target_position(target, target_pos, mode)))
+
+    def on_miss(self, actions, playback, unit, item, target, item2, target_pos, mode, attack_info):
+        if unit.position != get_target_position(target, target_pos, mode):
+            playback.append(self._create_projectile(unit.position, get_target_position(target, target_pos, mode)))
+        
+class SequentialProjectileAnim(ProjectileSpellAnim):
+    nid = 'sequential_projectile_anim'
+    desc = """Adds an animation which moves between targets in order when the item is used. Relevant in map combat situations.
+    Intended for scenarios in which there is a clearly designated order to targets, such as multi-target items.
+    anim: The animation to be used.
+    speed: How quickly the animation will move (Must be a positive integer).
+    loop: Whether the animation should loop while moving.
+    rotate: Whether the animation should rotate to face the target.  If used, make sure your animation png is initially facing right and centered on the rotation point.
+    """
+    tag = ItemTags.AESTHETIC
+    
+    def __init__(self, value = None):
+        self.prev_targ_pos = None
+        self.current_attack = (0,0) #This records which attack/sub-attack we're currently on.  Later, if it differs from what is indicated in attack info, we'll reset prev_targ
+        super().__init__(value)
+        
+    def _generate_anim(self, val, pos, vel, dur, loop, rot):
+        return pb.SequentialAnim(val, pos, vel, dur, loop, rot)
+        
+    def _handle_sequence_anim(self, unit, item, target_pos, playback, attack_info):
+        if self.prev_targ_pos is None or self.current_attack != attack_info: #First target, animation goes from attacker to target
+            self.current_attack = attack_info
+            if target_pos != unit.position: #In case unit is also the first target, don't spawn a projectile that has nowhere to go
+                playback.append(self._create_projectile(unit.position, target_pos))
+        else:
+            if target_pos != self.prev_targ_pos: #In case we select same target multiple times consecutively, don't spawn a projectile that has nowhere to go 
+                playback.append(self._create_projectile(self.prev_targ_pos, target_pos))
+        self.prev_targ_pos = target_pos
+                
+    def on_hit(self, actions, playback, unit, item, target, item2, target_pos, mode, attack_info):
+        self._handle_sequence_anim(unit, item, get_target_position(target, target_pos, mode), playback, attack_info)
+
+    def on_miss(self, actions, playback, unit, item, target, item2, target_pos, mode, attack_info):
+        self._handle_sequence_anim(unit, item, get_target_position(target, target_pos, mode), playback, attack_info)
+        
+    def end_combat(self, playback, unit, item, target, item2, mode):
+        self.prev_targ_pos = None
+        self.current_attack = (0, 0)
+            
+class WaitOnMapAnim(ItemComponent):
+    nid = 'wait_on_map_anim'
+    desc = "Wait for all map cast animations to complete before proceeding with map combat."
+    tag = ItemTags.AESTHETIC
+
+    def wait_on_map_anim(self, unit, item):
+        return True
 
 class MapCastPose(ItemComponent):
     nid = 'map_cast_pose'
