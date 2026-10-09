@@ -17,6 +17,7 @@ from app.data.database.database import DB
 from app.engine import (action, background, dialog, engine, evaluate,
                         image_mods, item_funcs)
 from app.engine.game_state import GameState
+from app.engine.input_manager import get_input_manager
 from app.engine.movement import movement_funcs
 from app.engine.objects.overworld import OverworldNodeObject
 from app.engine.objects.unit import UnitObject
@@ -117,6 +118,9 @@ class Event():
 
         # For map animations
         self.animations = []
+
+        # Whether this event has a rumble going that only stops when told to
+        self.endless_rumble = False
 
         # a way of passing key input events down to individual events
         # map between name of listener, and listener function
@@ -329,6 +333,9 @@ class Event():
         return surf
 
     def end(self):
+        if self.endless_rumble:
+            get_input_manager().stop_rumble()
+            self.endless_rumble = False
         self.state = 'almost_complete'
 
     def process(self):

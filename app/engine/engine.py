@@ -83,6 +83,8 @@ def remove_display():
 
 def terminate(crash=False):
     on_end(crash)
+    # A rumble with no duration keeps going after the game closes
+    stop_rumble()
     if pygame.mixer.get_init():
         pygame.mixer.music.stop()
         pygame.mixer.quit()
@@ -327,6 +329,11 @@ def get_gamepads() -> tuple[list[controller.Controller], list[pygame.joystick.Jo
             joystick.init()
             joysticks.append(joystick)
     return controllers, joysticks
+
+def stop_rumble():
+    controllers, joysticks = get_gamepads()
+    for pad in controllers + joysticks:
+        pad.stop_rumble()
 
 def get_mouse_pos():
     return pygame.mouse.get_pos()

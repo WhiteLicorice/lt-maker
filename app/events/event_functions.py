@@ -639,9 +639,11 @@ def rumble(self: Event, duration: int, low_frequency: float = None, high_frequen
     low_frequency = 0.5 if low_frequency is None else low_frequency
     high_frequency = 0.5 if high_frequency is None else high_frequency
     get_input_manager().rumble(low_frequency, high_frequency, duration)
+    self.endless_rumble = duration == 0
 
 def rumble_end(self: Event, flags=None):
     get_input_manager().stop_rumble()
+    self.endless_rumble = False
 
 def game_var(self: Event, nid, expression, flags=None):
     val = self._eval_expr(expression, 'from_python' in flags)

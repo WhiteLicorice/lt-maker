@@ -862,7 +862,8 @@ class Rumble(EventCommand):
 
     desc =         """
 Rumbles the player's controller for *Duration* milliseconds.
-Set *Duration* to 0 to make the rumble last until a `rumble_end` command.
+Set *Duration* to 0 to make the rumble last until a `rumble_end` command,
+or until this event ends.
 
 *LowFrequency* sets the strength of the heavy, low-frequency motor and
 *HighFrequency* the light, high-frequency motor, each from 0 to 1. Both default to 0.5.

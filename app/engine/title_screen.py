@@ -14,6 +14,7 @@ from app.engine.background import PanoramaBackground
 from app.engine.fluid_scroll import FluidScroll
 from app.engine.fonts import FONT
 from app.engine.game_state import game
+from app.engine.input_manager import get_input_manager
 from app.engine.objects.difficulty_mode import DifficultyModeObject
 from app.engine.sound import get_sound_thread
 from app.engine.sprites import SPRITES
@@ -35,6 +36,9 @@ class TitleStartState(State):
     show_map = False
 
     def start(self):
+        # A rumble left running by an event would carry over from the game just left
+        get_input_manager().stop_rumble()
+
         logo = SPRITES.get('logo')
         imgs = RESOURCES.panoramas.get('title_background')
         self.bg = PanoramaBackground(imgs) if imgs else None
