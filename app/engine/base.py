@@ -967,9 +967,9 @@ class LoreDisplay():
                 unit = game.get_unit(self.lore.nid)
             elif self.lore.nid in DB.units:
                 unit = DB.units.get(self.lore.nid)
-            if unit:
-                portrait = icons.get_portrait_with_size(unit, width, height).convert_alpha()
-                portrait = image_mods.make_translucent(portrait, 0.5)
+            portrait = icons.get_portrait_with_size(unit, width, height) if unit else None
+            if portrait:
+                portrait = image_mods.make_translucent(portrait.convert_alpha(), 0.5)
                 image.blit(portrait, (utils.tuple_sub(image.get_size(), portrait.get_size(), bottomright_pad)))
 
             render_text(image, ['text'], [self.lore.title], ['blue'], (self.width // 2, 4), HAlignment.CENTER)

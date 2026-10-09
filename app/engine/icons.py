@@ -183,9 +183,11 @@ def get_portrait_from_nid(portrait_nid: str) -> Tuple[Optional[engine.Surface], 
         offset = (0, 0)
     return image, offset
 
-def get_portrait_with_size(unit: unit.UnitObject | units.UnitPrefab, width: int, height: int) -> engine.Surface:
+def get_portrait_with_size(unit: unit.UnitObject | units.UnitPrefab, width: int, height: int) -> Optional[engine.Surface]:
     # Sub-surface out the best portion of the portrait given the size
     image, offset = get_portrait(unit)
+    if not image:
+        return None
     x_offset = max(min(offset[0] + (min( INFO_PORTRAIT_WIDTH,  image.get_width()) -  width)//2,
                         image.get_width() -  width), 0)
     y_offset = max(min(offset[1] + (min(INFO_PORTRAIT_HEIGHT, image.get_height()) - height)//2,
