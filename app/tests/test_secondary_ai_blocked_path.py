@@ -25,7 +25,7 @@ class SecondaryAIBlockedPathTests(unittest.TestCase):
                 grid.append(Node(x, y, (x, y) not in walls, 1))
         return grid
 
-    def find_position(self, walls, enemy_positions, movement=5):
+    def find_position(self, walls, enemy_positions, movement=5, pass_through=False):
         """
         Returns where the AI at START decides to move to in order to reach GOAL
         """
@@ -53,7 +53,7 @@ class SecondaryAIBlockedPathTests(unittest.TestCase):
         ai.reset()
 
         with patch.object(ai_controller, 'game', fake_game), \
-                patch.object(ai_controller.skill_system, 'pass_through', return_value=False):
+                patch.object(ai_controller.skill_system, 'pass_through', return_value=pass_through):
             for _ in range(10):
                 done, position = ai.run()
                 if done:
@@ -80,6 +80,15 @@ class SecondaryAIBlockedPathTests(unittest.TestCase):
 
     def test_enemy_on_the_goal_is_walked_up_to(self):
         self.assertEqual(self.find_position(self.CORRIDOR, {GOAL}), (3, 1))
+
+    def test_pass_through_walks_through_an_enemy(self):
+        self.assertEqual(self.find_position(self.CORRIDOR, {(2, 1)}, pass_through=True), GOAL)
+
+    def test_pass_through_cannot_stop_on_an_enemy(self):
+        self.assertEqual(self.find_position(self.CORRIDOR, {(3, 1)}, movement=3, pass_through=True), (2, 1))
+
+    def test_pass_through_walks_up_to_an_enemy_on_the_goal(self):
+        self.assertEqual(self.find_position(self.CORRIDOR, {(2, 1), GOAL}, pass_through=True), (3, 1))
 
     def test_way_around_the_blocker_is_preferred(self):
         # 6 moves around the enemy to the goal, rather than stopping in front of it
