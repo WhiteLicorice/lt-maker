@@ -119,7 +119,7 @@ class EventCollection(QWidget):
         # Reopen on the event that was open when the editor last closed
         self.last_event: Optional[EventPrefab] = None
         last = self.settings.component_controller.get_property(self.__class__.__name__, 'last_event')
-        if last:
+        if last and self.settings.get_preference(Preference.EVENT_REOPEN_LAST):
             project, event_nid, level_filter = last
             if project == self.settings.get_current_project():
                 self.last_event = DB.events.get_from_nid(event_nid)

@@ -115,6 +115,18 @@ class EventEditorReopenTests(unittest.TestCase):
         self.assertIs(tab.right_frame.current, self.other_event)
         self.assertEqual(self.level_filter(tab), 'All')
 
+    def test_last_event_is_ignored_when_preference_is_off(self):
+        from app.editor.settings.preference_definitions import Preference
+        tab = self.open_editor()
+        tab.left_frame.level_filter_box.edit.setValue(self.other_event.level_nid)
+        self.select(tab, self.other_event)
+        self.close_editor(tab)
+
+        self.settings.set_preference(Preference.EVENT_REOPEN_LAST, False)
+        tab = self.open_editor()
+        self.assertEqual(self.level_filter(tab), self.selected_level)
+        self.assertEqual(tab.right_frame.current.level_nid, self.selected_level)
+
     def test_last_event_from_another_project_is_ignored(self):
         tab = self.open_editor()
         tab.left_frame.level_filter_box.edit.setValue('All')

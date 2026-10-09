@@ -114,6 +114,18 @@ class Preference(Enum):
         default_value=Qt.Key_Tab
     )
 
+    # Event Editor section
+    EVENT_REOPEN_LAST = PreferenceDefinition(
+        setting_name="event_reopen_last",
+        label="Reopen Last Opened Event",
+        pref_type=PreferenceType.BOOLEAN,
+        category=PreferenceCategory.EDITOR,
+        section="Event Editor",
+        default_value=False,
+        tooltip="The event editor opens on the event that was open when it last closed, "
+                "rather than on the first event of the selected chapter."
+    )
+
     # Save Settings section
     AUTOSAVE_TIME = PreferenceDefinition(
         setting_name="autosave_time",
