@@ -63,6 +63,9 @@ class EventEditorReopenTests(unittest.TestCase):
 
         self.settings = MainSettingsController(TEST_COMPANY, TEST_PRODUCT)
         self.settings.set_current_project(PROJECT)
+        # Off by default
+        from app.editor.settings.preference_definitions import Preference
+        self.settings.set_preference(Preference.EVENT_REOPEN_LAST, True)
 
     def open_editor(self):
         from PyQt5.QtWidgets import QWidget
