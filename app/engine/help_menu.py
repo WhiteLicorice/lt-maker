@@ -22,7 +22,6 @@ if TYPE_CHECKING:
 MAX_TEXT_WIDTH = WINWIDTH - 40
 
 class HelpDialog():
-    help_logo = SPRITES.get('help_logo')
     font: NID = 'convo'
 
     def __init__(self, desc: str = '', name: str = ''):
@@ -140,7 +139,7 @@ class HelpDialog():
         # Draw help logo
         h_surf = engine.copy_surface(self.h_surf)
         h_surf.blit(help_surf, (0, 3))
-        h_surf.blit(self.help_logo, (9, 0))
+        h_surf.blit(SPRITES.get('help_logo'), (9, 0))
 
         if self.transition_in:
             h_surf = self.handle_transition_in(time, h_surf)

@@ -239,17 +239,14 @@ class CombatHealthBar(HealthBar):
             surf.blit(double_hp_bars, (left + 5, top - 4))
 
 class MapHealthBar(HealthBar):
-    health_outline = SPRITES.get('map_health_outline')
-    health_bar = SPRITES.get('map_health_bar')
-
     def draw(self, surf, left, top):
         total = max(1, self.get_max_val())
         fraction = utils.clamp(self.displayed_val / total, 0, 1)
         index_pixel = int(12 * fraction) + 1
 
-        surf.blit(self.health_outline, (left, top + 13))
+        surf.blit(SPRITES.get('map_health_outline'), (left, top + 13))
         if fraction > 0:
-            bar = engine.subsurface(self.health_bar, (0, 0, index_pixel, 1))
+            bar = engine.subsurface(SPRITES.get('map_health_bar'), (0, 0, index_pixel, 1))
             surf.blit(bar, (left + 1, top + 14))
 
         return surf
@@ -267,7 +264,6 @@ class MapBars(MultiGenericBar):
 
 class MapCombatBar(MultiGenericBar):
     display_numbers = True
-    health_bar = SPRITES.get('health_bar')
     prefix = 'map_bar_'
     color = 'blue'
     surfs = []

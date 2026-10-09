@@ -243,7 +243,6 @@ class Pennant():
     """
 
     font = 'convo'
-    bg_surf = SPRITES.get('pennant_bg')
 
     def __init__(self, text):
         self.change_text(text)
@@ -268,12 +267,12 @@ class Pennant():
 
         # If cursor is all the way on the bottom of the map
         if draw_on_top:
-            surf.blit(engine.flip_vert(self.bg_surf), (0, -self.sprite_offset))
+            surf.blit(engine.flip_vert(SPRITES.get('pennant_bg')), (0, -self.sprite_offset))
             while counter < self.width:
                 render_text(surf, [self.font], [self.text], ['white'], (counter, -self.sprite_offset))
                 counter += self.text_width + 24
         else:
-            surf.blit(self.bg_surf, (0, WINHEIGHT - self.height + self.sprite_offset))
+            surf.blit(SPRITES.get('pennant_bg'), (0, WINHEIGHT - self.height + self.sprite_offset))
             while counter < self.width:
                 render_text(surf, [self.font], [self.text], ['white'], (counter, WINHEIGHT - self.height + self.sprite_offset))
                 counter += self.text_width + 24

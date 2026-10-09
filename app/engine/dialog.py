@@ -982,7 +982,7 @@ class Ending:
 
     solo_flag = True
     wait_time = 5000
-    background = SPRITES.get("endings_display")
+    background_sprite = "endings_display"
 
     def __init__(self, portrait, title, text, unit, wait_for_input: bool = False):
         self.portrait = portrait
@@ -1014,7 +1014,7 @@ class Ending:
     def make_background(self):
         size = WINWIDTH, WINHEIGHT
         self.bg = engine.create_surface(size, transparent=True)
-        self.bg.blit(self.background, (0, 0))
+        self.bg.blit(SPRITES.get(self.background_sprite), (0, 0))
         self.bg.blit(self.portrait, (WINWIDTH - self.portrait.get_width() - 8,
                                     WINHEIGHT - self.portrait.get_height() - 23))
 
@@ -1092,7 +1092,7 @@ class PairedEnding(Ending):
     Contains a dialog
     """
 
-    background = SPRITES.get("paired_endings_display")
+    background_sprite = "paired_endings_display"
 
     def __init__(self, left_portrait, right_portrait, left_title, right_title, text,
                  left_unit, right_unit, wait_for_input: bool = False):
@@ -1117,7 +1117,7 @@ class PairedEnding(Ending):
     def make_background(self):
         size = WINWIDTH, WINHEIGHT
         self.bg = engine.create_surface(size, transparent=True)
-        self.bg.blit(self.background, (0, 0))
+        self.bg.blit(SPRITES.get(self.background_sprite), (0, 0))
         self.bg.blit(self.left_portrait, (8, WINHEIGHT - self.left_portrait.get_height() - 31))
         self.bg.blit(self.right_portrait, (WINWIDTH - self.right_portrait.get_width() - 8,
                                           WINHEIGHT - self.right_portrait.get_height() - 31))
