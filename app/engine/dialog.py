@@ -274,6 +274,8 @@ class Dialog:
     def determine_width(self):
         width = 0
         current_line = ""
+        # How far into current_line each wait arrives, since that is where the waiting cursor is drawn
+        wait_offsets: List[int] = []
         preceded_by_wait: bool = False
         for command in self.text_commands:
             if command in ("{br}", "{break}", "{clear}", "{sub_break}"):
@@ -285,11 +287,13 @@ class Dialog:
                 current_width = text_funcs.get_max_width(self.font_type,
                                                          split_lines)
                 width = max(width, current_width)
-                width = self._reserve_cursor_width(current_line, width)
+                width = self._reserve_cursor_width(current_line, wait_offsets, width)
                 current_line = ""
+                wait_offsets = []
                 preceded_by_wait = False
             elif command in ("{w}", "{wait}"):
                 preceded_by_wait = True
+                wait_offsets.append(len(current_line))
             elif command.startswith("{"):
                 pass
             else:
@@ -301,32 +305,49 @@ class Dialog:
                 split_lines = self.get_lines_from_block(current_line, 1)
             current_width = text_funcs.get_max_width(self.font_type, split_lines)
             width = max(width, current_width)
-            width = self._reserve_cursor_width(current_line, width)
+            width = self._reserve_cursor_width(current_line, wait_offsets, width)
         return width
 
-    def _reserve_cursor_width(self, block: str, width: int) -> int:
+    def _reserve_cursor_width(self, block: str, wait_offsets: List[int], width: int) -> int:
         """
-        Grow *width* until the waiting cursor fits beside the last line of *block*.
+        Grow *width* until the waiting cursor fits beside the text at every wait in *block*.
+        *wait_offsets* are how many characters of *block* come before each wait.
 
         The width above comes from a balanced split, but the box wraps greedily as
-        it types, so the line the cursor ends up on is whichever one `line_wrap`
-        finishes with -- ask it rather than assume the two agree. Without this the
-        box is built to a width the typing wrap then refuses to use, and the last
-        word drops to a line of its own with the rest of the box left empty.
+        it types, so the line a cursor ends up on is whichever one `line_wrap`
+        puts its word on -- ask it rather than assume the two agree. Without this the
+        box is built to a width the typing wrap then refuses to use, and the word
+        before a wait drops to the next line with the rest of the box left empty.
         """
-        if not self.draw_cursor_flag or width <= 0 or not block.strip():
+        if not self.draw_cursor_flag or width <= 0:
+            return width
+        words_before_waits = [len(text_funcs.line_chunk(block[:offset])) for offset in wait_offsets]
+        words_before_waits = [num_words for num_words in words_before_waits if num_words]
+        if not words_before_waits:
             return width
         allowance = self.cursor_gap + self.cursor.get_width()
         ceiling = WINWIDTH - 32  # determine_size clamps to this anyway
-        # Widening can pull a word back up, lengthening the last line again, so
+        # Widening can pull a word back up, lengthening a line again, so
         # settle it rather than growing once
         for _ in range(4):
             lines = text_funcs.line_wrap(self.font_type, block, width)
-            needed = text_funcs.get_max_width(self.font_type, lines[-1:]) + allowance
+            needed = max(self._width_before_wait(lines, num_words) for num_words in words_before_waits) + allowance
             if needed <= width or width >= ceiling:
                 break
             width = min(needed, ceiling)
         return width
+
+    def _width_before_wait(self, lines: List[str], num_words: int) -> int:
+        """
+        Width of the text sharing a line with the waiting cursor, for the wait
+        that arrives *num_words* words into the wrapped *lines*
+        """
+        for line in lines:
+            words = text_funcs.line_chunk(line)
+            if num_words <= len(words):
+                return text_funcs.get_max_width(self.font_type, [' '.join(words[:num_words])])
+            num_words -= len(words)
+        return 0
 
     def determine_height(self):
         self.text_height = self.font.height * self.num_lines

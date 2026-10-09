@@ -58,6 +58,20 @@ class DialogCursorWrapTests(EngineTestCase):
                 self.assertEqual(len(widths), len(bare))
                 self.assertLessEqual(self._cursor_right_edge(box, widths[-1]), box.text_width)
 
+    def test_autosized_box_is_built_wide_enough_for_a_mid_text_cursor(self):
+        '''
+        Silvio: an autosized box reserved room for the cursor at the end of the text
+        but not at a wait in the middle of it, so the word before that wait dropped
+        to the next line and pushed the rest of the text onto a third
+        '''
+        text = "I shall do more than that!{w} Prepare yourself!"
+        box = self._process(text, autosize=True)
+        widths = self._line_widths(box)
+        bare = self._line_widths(self._process(text, autosize=True, draw_cursor=False))
+        self.assertEqual(widths, bare)
+        for width in widths:
+            self.assertLessEqual(self._cursor_right_edge(box, width), box.text_width)
+
     def test_no_room_reserved_without_cursor(self):
         self.assertEqual(len(self._line_widths(self._process(FULL_LINE, draw_cursor=False))), 1)
         self.assertEqual(len(self._line_widths(self._process(FULL_LINE + "{no_wait}"))), 1)
