@@ -84,6 +84,8 @@ def _init_display():
 _init_display()
 sprites.load_images()
 StateMachine().load_states()
+# One of the modules that needs the display to be imported
+from app.engine.phase import PhaseIn  # noqa: E402
 
 class EngineTestCase(unittest.TestCase):
     '''
@@ -155,9 +157,15 @@ class EngineHarness():
         # checks get_true_time to spread its thinking across frames
         self._true_time_patch = patch.object(engine, 'get_true_time', engine.get_time)
         self._true_time_patch.start()
+        # A phase starts as it does in the game, but its banner is over at once.
+        # The banner plays for 87 frames at every change of phase, and drawing it
+        # was a third of the time the tests that play a level took
+        self._phase_banner_patch = patch.object(PhaseIn, 'update', return_value=True)
+        self._phase_banner_patch.start()
 
     def close(self):
         self._true_time_patch.stop()
+        self._phase_banner_patch.stop()
 
     @property
     def game(self) -> GameState:
@@ -294,6 +302,12 @@ class EngineHarness():
         self.run_until_state('combat_targeting')
         self.press('SELECT')
         self.run_until_state('free', max_frames)
+
+    def end_turn(self):
+        '''From the free state, ends the player's turn as End in the option menu does'''
+        self.game.state.change('turn_change')
+        self.game.state.change('status_endstep')
+        self.game.state.change('ai')
 
     def run_until_player_turn(self, turn: int, max_frames: int = 6000):
         '''Runs through the other phases until the player can act on turn'''
