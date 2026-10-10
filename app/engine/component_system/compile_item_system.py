@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Dict
-from app.engine.codegen.codegen_utils import get_codegen_header
+from app.engine.codegen.codegen_utils import GeneratedSource, get_codegen_header
 from app.engine.component_system.utils import HookInfo, ARG_TYPE_MAP, ResolvePolicy
 
 ITEM_HOOKS: Dict[str, HookInfo] = {
@@ -164,7 +164,7 @@ def {hook_name}({func_signature}):
 def compile_item_system():
     import os
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    compiled_item_system = open(os.path.join(dir_path, '..', 'item_system.py'), 'w')
+    compiled_item_system = GeneratedSource(os.path.join(dir_path, '..', 'item_system.py'))
     item_system_base = open(os.path.join(dir_path, 'item_system_base.py'), 'r')
 
     # write warning msg

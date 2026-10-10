@@ -1,6 +1,6 @@
 from typing import Type
 
-from app.engine.codegen.codegen_utils import get_codegen_header
+from app.engine.codegen.codegen_utils import GeneratedSource, get_codegen_header
 from app.events.event_commands import EventCommand, get_all_event_commands
 from app.events.event_version import EventVersion
 
@@ -43,7 +43,7 @@ def {command_name}({command_params}{command_optional_params}) -> event_commands.
 def generate_event_command_python_wrappers():
     import os
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    generated_event_wrappers = open(os.path.join(dir_path, 'python_event_command_wrappers.py'), 'w')
+    generated_event_wrappers = GeneratedSource(os.path.join(dir_path, 'python_event_command_wrappers.py'))
 
     generated_event_wrappers.writelines(get_codegen_header())
 
