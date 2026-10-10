@@ -24,7 +24,7 @@ class BaseProjectIntegrityTests(unittest.TestCase):
         warnings = checker.validate_for_warnings()
         errors = checker.validate_for_errors()
         warnings = [str(warning) for warning in warnings]
-        errors = [str(warning) for warning in warnings]
+        errors = [str(error) for error in errors]
         self.assertTrue(len(warnings) == 0, str(warnings))
         self.assertTrue(len(errors) == 0, str(errors))
 
@@ -35,6 +35,6 @@ class BaseProjectIntegrityTests(unittest.TestCase):
         warnings = checker.validate_for_warnings()
         errors = checker.validate_for_errors()
         warnings = [str(warning) for warning in warnings]
-        errors = [str(warning) for warning in warnings]
+        errors = [str(error) for error in errors]
         self.assertTrue(len(warnings) == 0, str(warnings))
         self.assertTrue(len(errors) == 0, str(errors))
