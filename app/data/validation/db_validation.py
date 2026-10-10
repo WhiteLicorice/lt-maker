@@ -1,7 +1,6 @@
 from __future__ import annotations
-from ast import Tuple
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from app.data.database.components import Component, ComponentType
 from app.data.database.database import Database
@@ -45,7 +44,7 @@ class DBChecker():
 
         tilemap_prefab = self.resources.tilemaps.get(level.tilemap)
         if unit.starting_position and tilemap_prefab and not tilemap_prefab.check_bounds(unit.starting_position):
-            res.errors.append(u_err.msg("Starting Position %s is out of bounds" % unit.starting_position))
+            res.errors.append(u_err.msg("Starting Position %s is out of bounds" % (unit.starting_position,)))
 
         if travelers.get(unit.nid):
             traveler = travelers.get(unit.nid)
@@ -132,8 +131,8 @@ class DBChecker():
                 if container == ComponentType.List:
                     # list of nids
                     types_and_values = [(value_type, value) for value in cval]
-                elif container in (ComponentType.Dict, ComponentType.FloatDict):
-                    # see elsewhere for usages: always dict of 'nid: int'
+                elif container in (ComponentType.Dict, ComponentType.FloatDict, ComponentType.StringDict):
+                    # see elsewhere for usages: always dict of 'nid: value'
                     types_and_values = [(value_type, key) for key, _ in cval]
                 elif container == ComponentType.MultipleChoice:
                     # short-circuit. we don't use DB validation for this
@@ -152,8 +151,8 @@ class DBChecker():
             errors: List[ltdb.Error] = []
             warnings: List[ltdb.Warning] = []
             if not component.expose:
-                return ValidationResult()
-            if component.expose == ComponentType.NewMultipleOptions:
+                pass  # holds no value to check
+            elif component.expose == ComponentType.NewMultipleOptions:
                 for option in component.options.keys():
                     errors += _val_comp_t(component.options[option], component.value[option], c_err)
             else:
