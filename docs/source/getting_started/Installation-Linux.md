@@ -94,7 +94,7 @@ sudo apt-get install python3-pyqt5
 
 ## Launching the engine/editor
 
-Open a terminal window inside of the `lt-maker` folder. Here, type `python3 run_engine.py`. The engine main screen should pop up and you should be able to play the Lion Throne.
+Open a terminal window inside of the `lt-maker` folder. Here, type `python3 run_engine.py`. The engine main screen should pop up and you should be able to play the prologue and first five chapters of Sacred Stones.
 
 ![TitleScreen](images/TitleScreen.png)
 
