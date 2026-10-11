@@ -921,6 +921,7 @@ class UIView():
     def draw_spell_info(self, surf, attacker, spell, defender):
         # Turns on appropriate combat conditionals to get accurate stats
         skill_system.test_on([], attacker, spell, defender, resolve_weapon(defender), 'attack')
+        skill_system.test_on([], defender, resolve_weapon(defender), attacker, spell, 'defense')
 
         if not self.spell_info_disp:
             self.spell_info_disp = self.create_spell_info(attacker, spell, defender)
@@ -950,6 +951,7 @@ class UIView():
             surf.blit(icon, (topleft[0] + 8, topleft[1] + self.spell_info_disp.get_height() - 20))
 
         # Turns off combat conditionals
+        skill_system.test_off([], defender, resolve_weapon(defender), attacker, spell, 'defense')
         skill_system.test_off([], attacker, spell, defender, resolve_weapon(defender), 'attack')
 
         return surf
