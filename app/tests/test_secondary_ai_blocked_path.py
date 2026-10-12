@@ -97,5 +97,75 @@ class SecondaryAIBlockedPathTests(unittest.TestCase):
     def test_terrain_in_the_way_still_means_no_path(self):
         self.assertIsNone(self.find_position(self.CORRIDOR | {(2, 1)}, set()))
 
+class SecondaryAIWholeMapTests(unittest.TestCase):
+    """
+    A behaviour that looks at the whole map (view range -4) walks toward its target
+    however far off it is. Past 99 tiles, or 99 movement points of path, it used to
+    find no target and stand still.
+    """
+    MOVEMENT = 5
+
+    def find_position(self, length, tile_cost=1, view_range=-4):
+        """
+        Returns where the AI at the left end of a corridor `length` tiles long
+        decides to move to in order to reach its right end
+        """
+        start, goal = (0, 0), (length - 1, 0)
+        grid = BoundedGrid((length, 1), (0, 0, length - 1, 0))
+        for x in range(length):
+            grid.append(Node(x, 0, True, tile_cost))
+
+        unit = MagicMock()
+        unit.position = start
+        unit.team = 'enemy'
+        unit.ai_group = None
+        unit.movement_left = self.MOVEMENT
+        unit.get_movement.return_value = self.MOVEMENT
+
+        fake_game = SimpleNamespace(units=[unit])
+        fake_game.board = SimpleNamespace(
+            can_move_through=lambda team, pos: True,
+            get_unit=lambda pos: None)
+        fake_game.path_system = PathSystem(fake_game)
+        fake_game.ai_group_active = lambda ai_group: False
+
+        ai = ai_controller.SecondaryAI.__new__(ai_controller.SecondaryAI)
+        ai.unit = unit
+        ai.behaviour = SimpleNamespace(action='Move_to', target='Position', view_range=view_range)
+        # As SecondaryAI.__init__ does: the whole map is looked at only after two moves' worth is
+        ai.view_range = -3 if view_range == -4 else view_range
+        ai.widen_flag = False
+        ai.single_move = self.MOVEMENT
+        ai.double_move = self.MOVEMENT * 2
+        ai.all_targets = [goal]
+        ai.grid = grid
+        ai.pathfinder = pathfinding.AStar(start, None, ai.grid)
+        ai.reset()
+
+        with patch.object(ai_controller, 'game', fake_game),                 patch.object(ai_controller.skill_system, 'pass_through', return_value=False):
+            for _ in range(10):
+                done, position = ai.run()
+                if done:
+                    return position
+        self.fail("AI never finished thinking")
+
+    def test_a_target_within_two_moves_is_walked_toward(self):
+        self.assertEqual(self.find_position(length=9), (5, 0))
+
+    def test_a_target_more_than_99_tiles_off_is_walked_toward(self):
+        self.assertEqual(self.find_position(length=300), (5, 0))
+
+    def test_a_path_costing_more_than_99_is_walked(self):
+        # 39 tiles of 5 movement each
+        self.assertEqual(self.find_position(length=40, tile_cost=5), (1, 0))
+
+    def test_a_view_range_of_two_moves_still_ignores_what_is_farther(self):
+        self.assertIsNone(self.find_position(length=300, view_range=-3))
+
+    def test_a_view_range_in_tiles_still_ignores_what_is_farther(self):
+        self.assertIsNone(self.find_position(length=300, view_range=20))
+        self.assertEqual(self.find_position(length=21, view_range=20), (5, 0))
+
+
 if __name__ == '__main__':
     unittest.main()

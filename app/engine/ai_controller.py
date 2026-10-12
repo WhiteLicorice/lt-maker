@@ -754,14 +754,19 @@ class SecondaryAI():
         self.best_path_blocked = False  # Whether an enemy cuts the best path short
 
         limit = self.get_limit()
-        self.available_targets = [t for t in self.all_targets if utils.calculate_distance(self.unit.position, t) <= limit]
+        self.available_targets = [t for t in self.all_targets
+                                  if limit is None or utils.calculate_distance(self.unit.position, t) <= limit]
 
         self.best_position = None
 
-    def get_limit(self) -> int:
-        # Make sure we don't exceed double move
+    def get_limit(self) -> Optional[int]:
+        """
+        How far off a target may be: in tiles for it to be considered at all,
+        and in movement cost for the path to it. None is no limit, for a
+        behaviour that looks at the whole map, however large the map is.
+        """
         if self.widen_flag or self.view_range == -4:
-            limit = 99
+            limit = None
         elif self.view_range == -3:
             limit = self.double_move
         elif self.view_range == -2:
