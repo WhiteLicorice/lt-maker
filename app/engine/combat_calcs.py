@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import List, Optional, Tuple
 from app.engine.utils.ltcache import ltcached
 from app.engine.combat_calcs_utils import resolve_defensive_formula, resolve_offensive_formula
@@ -120,6 +121,30 @@ def compute_advantage_attr(attacker, defender, weapon, def_weapon, attribute: st
     if disadv:
         mod += int(getattr(disadv, attribute))
     return mod
+
+class WeaponAdvantage(str, Enum):
+    ADVANTAGE = 'advantage'
+    DISADVANTAGE = 'disadvantage'
+    NEUTRAL = 'neutral'
+
+    def __bool__(self):
+        # Every member is a non-empty string, so a bare `if advantage:` would always pass
+        raise TypeError("WeaponAdvantage has no truth value, compare it instead (e.g. == 'advantage')")
+
+def compute_overall_advantage(attacker, defender, weapon, def_weapon) -> WeaponAdvantage:
+    '''Which way the weapon triangle leans for the attacker, after reaver-style modifiers'''
+    adv = compute_advantage(attacker, defender, weapon, def_weapon)
+    disadv = compute_advantage(attacker, defender, weapon, def_weapon, False)
+
+    if adv and adv.modification > 0:
+        return WeaponAdvantage.ADVANTAGE
+    elif adv and adv.modification < 0:
+        return WeaponAdvantage.DISADVANTAGE
+    elif disadv and disadv.modification > 0:
+        return WeaponAdvantage.DISADVANTAGE
+    elif disadv and disadv.modification < 0:
+        return WeaponAdvantage.ADVANTAGE
+    return WeaponAdvantage.NEUTRAL
 
 def can_counterattack(attacker, aweapon, defender, dweapon) -> bool:
     # A unit that targets itself is not its own enemy
