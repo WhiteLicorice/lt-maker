@@ -126,6 +126,8 @@ class Region(Prefab):
         Returns:
             bool: True if the position is within the region, False otherwise.
         """
+        if not pos:
+            return False
         x, y = pos
         if self.position:
             return self.position[0] <= x < self.position[0] + self.size[0] and \
