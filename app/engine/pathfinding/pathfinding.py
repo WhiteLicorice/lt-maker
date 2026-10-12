@@ -90,6 +90,9 @@ class AStar:
     def reset(self):
         self.open: List[Node] = []
         heapq.heapify(self.open)
+        # The nodes waiting in the open queue, so that asking whether one is
+        # there does not mean reading through the whole queue
+        self.in_open: Set[Node] = set()
         self.closed: Set[Node] = set()
         self._reset_grid()
 
@@ -165,8 +168,10 @@ class AStar:
         """
         # Add starting node to open queue
         heapq.heappush(self.open, (self.start_node.f, self.start_node))
+        self.in_open.add(self.start_node)
         while self.open:
             f, node = heapq.heappop(self.open)
+            self.in_open.discard(node)
             # Make sure we don't process the node twice
             self.closed.add(node)
             # If this node is past the limit, just return None
@@ -182,7 +187,7 @@ class AStar:
             for adj in adj_nodes:
                 if adj.reachable and adj not in self.closed:
                     if can_move_through((adj.x, adj.y)) and adj.cost <= max_movement_limit:
-                        if (adj.f, adj) in self.open:
+                        if adj in self.in_open:
                             # if adj node in open list, check if current path
                             # is better than the one previously found for this adj node
                             if adj.g > node.g + adj.cost:
@@ -191,6 +196,7 @@ class AStar:
                         else:
                             self._update_node(adj, node)
                             heapq.heappush(self.open, (adj.f, adj))
+                            self.in_open.add(adj)
                     else:  # Is blocked
                         pass
         return []
