@@ -87,3 +87,5 @@ These variables are cleared after winning or losing the current level
 `_prep_slots` **int** Limits the number of units that can be brought to the level. Used only when you want to limit the number of player units to a number lower than the number of Formation tiles. Defaults to None.
 
 `_minimum_deployment` **int** Must deploy at least this many units during the Prep Screen. If you have less units that this, must deploy all units.
+
+`_shop_purchases` **array of str** Populated with item NIDs while the player is in a shop. NIDs are in order of purchase, and include duplicates.
