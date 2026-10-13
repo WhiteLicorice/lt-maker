@@ -605,8 +605,8 @@ class UIView():
                 stat.append(crit)
                 e_stat.append(e_crit)
         if not grandmaster and detailed_flag and not y_adjust > 32:
-            stat.append(combat_calcs.compute_true_speed(attacker, defender, weapon, resolve_weapon(defender), 'attack', (0, 0)))
-            e_stat.append(combat_calcs.compute_true_speed(defender, attacker, resolve_weapon(defender), weapon, 'defense', (0, 0)))
+            stat.append(combat_calcs.compute_attack_speed(attacker, defender, weapon, resolve_weapon(defender), 'attack', (0, 0)))
+            e_stat.append(combat_calcs.compute_attack_speed(defender, attacker, resolve_weapon(defender), weapon, 'defense', (0, 0)))
         if guard_flag:
             # If unit is not paired up, no point in displaying guard gauge
             stat.append(attacker.get_guard_gauge() if attacker.traveler else '--')
