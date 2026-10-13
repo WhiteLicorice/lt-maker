@@ -646,7 +646,7 @@ class UnitSprite():
                 if engine.get_time() > starting_time + total_time:
                     self.vibrate.remove(vibrate)
                     continue
-                left += (1 if self.vibrate_counter % 2 else -1)
+                left += (2 if self.vibrate_counter % 2 else -2)  # As far as on the GBA
 
         # Handle transitions
         if self.transition_state in ('fade_out', 'warp_out', 'swoosh_out', 'fade_move', 'warp_move', 'swoosh_move') or self.state in ('fake_transition_out'):

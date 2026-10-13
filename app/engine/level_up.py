@@ -208,6 +208,10 @@ class ExpState(State):
                 if len(self.state.state) <= 0:
                     game.state.back()
                 # Otherwise, we're probably about to level up!
+                elif self.state.get_state() == 'level_up':
+                    # Made on the frame it is first shown: a banner timed in
+                    # milliseconds counts them from when it is made
+                    self.create_level_up_logo()
 
         elif self.state.get_state() == 'exp100':
             progress = (current_time - self.start_time)/float(self.total_time_for_exp)
@@ -227,7 +231,6 @@ class ExpState(State):
                 action.do(action.IncLevel(self.unit))
                 action.do(action.ApplyStatChanges(self.unit, self.stat_changes, self.name == 'bonus_exp'))
                 action.do(action.UpdateRecords('level_gain', (self.unit.nid, self.unit.level, self.unit.klass)))
-                self.create_level_up_logo()
                 self.state.clear()
                 self.state.change('level_up')
                 self.state.change('exp_leave')
@@ -252,7 +255,6 @@ class ExpState(State):
                 action.do(action.GrowthPointChange(self.unit, old_growth_points, self.unit.growth_points))
                 action.do(action.SetLevel(self.unit, self.unit.level - 1))
                 action.do(action.ApplyStatChanges(self.unit, self.stat_changes, self.name == 'bonus_exp'))
-                self.create_level_up_logo()
                 self.state.clear()
                 self.state.change('level_up')
                 self.state.change('exp_leave')
@@ -368,7 +370,7 @@ class ExpState(State):
         elif self.state.get_state() == 'level_up':
             surf.blit(self.dark_fuzz_background, (0, 0))
             if self.level_up_animation:
-                self.level_up_animation.update()
+                # update() has already advanced it this frame
                 self.level_up_animation.draw(surf)
 
         elif self.state.get_state() == 'level_screen':
@@ -430,8 +432,12 @@ class LevelUpScreen():
     width = bg_bottom.get_width()
     height = bg_bottom.get_height()
 
-    spark_time = 350
+    # The GBA shows a stat gain every 20 frames: a frame goes to picking the
+    # next one, and half a frame is taken off since a frame is 16 or 17 ms
+    spark_time = utils.frames2ms(18.5)
     level_up_wait = 1366
+    # The GBA's screen is gone in 9 frames
+    scroll_out_time = utils.frames2ms(10)
 
     underline = SPRITES.get('stat_underline')
 
@@ -526,7 +532,7 @@ class LevelUpScreen():
         elif self.state == 'scroll_out':
             self.unit_scroll_offset += 10
             self.screen_scroll_offset += 20
-            if current_time - self.start_time > 500:
+            if current_time - self.start_time > self.scroll_out_time:
                 return True  # Done
 
         elif self.state == 'first_spark':

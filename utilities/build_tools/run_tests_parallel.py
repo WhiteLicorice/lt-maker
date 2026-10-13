@@ -50,6 +50,17 @@ def find_test_modules() -> List[str]:
     return sorted(modules)
 
 
+def prepare_worker():
+    """Runs once in each process, before it is handed its first module"""
+    # In a serial run, discovery imports every test module before any test runs,
+    # so the engine harness has imported the state modules while the sprites are
+    # loaded. Here a process imports its modules one at a time, and one that
+    # imports a state module without loading the sprites first leaves None in its
+    # class attributes (menus.Trade.trade_name_surf) for the modules after it
+    with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+        import app.tests.engine_harness  # noqa: F401
+
+
 def run_module(module: str) -> ModuleResult:
     """Runs one test module in this process"""
     output = io.StringIO()
@@ -98,7 +109,7 @@ def main() -> int:
 
     start = time.perf_counter()
     results: List[ModuleResult] = []
-    with multiprocessing.Pool(jobs) as pool:
+    with multiprocessing.Pool(jobs, initializer=prepare_worker) as pool:
         for result in pool.imap_unordered(run_module, modules):
             results.append(result)
             sys.stdout.write('.' if result.passed else 'F')

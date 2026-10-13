@@ -10,12 +10,21 @@ from app.engine.animations import MapAnimation, SpellAnimation
 from app.engine.game_state import game
 
 from app.events import triggers
+from app.utilities import utils
 
 from app.engine.combat.simple_combat import SimpleCombat
 
 
 class MapCombat(SimpleCombat):
     alerts: bool = True
+
+    # The GBA's pace, for a strike with nothing to show before it (see needs_lead_in).
+    # How long before the lunge: on the first strike, while the HP boxes open,
+    # and on the later ones
+    quick_opening_wait = utils.frames2ms(12)
+    quick_wait = utils.frames2ms(3)
+    # How long the units rest once the HP bars have settled
+    quick_rest = utils.frames2ms(22)
 
     def __init__(self, attacker, main_item, items, positions, main_target_positions, splash_positions, script, total_rounds=1):
         self._full_setup(attacker, main_item, items, positions,
@@ -38,6 +47,8 @@ class MapCombat(SimpleCombat):
         self.health_bars = {}
 
         self.first_phase = True
+        self.opening_phase = True
+        self.quick_phase = False
         self.cast_pose = False
 
         # Aesthetic suppression -- decided by the attacker's item for the whole combat,
@@ -93,6 +104,7 @@ class MapCombat(SimpleCombat):
                 return False
             if not item_system.no_map_hp_display(self.attacker, self.main_item):
                 self._build_health_bars()
+            self.opening_phase = self.first_phase
             if self.first_phase:
                 self.set_up_pre_proc_animation('attack_pre_proc')
                 self.set_up_pre_proc_animation('defense_pre_proc')
@@ -168,10 +180,15 @@ class MapCombat(SimpleCombat):
             self.set_up_proc_animation('defense_proc')
             self.set_up_proc_animation('defense_hit_proc')
 
+            self.quick_phase = not self.needs_lead_in()
             self.set_state('start_anim')
 
         elif self.state == 'start_anim':
-            if self._skip or current_time > 200:
+            if self.quick_phase:
+                wait = self.quick_opening_wait if self.opening_phase else self.quick_wait
+            else:
+                wait = 200
+            if self._skip or current_time > wait:
                 animation_brushes = self.get_from_playback('cast_anim')
                 for brush in animation_brushes:
                     anim = RESOURCES.animations.get(brush.anim)
@@ -190,7 +207,7 @@ class MapCombat(SimpleCombat):
                 self.set_state('sound')
 
         elif self.state == 'sound':
-            if self._skip or current_time > 250:
+            if self._skip or self.quick_phase or current_time > 250:
                 if self.defender and self.defender.sprite.state == 'combat_attacker' and \
                         self.get_from_playback('defender_phase'):
                     self.change_sprite_state(self.defender, 'combat_anim')
@@ -275,7 +292,8 @@ class MapCombat(SimpleCombat):
                 self.set_state('end_phase_anim')
 
         elif self.state == 'end_phase_anim':
-            if self._skip or (self.cast_pose and current_time > 250) or current_time > 550:
+            rest = self.quick_rest if self.quick_phase else 550
+            if self._skip or (self.cast_pose and current_time > 250) or current_time > rest:
                 if self.defender and self.defender.sprite.state == 'combat_anim':
                     self.change_sprite_state(self.defender, 'combat_attacker')
                 elif self.defender and self.defender.sprite.state == 'start_cast':
@@ -324,6 +342,16 @@ class MapCombat(SimpleCombat):
                 hp_bar.update()
 
         return False
+
+    def needs_lead_in(self) -> bool:
+        """
+        Whether this phase has something for the player to take in before the
+        strike: a casting pose, a cast animation, or a skill's icon by an HP box
+        """
+        return bool(self.cast_pose or
+                    self.get_from_playback('cast_anim') or
+                    self.get_from_playback('target_cast_anim') or
+                    any(hp_bar.skill_icons for hp_bar in self.health_bars.values()))
 
     def _show_guard_gauge(self) -> bool:
         return DB.constants.value('pairup') and not DB.constants.value('attack_stance_only')

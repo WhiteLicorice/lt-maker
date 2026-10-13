@@ -128,12 +128,15 @@ class movement_counter():
         self.count = 0
         self.movement = [0, 1, 2, 3, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 4, 3, 2, 1]
         self.started = False
+        self.last_update = None
 
     def value(self):
         return self.movement[self.count]
 
     def update(self, current_time):
-        if self.started:
+        # One step a frame, however many times it is read during that frame
+        if self.started and current_time != self.last_update:
+            self.last_update = current_time
             self.count += 1
             if self.count >= len(self.movement):
                 self.count = 0
@@ -142,6 +145,7 @@ class movement_counter():
     def reset(self):
         self.started = True
         self.count = 0
+        self.last_update = None
 
 class arrow_counter():
     def __init__(self, offset=0):

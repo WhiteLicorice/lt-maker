@@ -102,8 +102,30 @@ class HealthBar(GenericBar):
     def get_max_val(self):
         return self.unit.get_max_hp()
 
+class MapCombatHealthBar(HealthBar):
+    """
+    The HP bar of a map combat info box. As on the GBA, HP that is lost drains
+    at 1 a frame, and HP that is gained fills at 1 every 4 frames, with a boop for each
+    """
+    heal_speed = utils.frames2ms(4)
+
+    def __init__(self, unit, new_time_for_change = None, new_speed = None):
+        super().__init__(unit, new_time_for_change, new_speed)
+        self.damage_speed = self.speed
+
+    def update(self):
+        if not self.transition_flag:
+            self.speed = self.heal_speed if self.displayed_val < self.get_val() else self.damage_speed
+        super().update()
+
+    def set_val(self, val):
+        if self.transition_flag and val > self.displayed_val:
+            get_sound_thread().stop_sfx('HealBoop')
+            get_sound_thread().play_sfx('HealBoop')
+        super().set_val(val)
+
 class BarType(Enum):
-    HP = HealthBar
+    HP = MapCombatHealthBar
 
     def __call__(self, *args, **kwargs):
         return self.value(*args, **kwargs)
@@ -117,12 +139,18 @@ class MultiGenericBar():
         self.unit = unit
         self.combat_bars = []
 
-        self.transition_flag = False
-        self.time_for_change = self.time_for_change_min
-        self.last_update = 0
-
         for bar in bars:
-            self.combat_bars.append(bar(unit, self.time_for_change, self.speed))
+            self.combat_bars.append(bar(unit, self.time_for_change_min, self.speed))
+
+    @property
+    def transition_flag(self) -> bool:
+        """Whether any of its bars is still on its way to a new value"""
+        return any(bar.transition_flag for bar in self.combat_bars)
+
+    @property
+    def time_for_change(self) -> int:
+        """How long the slowest of its bars takes to reach its new value"""
+        return max((bar.time_for_change for bar in self.combat_bars), default=self.time_for_change_min)
 
     def set_val(self, val):
         for bar in self.combat_bars:
