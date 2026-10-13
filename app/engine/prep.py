@@ -1,6 +1,6 @@
 from typing import List, Tuple
 
-from app.constants import TILEHEIGHT, TILEWIDTH, WINHEIGHT, WINWIDTH
+from app.constants import FRAMERATE, TILEHEIGHT, TILEWIDTH, WINHEIGHT, WINWIDTH
 # from app.data.resources.resources import RESOURCES
 from app.data.database.database import DB
 from app.engine import action, background, banner, base_surf
@@ -358,6 +358,26 @@ def _handle_info():
         get_sound_thread().play_sfx('Select 3')
         game.boundary.toggle_all_enemy_attacks()
 
+def _move_on_map(unit, pos):
+    """The unit flies from the tile it stands on to pos, an empty one"""
+    old_pos = unit.position
+    action.do(action.LeaveMap(unit))
+    action.do(action.ArriveOnMap(unit, pos))
+    unit.sprite.begin_swap_arc(old_pos)
+
+def _swap_on_map(unit1, unit2):
+    """Two units on the map trade places, each flying to the other's tile"""
+    pos1, pos2 = unit1.position, unit2.position
+    action.do(action.LeaveMap(unit1))
+    action.do(action.LeaveMap(unit2))
+    action.do(action.ArriveOnMap(unit1, pos2))
+    action.do(action.ArriveOnMap(unit2, pos1))
+    unit1.sprite.begin_swap_arc(pos1)
+    unit2.sprite.begin_swap_arc(pos2)
+
+def _units_in_flight():
+    return [unit for unit in game.get_player_units() if unit.sprite.transition_state == 'swap_arc']
+
 class PrepFormationState(MapState):
     name = 'prep_formation'
 
@@ -369,6 +389,9 @@ class PrepFormationState(MapState):
         game.boundary.show()
 
     def take_input(self, event):
+        if _units_in_flight():
+            return  # As on the GBA, nothing can be done until reordered units have landed
+
         game.cursor.take_input()
 
         if event == 'INFO':
@@ -427,6 +450,11 @@ class PrepFormationState(MapState):
 
     def draw(self, surf):
         surf = super().draw(surf)
+        # The hand rides above each reordered unit while it flies, as on the GBA
+        for unit in _units_in_flight():
+            x = (unit.position[0] - game.camera.get_x()) * TILEWIDTH + unit.sprite.offset[0] + PrepFormationSelectState.marker_left
+            y = (unit.position[1] - game.camera.get_y()) * TILEHEIGHT + unit.sprite.offset[1] - PrepFormationSelectState.marker_height
+            surf.blit(PrepFormationSelectState.marker, (x, y))
         if game.memory.get('_prep_outline'):
             game.memory['_prep_outline'].draw(surf)
         return surf
@@ -440,7 +468,16 @@ class PrepFormationState(MapState):
 class PrepFormationSelectState(MapState):
     name = 'prep_formation_select'
     marker = SPRITES.get('menu_hand_rotated')
-    marker_offset = [0, 1, 2, 3, 4, 5, 4, 3, 2, 1]
+    # Where the GBA draws its hands, in pixels right of the tile's left edge and
+    # above its top. The one over the picked unit, and over a unit in flight, stays
+    # at marker_height
+    marker_left = 3
+    marker_height = 12
+    # The one over the cursor bobs down from marker_bob_height: how far it hangs
+    # below that on each frame. It rests at the bottom and at the top and is quick
+    # in between
+    marker_bob_height = 14
+    marker_offset = [5] * 4 + [3] * 3 + [2] + [1] * 3 + [0] * 4 + [1] * 3 + [2] + [3] * 3
 
     def start(self):
         game.cursor.formation_show()
@@ -480,12 +517,7 @@ class PrepFormationSelectState(MapState):
                 # Else if solo unit but cannot pair-up and I'm on the map
                 # Swap us
                 elif hovered_unit and self.unit.position:
-                    old_unit_position = self.unit.position
-                    old_hovered_unit_position = hovered_unit.position
-                    action.do(action.LeaveMap(self.unit))
-                    action.do(action.LeaveMap(hovered_unit))
-                    action.do(action.ArriveOnMap(self.unit, old_hovered_unit_position))
-                    action.do(action.ArriveOnMap(hovered_unit, old_unit_position))
+                    _swap_on_map(self.unit, hovered_unit)
                     self.back()
                 # Else if solo unit but cannot pair-up and I'm not on the map
                 # Send solo unit to bench and put me there, unless solo unit is REQUIRED
@@ -502,8 +534,7 @@ class PrepFormationSelectState(MapState):
                 # Put me there
                 else:
                     if self.unit.position:
-                        action.do(action.LeaveMap(self.unit))
-                        action.do(action.ArriveOnMap(self.unit, game.cursor.position))
+                        _move_on_map(self.unit, game.cursor.position)
                         self.back()
                     else:
                         game.memory['child_menu'] = menus.Choice(self.unit, ['Separate', 'Swap'])
@@ -533,18 +564,18 @@ class PrepFormationSelectState(MapState):
                 pos = self.unit.position
             else:
                 pos = game.get_rescuer(self.unit).position
-            x = (pos[0] - game.camera.get_x()) * TILEWIDTH + 2
-            y = (pos[1] - game.camera.get_y() - 1) * TILEHEIGHT
+            x = (pos[0] - game.camera.get_x()) * TILEWIDTH + self.marker_left
+            y = (pos[1] - game.camera.get_y()) * TILEHEIGHT - self.marker_height
             surf.blit(self.marker, (x, y))
 
         hovered_unit = game.cursor.get_hover()
         if game.check_for_region(game.cursor.position, 'formation') or (hovered_unit and hovered_unit.team == 'player' and hovered_unit.traveler):
             pos = game.cursor.position
-            while engine.get_time() - 50 > self.last_update:
-                self.last_update += 50
-                self.counter = self.counter % len(self.marker_offset)
-            x = (pos[0] - game.camera.get_x()) * TILEWIDTH + 2
-            y = (pos[1] - game.camera.get_y() - 1) * TILEHEIGHT + self.marker_offset[self.counter]
+            frames_passed = (engine.get_time() - self.last_update) // FRAMERATE
+            self.counter = frames_passed % len(self.marker_offset)
+            # The cursor's offset is how far it still is from its tile: the hand slides with it
+            x = (pos[0] - game.camera.get_x()) * TILEWIDTH - game.cursor.offset_x + self.marker_left
+            y = (pos[1] - game.camera.get_y()) * TILEHEIGHT - game.cursor.offset_y - self.marker_bob_height + self.marker_offset[self.counter]
             surf.blit(self.marker, (x, y))
 
         return surf
@@ -620,15 +651,9 @@ class PrepFormationMenuState(MapState):
                     # Unit was a duo unit
                     unit_to_move = game.get_rescuer(self.unit)
                 if hovered_unit:
-                    old_unit_position = unit_to_move.position
-                    old_hovered_unit_position = hovered_unit.position
-                    action.do(action.LeaveMap(unit_to_move))
-                    action.do(action.LeaveMap(hovered_unit))
-                    action.do(action.ArriveOnMap(unit_to_move, old_hovered_unit_position))
-                    action.do(action.ArriveOnMap(hovered_unit, old_unit_position))
+                    _swap_on_map(unit_to_move, hovered_unit)
                 else:
-                    action.do(action.LeaveMap(unit_to_move))
-                    action.do(action.ArriveOnMap(unit_to_move, game.cursor.position))
+                    _move_on_map(unit_to_move, game.cursor.position)
                 game.state.back()
                 game.state.back()
 

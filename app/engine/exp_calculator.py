@@ -76,7 +76,9 @@ class ExpCalculator():
         return class_power_4
       return class_power_3
         
-    result = (damage_bonus + target.level + get_class_bonus_a(target_klass) - (unit.level + get_class_bonus_a(unit_klass)))//get_class_power(unit_klass)
+    # No less than 0 before the division, as in the GBA games: a unit far above its
+    # target gets nothing for the hit, and loses none of what it gets for the kill
+    result = max(0, damage_bonus + target.level + get_class_bonus_a(target_klass) - (unit.level + get_class_bonus_a(unit_klass)))//get_class_power(unit_klass)
     if target.is_dying:
         base = target.level*get_class_power(target_klass) + get_class_bonus_b(target_klass) - (unit.level*get_class_power(unit_klass) + get_class_bonus_b(unit_klass))
         if mode_coeff > 1 and base <= 0:

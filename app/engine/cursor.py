@@ -22,7 +22,9 @@ class BaseCursor():
     
     def __init__(self, camera: Camera = None, game_board=None):
         # internal scroll controller
-        self.fluid: FluidScroll = FluidScroll(frames2ms(4), 3.25)
+        # gba timing: a held direction repeats after 12 frames, then every 4.
+        # Half a frame under each, since a frame is 16 or 17 ms on the clock
+        self.fluid: FluidScroll = FluidScroll(frames2ms(3.5), 11.5 / 3.5)
 
         # fellow controllers
         self.camera = camera

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from app.counters import GenericAnimCounter
 from app.data.database.units import UnitPrefab
@@ -27,6 +27,28 @@ from app.engine.game_state import game
 from app.utilities.typing import NID, Color3
 
 import logging
+
+def swap_arc_frames(distance: int) -> int:
+    """
+    How many frames a unit takes to fly `distance` pixels when units are
+    reordered on the prep screen: 12 for no distance, 48 for 512 pixels.
+    From the GBA games (FE8's PrepUnitSwapProc_Init)
+    """
+    return 12 + 36 * distance // 512
+
+def swap_arc_offset(start: Tuple[int, int], progress: float) -> Tuple[int, int]:
+    """
+    Where a unit is, in pixels from its new tile, `progress` (0 to 1) of the
+    way through that flight. `start` is where it began, also in pixels from
+    its new tile. The unit bows out to the left of its heading, by more the
+    farther it flies but never by much more than a tile, so that two units
+    trading places circle each other.
+    From the GBA games (FE8's PrepUnitSwapProc_MainLoop)
+    """
+    distance = math.isqrt(start[0] * start[0] + start[1] * start[1])
+    bow = math.sin(math.pi * progress) * 0x1000 / (0x1000 + (0x20000 - 0x1000) * distance // 0x200)
+    return (start[0] + math.floor(-start[0] * progress) + int(-start[1] * bow),
+            start[1] + math.floor(-start[1] * progress) + int(start[0] * bow))
 
 class SingleMapSprite():
     frames: List[engine.Surface] = []
@@ -205,6 +227,9 @@ class UnitSprite():
 
         self.transition_counter = 0
         self.transition_time = self.default_transition_time
+        # Where a 'swap_arc' began, in pixels from the unit's tile, and how long it takes
+        self.swap_arc_start = (0, 0)
+        self.swap_arc_time = 0
 
         self._fake_position = None  # For escape and rescue, etc...
         self._roam_position = None  # For roam
@@ -396,6 +421,20 @@ class UnitSprite():
             self._fake_position = self.unit.position
             self.add_swoosh_anim(reverse=True)
 
+    def begin_swap_arc(self, old_pos: Tuple[int, int]):
+        """
+        Draws the unit flying in an arc from old_pos to the tile it now stands on,
+        as units do on the GBA when they are reordered on the prep screen
+        """
+        self.set_transition('swap_arc')
+        self._fake_position = None
+        self.swap_arc_start = ((old_pos[0] - self.unit.position[0]) * TILEWIDTH,
+                               (old_pos[1] - self.unit.position[1]) * TILEHEIGHT)
+        distance = math.isqrt(self.swap_arc_start[0] ** 2 + self.swap_arc_start[1] ** 2)
+        self.swap_arc_time = utils.frames2ms(swap_arc_frames(distance))
+        self.transition_counter = self.swap_arc_time
+        self.offset = list(self.swap_arc_start)
+
     combat_states = ('combat_attacker', 'combat_anim', 'combat_defender', 'combat_counter')
 
     def change_state(self, new_state, dir = None, suppress_movement: bool = False):
@@ -554,6 +593,13 @@ class UnitSprite():
 
     def update_transition(self):
         self.transition_counter -= engine.get_delta()
+        if self.transition_state == 'swap_arc':
+            if self.transition_counter > 0:
+                progress = 1 - self.transition_counter / self.swap_arc_time
+                self.offset = list(swap_arc_offset(self.swap_arc_start, progress))
+            else:
+                self.set_transition('normal')
+            return
         if self.transition_counter < 0:
             self.transition_counter = 0
             self._fake_position = None
