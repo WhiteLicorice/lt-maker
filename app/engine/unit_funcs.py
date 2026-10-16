@@ -125,7 +125,7 @@ def _fixed_levelup(unit, level, get_growth_rate=growth_rate) -> dict:
                 stat_changes[nid] -= 1
     return stat_changes
 
-def _random_levelup(unit, level) -> dict:
+def _random_levelup(unit, level, reroll_empty: bool = False) -> dict:
     rng = static_random.get_levelup(unit.nid, level)
     stat_changes = {nid: 0 for nid in DB.stats.keys()}
 
@@ -142,9 +142,27 @@ def _random_levelup(unit, level) -> dict:
                 counter -= 1 if rng.randint(0, 99) < growth else 0
                 growth -= 100
         stat_changes[nid] += counter
+
+    if reroll_empty and not any(stat_changes.values()):
+        _reroll_empty_levelup(unit, rng, stat_changes)
     return stat_changes
 
-def _dynamic_levelup(unit, level) -> dict:
+def _reroll_empty_levelup(unit, rng, stat_changes: dict):
+    """
+    As on the GBA, for a level up that raised no stat: the stats are rolled
+    again one at a time, up to twice over, and the first one to come up is the
+    only one raised. A stat already at its cap can be that one, and the level
+    stays empty. The rolls are against the stats' growth rates alone, and leave
+    the growth points of dynamic growths as they are
+    """
+    for _ in range(2):
+        for nid in DB.stats.keys():
+            growth = growth_rate(unit, nid)
+            if growth > 0 and rng.randint(0, 99) < growth:
+                stat_changes[nid] = 1
+                return
+
+def _dynamic_levelup(unit, level, reroll_empty: bool = False) -> dict:
     """
     Does not support leveling down 100% because it keeps state
     """
@@ -177,6 +195,8 @@ def _dynamic_levelup(unit, level) -> dict:
             else:
                 unit.growth_points[nid] += new_growth / variance
 
+    if reroll_empty and not any(stat_changes.values()):
+        _reroll_empty_levelup(unit, rng, stat_changes)
     return stat_changes
     
 def _lucky_levelup(unit, level) -> dict:
@@ -230,7 +250,8 @@ def _rd_bexp_levelup(unit, level):
 
     return stat_changes
 
-def get_next_level_up(unit: UnitObject, level: int, custom_method: Optional[str] = None) -> Dict[NID, int]:
+def get_next_level_up(unit: UnitObject, level: int, custom_method: Optional[str] = None,
+                      reroll_empty: bool = True) -> Dict[NID, int]:
     """
     Determines the unit's next level-up stat changes based on its current level and the leveling method.
 
@@ -241,11 +262,13 @@ def get_next_level_up(unit: UnitObject, level: int, custom_method: Optional[str]
         unit (UnitObject): The unit for which to determine the next level-up stat changes.
         level (int): The current level of the unit.
         custom_method (Optional[str]): A custom leveling method to use. Defaults to None.
+        reroll_empty (bool): Whether the `reroll_empty_level_ups` constant applies to this level.
 
     Returns:
         dict (Dict[NID, int]): A dictionary containing the next level-up stat changes for the unit.
     """
     method = get_leveling_method(unit, custom_method)
+    reroll_empty = reroll_empty and DB.constants.value('reroll_empty_level_ups')
 
     stat_changes = {nid: 0 for nid in DB.stats.keys()}
     if method == 'Bexp':
@@ -253,9 +276,9 @@ def get_next_level_up(unit: UnitObject, level: int, custom_method: Optional[str]
     elif method == GrowthOption.FIXED:
         stat_changes = _fixed_levelup(unit, level)
     elif method == GrowthOption.RANDOM:
-        stat_changes = _random_levelup(unit, level)
+        stat_changes = _random_levelup(unit, level, reroll_empty)
     elif method == GrowthOption.DYNAMIC:
-        stat_changes = _dynamic_levelup(unit, level)
+        stat_changes = _dynamic_levelup(unit, level, reroll_empty)
     elif method == GrowthOption.LUCKY:
         stat_changes = _lucky_levelup(unit, level)
     else:
@@ -284,10 +307,12 @@ def auto_level(unit: UnitObject, base_level: int, num_levels: int, custom_method
     """
     total_stat_changes = {nid: 0 for nid in DB.stats.keys()}
 
+    # As on the GBA, an empty level is rolled again only when a unit earns the
+    # level, not for the levels it is given here
     if num_levels > 0:
         for i in range(num_levels):
             level = base_level + i
-            stat_changes = get_next_level_up(unit, level, custom_method)
+            stat_changes = get_next_level_up(unit, level, custom_method, reroll_empty=False)
             # Add to total
             for nid in total_stat_changes.keys():
                 total_stat_changes[nid] += stat_changes[nid]
@@ -295,7 +320,7 @@ def auto_level(unit: UnitObject, base_level: int, num_levels: int, custom_method
     elif num_levels < 0:
         ending_level = base_level + num_levels
         for level in reversed(range(ending_level, base_level)):
-            stat_changes = get_next_level_up(unit, level, custom_method)
+            stat_changes = get_next_level_up(unit, level, custom_method, reroll_empty=False)
             # Add reversed stat_changes to total
             for nid in total_stat_changes.keys():
                 total_stat_changes[nid] -= stat_changes[nid]

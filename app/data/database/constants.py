@@ -107,6 +107,7 @@ constants = ConstantCatalog([
     Constant('learn_skills_on_reclass', "Learn the skills of your new class when you reclass", ConstantType.BOOL, True, ConstantTag.LEVELING),
     Constant('learn_skills_on_promote', "Learn the skills of your new class when you promote", ConstantType.BOOL, True, ConstantTag.LEVELING),
     Constant('negative_growths', "Negative growth rates will reduce stats", ConstantType.BOOL, True, ConstantTag.LEVELING),
+    Constant('reroll_empty_level_ups', "With random or dynamic growths, a level up that raises no stat is rolled again up to twice, and raises the first stat to come up (GBA)", ConstantType.BOOL, False, ConstantTag.LEVELING),
     Constant('class_change_same_tier', "Class Change only between classes of the same tier", ConstantType.BOOL, False, ConstantTag.LEVELING),
     Constant('generic_feats', "Generic units will be given random feats when appropriate", ConstantType.BOOL, False, ConstantTag.LEVELING),
     Constant('min_damage', "Min damage dealt by an attack", ConstantType.INT, 0),
