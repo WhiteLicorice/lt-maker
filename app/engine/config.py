@@ -16,7 +16,7 @@ def base_config() -> OrderedDict:
                         ('animation', 'Always'),
                         ('display_fps', 0),
                         ('battle_bg', 0),
-                        ('unit_speed', 120),
+                        ('unit_speed', 133),  # ms a tile: 8 frames, as on the GBA
                         ('text_speed', 32),
                         ('cursor_speed', 66),
                         ('mouse', 1),

@@ -70,8 +70,9 @@ class UnitPathMovementComponent(MovementComponent):
             if progress >= 1:
                 self.unit.sprite.reset()
             else:
-                self.unit.sprite.offset[0] = int(TILEWIDTH * progress * net_position[0])
-                self.unit.sprite.offset[1] = int(TILEHEIGHT * progress * net_position[1])
+                # Rounded, so at the GBA's pace it steps 2 pixels a frame as there
+                self.unit.sprite.offset[0] = round(TILEWIDTH * progress * net_position[0])
+                self.unit.sprite.offset[1] = round(TILEHEIGHT * progress * net_position[1])
 
         if progress >= 1:
             self._last_update = current_time

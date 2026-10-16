@@ -112,5 +112,37 @@ class RangeSquareOpeningTests(EngineTestCase):
         self.assertEqual([(size, size, (32, 48 + 16 - size)) for size in sizes], seen)
 
 
+class UnitWalkTests(EngineTestCase):
+    def test_a_tile_in_8_frames_2_pixels_a_frame(self):
+        '''As on the GBA. Here it was 120 ms, and its steps came out 2 or 3 pixels'''
+        from app.engine import config as cf
+        from app.engine.movement.unit_path_movement_component import UnitPathMovementComponent
+        from app.engine import engine
+        self.assertEqual(133, cf.base_config()['unit_speed'])
+        harness = self.start_harness()
+        harness.start_level('0')
+        harness.run_until_state('free')
+        eirika = harness.game.get_unit('Eirika')
+        self.addCleanup(engine.constants.__setitem__, 'current_time', engine.constants.get('current_time', 0))
+        start = engine.constants['current_time'] = 50000
+        x, y = eirika.position
+        mover = UnitPathMovementComponent(eirika, [(x, y - 1), (x, y)], speed=133)
+        mover._last_update = start
+        seen = []
+        for frame in range(1, 9):
+            # The clock counts whole milliseconds, so frames are 16 or 17 of them apart
+            engine.constants['current_time'] = start + frame * 16 + frame * 2 // 3
+            with patch.object(mover, '_handle_path'):
+                mover.update(engine.get_time())
+            seen.append(eirika.sprite.offset[1] if frame < 8 else 'there')
+        self.assertEqual([-2, -4, -6, -8, -10, -12, -14, 'there'], seen)
+
+    def test_settings_offer_whole_frames(self):
+        from app.engine import settings
+        speeds = dict((name, values) for name, values, _ in settings.config)['unit_speed']
+        self.assertIn(133, speeds)
+        self.assertIn(66, speeds)  # The GBA's fast game speed
+
+
 if __name__ == '__main__':
     unittest.main()
