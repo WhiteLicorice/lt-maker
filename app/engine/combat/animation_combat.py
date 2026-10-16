@@ -294,7 +294,8 @@ class AnimationCombat(BaseCombat, MockCombat):
                     self.name_offset = 1
                 self.platform_offset = 1
                 if self.battle_background:
-                    self.battle_background.fade_in(utils.frames2ms(25))
+                    # As on the GBA: the map goes to black over 8 frames, then the background comes in over 8
+                    self.battle_background.fade_in(utils.frames2ms(16))
                 self.state = 'init_pause'
 
         elif self.state == 'arena_init':
@@ -466,7 +467,8 @@ class AnimationCombat(BaseCombat, MockCombat):
                 
         elif self.state == 'hp_change':
             proceed = self.current_battle_anim.can_proceed()
-            if current_time > utils.frames2ms(27) and self.left_hp_bar.done() and self.right_hp_bar.done() and proceed:
+            # As on the GBA, at least 30 frames from the hit, and longer if the hp bar takes longer
+            if current_time > utils.frames2ms(30) and self.left_hp_bar.done() and self.right_hp_bar.done() and proceed:
                 self.current_battle_anim.resume()
                 if not self._delay_death:
                     if self.left.get_hp() <= 0:
@@ -510,7 +512,8 @@ class AnimationCombat(BaseCombat, MockCombat):
                 self.state = 'exp_pause'
 
         elif self.state == 'exp_pause':
-            if self._skip or current_time > 450:
+            # The GBA waits 30 frames after the fighting before the exp bar
+            if self._skip or current_time > utils.frames2ms(30):
                 self.clean_up1()
                 self.state = 'exp_wait'
 

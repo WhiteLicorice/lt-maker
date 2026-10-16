@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from app.engine import action  # noqa: F401 -- avoids a circular import, see test_menu_options
 from app.tests.engine_harness import EngineTestCase
@@ -108,6 +108,59 @@ class ScreenFadeTests(EngineTestCase):
     def test_screen_that_asks_for_a_slower_fade_keeps_it(self):
         '''The title screen's'''
         self.assertEqual(4 * 133, self.start(4).wait_time)
+
+
+class AnimationCombatTimingTests(unittest.TestCase):
+    def setUp(self):
+        from app.engine import engine
+        self.addCleanup(engine.constants.__setitem__, 'current_time', engine.constants.get('current_time', 0))
+
+    def frames_in(self, combat, state, limit=120):
+        '''How many frames the combat stays in that state, at 60 a second'''
+        from app.engine import engine
+        combat.state = state
+        combat.last_update = 10000
+        for frame in range(1, limit):
+            engine.constants['current_time'] = 10000 + frame * 1000 // 60
+            with patch.object(combat, 'clean_up1', create=True):
+                combat.update()
+            if combat.state != state:
+                return frame
+        return None
+
+    def build(self):
+        from app.tests.test_animation_combat import build_combat
+        combat = build_combat()
+        combat._skip = False
+        combat._delay_death = True
+        combat.current_battle_anim = MagicMock()
+        combat.left_hp_bar.done.return_value = True
+        combat.right_hp_bar.done.return_value = True
+        return combat
+
+    def test_at_least_30_frames_after_a_hit(self):
+        '''As on the GBA. Here it was 27'''
+        self.assertEqual(31, self.frames_in(self.build(), 'hp_change'))
+
+    def test_longer_if_the_hp_bar_takes_longer(self):
+        from app.engine import engine
+        combat = self.build()
+        # Done draining 40 frames after the hit
+        combat.left_hp_bar.done.side_effect = lambda: engine.get_time() >= 10000 + 40 * 1000 // 60
+        self.assertEqual(40, self.frames_in(combat, 'hp_change'))
+
+    def test_30_frames_before_the_exp_bar(self):
+        '''As on the GBA. Here it was 450 ms, 27 frames'''
+        self.assertEqual(31, self.frames_in(self.build(), 'exp_pause'))
+
+    def test_background_comes_in_over_16_frames(self):
+        '''The map to black over 8 frames, then the background in over 8, as on the GBA. Here it took 25'''
+        from app.utilities import utils
+        combat = self.build()
+        combat.battle_background = MagicMock()
+        combat.ui_should_be_hidden = MagicMock(return_value=True)
+        self.frames_in(combat, 'entrance')
+        combat.battle_background.fade_in.assert_called_once_with(utils.frames2ms(16))
 
 
 if __name__ == '__main__':
