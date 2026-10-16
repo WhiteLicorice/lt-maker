@@ -28,6 +28,18 @@ class ExpState(State):
     name = 'exp'
     transparent = True
     state = None
+    music_lowered = False
+
+    # The GBA waits 10 frames between the exp bar and the banner. Half a frame
+    # is taken off, since a frame is 16 or 17 ms
+    banner_wait_time = utils.frames2ms(9.5)
+    # On the map it then brings the music down to half over 16 frames, and only
+    # once it is down shows the banner, 18 frames on. After the banner it brings
+    # the music back up the same way, and the level up screen comes 19 frames on.
+    # In battle the music is left as it is
+    music_fade_time = utils.frames2ms(16)
+    music_down_time = utils.frames2ms(17.5)
+    music_up_time = utils.frames2ms(18.5)
 
     dark_fuzz_background = image_mods.make_translucent(SPRITES.get('bg_black'), 0.66)
 
@@ -104,6 +116,12 @@ class ExpState(State):
     def end(self):
         # Just in case, make sure this doesn't last forever
         get_sound_thread().stop_sfx('Experience Gain')
+        self.restore_music()
+
+    def restore_music(self):
+        if self.music_lowered:
+            get_sound_thread().unmute(fade=self.music_fade_time)
+            self.music_lowered = False
 
     def create_level_up_logo(self):
         if self.combat_object:
@@ -208,10 +226,6 @@ class ExpState(State):
                 if len(self.state.state) <= 0:
                     game.state.back()
                 # Otherwise, we're probably about to level up!
-                elif self.state.get_state() == 'level_up':
-                    # Made on the frame it is first shown: a banner timed in
-                    # milliseconds counts them from when it is made
-                    self.create_level_up_logo()
 
         elif self.state.get_state() == 'exp100':
             progress = (current_time - self.start_time)/float(self.total_time_for_exp)
@@ -233,6 +247,7 @@ class ExpState(State):
                 action.do(action.UpdateRecords('level_gain', (self.unit.nid, self.unit.level, self.unit.klass)))
                 self.state.clear()
                 self.state.change('level_up')
+                self.state.change('banner_wait')
                 self.state.change('exp_leave')
                 self.exp_bar.fade_out()
                 self.start_time = current_time
@@ -257,8 +272,36 @@ class ExpState(State):
                 action.do(action.ApplyStatChanges(self.unit, self.stat_changes, self.name == 'bonus_exp'))
                 self.state.clear()
                 self.state.change('level_up')
+                self.state.change('banner_wait')
                 self.state.change('exp_leave')
                 self.exp_bar.fade_out()
+                self.start_time = current_time
+
+        # The GBA's pause between the exp bar and the banner
+        elif self.state.get_state() == 'banner_wait':
+            if current_time - self.start_time > self.banner_wait_time:
+                self.state.back()
+                if self.combat_object:
+                    # Made on the frame it is first shown: a banner timed in
+                    # milliseconds counts them from when it is made
+                    self.create_level_up_logo()
+                else:
+                    # As on the GBA, the music is at half its volume under the banner
+                    get_sound_thread().lower(0.5, fade=self.music_fade_time)
+                    self.music_lowered = True
+                    self.state.change('music_down')
+                    self.start_time = current_time
+
+        # On the map, the banner waits for the music to come down
+        elif self.state.get_state() == 'music_down':
+            if current_time - self.start_time > self.music_down_time:
+                self.state.back()
+                self.create_level_up_logo()
+
+        # And the level up screen waits for it to come back up
+        elif self.state.get_state() == 'music_up':
+            if current_time - self.start_time > self.music_up_time:
+                self.state.back()
                 self.start_time = current_time
 
         elif self.state.get_state() == 'level_up':
@@ -271,6 +314,9 @@ class ExpState(State):
                     self.combat_object.darken_ui()
                 self.state.change('level_screen')
                 self.start_time = current_time
+                if self.music_lowered:
+                    self.restore_music()
+                    self.state.change('music_up')
 
         elif self.state.get_state() == 'level_screen':
             if not self.level_up_screen:
@@ -436,8 +482,8 @@ class LevelUpScreen():
     # next one, and half a frame is taken off since a frame is 16 or 17 ms
     spark_time = utils.frames2ms(18.5)
     level_up_wait = 1366
-    # The GBA's screen is gone in 9 frames
-    scroll_out_time = utils.frames2ms(10)
+    # The GBA's screen is gone in 9 frames. This one takes 10 to be off the screen
+    scroll_out_time = utils.frames2ms(9.5)
 
     underline = SPRITES.get('stat_underline')
 

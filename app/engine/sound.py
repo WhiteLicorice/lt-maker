@@ -382,11 +382,11 @@ class SoundController(ABC):
         pass
 
     @abstractmethod
-    def lower(self):
+    def lower(self, fraction: float = 0.25, fade: int = 0):
         pass
 
     @abstractmethod
-    def unmute(self):
+    def unmute(self, fade: int = 0):
         pass
 
     @abstractmethod
@@ -492,10 +492,10 @@ class NullSoundController(ABC):
     def mute(self):
         pass
 
-    def lower(self):
+    def lower(self, fraction: float = 0.25, fade: int = 0):
         pass
 
-    def unmute(self):
+    def unmute(self, fade: int = 0):
         pass
 
     def get_music_volume(self) -> float:
@@ -585,6 +585,10 @@ class DefaultSoundController(SoundController):
         pygame.mixer.set_reserved(8)  # Reserve the first 8 channels for music
         self.global_music_volume = 1.0
         self.global_sfx_volume = 1.0
+        # What fraction of its volume the music is heard at (see lower and unmute),
+        # and the fade it is in the middle of: from, to, when it began, how long
+        self.music_fraction = 1.0
+        self._fraction_fade = None
 
         self.channel1 = ChannelPair(0)
         self.channel2 = ChannelPair(2)  # Skip each time because battle channel
@@ -611,21 +615,34 @@ class DefaultSoundController(SoundController):
     def mute(self):
         self.current_channel.set_volume(0)
 
-    def lower(self):
-        for channel in self.channel_stack:
-            channel.set_volume(0.25 * self.global_music_volume)
+    def lower(self, fraction: float = 0.25, fade: int = 0):
+        """
+        Plays the music at this fraction of its volume until unmute.
+        It gets there over `fade` milliseconds, or at once
+        """
+        self._set_music_fraction(fraction, fade)
 
-    def unmute(self):
+    def unmute(self, fade: int = 0):
+        self._set_music_fraction(1.0, fade)
+
+    def _set_music_fraction(self, fraction: float, fade: int):
+        if fade > 0:
+            self._fraction_fade = (self.music_fraction, fraction, engine.get_time(), fade)
+        else:
+            self._fraction_fade = None
+            self.music_fraction = fraction
+            self._apply_music_volume()
+
+    def _apply_music_volume(self):
         for channel in self.channel_stack:
-            channel.set_volume(self.global_music_volume)
+            channel.set_volume(self.music_fraction * self.global_music_volume)
 
     def get_music_volume(self) -> float:
         return self.global_music_volume
 
     def set_music_volume(self, volume):
         self.global_music_volume = volume
-        for channel in self.channel_stack:
-            channel.set_volume(self.global_music_volume)
+        self._apply_music_volume()
 
     def get_sfx_volume(self) -> float:
         return self.global_sfx_volume
@@ -819,6 +836,16 @@ class DefaultSoundController(SoundController):
 
     def update(self, event_list):
         current_time = engine.get_time()
+
+        if self._fraction_fade:
+            start, end, began, length = self._fraction_fade
+            progress = utils.clamp((current_time - began) / length, 0, 1)
+            # Quick at first and slowing as it gets there, as the GBA's fades do
+            eased = 1 - (1 - progress) ** 2
+            self.music_fraction = start + (end - start) * eased
+            self._apply_music_volume()
+            if progress >= 1:
+                self._fraction_fade = None
 
         any_changes = False
         for channel in self.channel_stack:
