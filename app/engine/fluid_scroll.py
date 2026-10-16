@@ -95,7 +95,9 @@ class FluidScroll():
 
         if slow_speed:
             speed = self.slow_speed
-        elif self.move_counter >= 2:
+        elif self.move_counter >= 2 or double_speed:
+            # Double speed has no wait before the repeats: on the GBA, holding B
+            # moves the cursor every 2 frames from the first
             speed = self.fast_speed
         else:
             speed = self.slow_speed

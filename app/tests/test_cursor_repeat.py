@@ -30,6 +30,25 @@ class CursorRepeatTests(EngineTestCase):
                             moved_on.append(frame)
                 self.assertEqual([0, 12, 16, 20, 24, 28], moved_on, frame_ms)
 
+    def test_holding_b_moves_every_2_frames_from_the_first(self):
+        '''On the GBA there is no wait before the second move. Here it was 6 frames'''
+        from app.engine import engine, fluid_scroll
+
+        held = MagicMock()
+        held.is_pressed.side_effect = lambda button: button == 'RIGHT'
+        fluid = fluid_scroll.FluidScroll()
+        for frame_ms in (16, 1000 / 60, 17):
+            fluid.reset_on_change_state()
+            moved_on = []
+            with patch.object(fluid_scroll, 'get_input_manager', return_value=held):
+                for frame in range(12):
+                    engine.constants['current_time'] = 1000 + int(frame * frame_ms)
+                    held.just_pressed.side_effect = lambda button: button == 'RIGHT' and frame == 0
+                    fluid.update()
+                    if fluid.get_directions(double_speed=True):
+                        moved_on.append(frame)
+            self.assertEqual([0, 2, 4, 6, 8, 10], moved_on, frame_ms)
+
 
 if __name__ == '__main__':
     unittest.main()
