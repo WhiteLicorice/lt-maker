@@ -477,6 +477,8 @@ class PrepFormationSelectState(MapState):
     # below that on each frame. It rests at the bottom and at the top and is quick
     # in between
     marker_bob_height = 14
+    # And it is held this high over a tile nothing can be put down on
+    marker_blocked_height = 10
     marker_offset = [5] * 4 + [3] * 3 + [2] + [1] * 3 + [0] * 4 + [1] * 3 + [2] + [3] * 3
 
     def start(self):
@@ -544,39 +546,43 @@ class PrepFormationSelectState(MapState):
 
         elif event == 'BACK':
             get_sound_thread().play_sfx('Select 4')
+            # As on the GBA, the cursor goes back to the unit that was picked up
+            game.cursor.set_pos(self.unit_position())
             self.back()
 
         elif event == 'AUX':
-            if self.unit.position:
-                game.cursor.set_pos(self.unit.position)
-            else:
-                game.cursor.set_pos(game.get_rescuer(self.unit).position)
+            game.cursor.set_pos(self.unit_position())
 
         elif event == 'INFO':
             _handle_info()
+
+    def unit_position(self):
+        """Where the picked up unit is: on its own tile, or on its carrier's"""
+        return self.unit.position or game.get_rescuer(self.unit).position
 
     def draw(self, surf):
         surf = super().draw(surf)
 
         # Draw static hand
         if self.unit:
-            if self.unit.position:
-                pos = self.unit.position
-            else:
-                pos = game.get_rescuer(self.unit).position
+            pos = self.unit_position()
             x = (pos[0] - game.camera.get_x()) * TILEWIDTH + self.marker_left
             y = (pos[1] - game.camera.get_y()) * TILEHEIGHT - self.marker_height
             surf.blit(self.marker, (x, y))
 
         hovered_unit = game.cursor.get_hover()
-        if game.check_for_region(game.cursor.position, 'formation') or (hovered_unit and hovered_unit.team == 'player' and hovered_unit.traveler):
-            pos = game.cursor.position
+        pos = game.cursor.position
+        if game.check_for_region(pos, 'formation') or (hovered_unit and hovered_unit.team == 'player' and hovered_unit.traveler):
             frames_passed = (engine.get_time() - self.last_update) // FRAMERATE
             self.counter = frames_passed % len(self.marker_offset)
-            # The cursor's offset is how far it still is from its tile: the hand slides with it
-            x = (pos[0] - game.camera.get_x()) * TILEWIDTH - game.cursor.offset_x + self.marker_left
-            y = (pos[1] - game.camera.get_y()) * TILEHEIGHT - game.cursor.offset_y - self.marker_bob_height + self.marker_offset[self.counter]
-            surf.blit(self.marker, (x, y))
+            height = self.marker_bob_height - self.marker_offset[self.counter]
+        else:
+            # Nothing can be put down here: the hand keeps still, over the cursor's blinking X
+            height = self.marker_blocked_height
+        # The cursor's offset is how far it still is from its tile: the hand slides with it
+        x = (pos[0] - game.camera.get_x()) * TILEWIDTH - game.cursor.offset_x + self.marker_left
+        y = (pos[1] - game.camera.get_y()) * TILEHEIGHT - game.cursor.offset_y - height
+        surf.blit(self.marker, (x, y))
 
         return surf
 

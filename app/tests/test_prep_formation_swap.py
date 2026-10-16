@@ -170,6 +170,49 @@ class PrepFormationSwapTests(EngineTestCase):
         self.assertEqual(sorted(set(seen)), seen)
         self.assertEqual((4 * 16 + 3, 3 * 16 - 14 + bob()), hands()[0])
 
+    def test_cancel_puts_the_cursor_back_on_the_unit(self):
+        '''As on the GBA. The cursor stayed wherever it had been taken'''
+        harness = self.start_formation()
+        self.pick_up(harness, 'Eirika')  # At (4, 5)
+        harness.move_cursor_to((3, 3))
+        harness.press('BACK')
+        self.assertEqual('prep_formation', harness.state)
+        self.assertEqual((4, 5), harness.game.cursor.position)
+
+    def test_tile_nothing_can_be_put_down_on(self):
+        '''
+        As on the GBA: the X in the cursor is there for 30 frames and gone for 8,
+        and the hand keeps still above it. Here the X never blinked, and there
+        was no hand
+        '''
+        import itertools
+        import pygame
+        from app.engine.prep import PrepFormationSelectState
+        color = (255, 0, 254)
+        hand = pygame.Surface(PrepFormationSelectState.marker.get_size())
+        hand.fill(color)
+        patcher = patch.object(PrepFormationSelectState, 'marker', hand)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+        harness = self.start_formation()  # The formation is from (3, 3) to (5, 5)
+        self.pick_up(harness, 'Eirika')
+        harness.move_cursor_to((3, 3))
+        harness.move_cursor_to((2, 3))
+        cursor = harness.game.cursor
+
+        hands, crossed = set(), []
+        for _ in range(120):
+            harness.step()
+            mask = pygame.mask.from_threshold(harness.surf, color, (1, 1, 1, 255))
+            hands.add(min(rect.topleft for rect in mask.get_bounding_rects()))
+            # The cursor's two pictures are side by side on its sheet: plain, then crossed
+            crossed.append(cursor.get_image().get_offset()[0] > 0)
+        self.assertEqual({(2 * 16 + 3, 3 * 16 - 10)}, hands)
+        runs = [(is_crossed, len(list(frames))) for is_crossed, frames in itertools.groupby(crossed)]
+        # But for the first and the last, which the 120 frames cut short
+        self.assertEqual({(True, 30), (False, 8)}, set(runs[1:-1]))
+
 
 if __name__ == '__main__':
     unittest.main()

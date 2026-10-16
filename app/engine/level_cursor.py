@@ -5,7 +5,7 @@ from typing import Optional, Tuple
 from app.engine.objects.unit import UnitObject
 from app.engine.objects.region import RegionObject
 from app.events.regions import RegionType
-from app.constants import TILEHEIGHT, TILEWIDTH
+from app.constants import FRAMERATE, TILEHEIGHT, TILEWIDTH
 from app.counters import GenericAnimCounter
 from app.data.database.database import DB
 from app.engine import engine, image_mods, skill_system, evaluate
@@ -35,6 +35,8 @@ class LevelCursor(BaseCursor):
         self.path = []
         self.draw_state = LevelCursorDrawState.Hidden
         self.speed_state = False
+        # When the formation cursor came onto a tile nothing can be put down on
+        self._blocked_since = None
 
         self._sprite = SPRITES.get('cursor')
         self._sprite_dim = (32, 32)
@@ -97,6 +99,7 @@ class LevelCursor(BaseCursor):
     def formation_show(self):
         super().show()
         self.draw_state = LevelCursorDrawState.Formation
+        self._blocked_since = None
 
     def set_speed_state(self, val: bool):
         self.speed_state = val
@@ -278,9 +281,17 @@ class LevelCursor(BaseCursor):
         base_size = 32
         if self.draw_state == LevelCursorDrawState.Formation:
             if self.game.check_for_region(self.position, 'formation'):
+                self._blocked_since = None
                 return engine.subsurface(self.formation_sprite, (0, 0, base_size, base_size))
-            else:
+            # Nothing can be put down here. As on the GBA, the X blinks: there
+            # for 30 frames and gone for 8, from when the cursor came off the formation
+            if self._blocked_since is None:
+                self._blocked_since = engine.get_time()
+            frames_passed = (engine.get_time() - self._blocked_since) // FRAMERATE
+            if frames_passed % 38 < 30:
                 return engine.subsurface(self.formation_sprite, (base_size, 0, base_size, base_size))
+            else:
+                return engine.subsurface(self.formation_sprite, (0, 0, base_size, base_size))
         elif self.draw_state == LevelCursorDrawState.Combat:
             return engine.subsurface(self.red_sprite, (left, 0, base_size, base_size))
         elif self.draw_state == LevelCursorDrawState.Turnwheel:  # Green for turnwheel
