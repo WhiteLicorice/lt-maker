@@ -19,6 +19,7 @@ from app.engine.objects.skill import SkillObject
 from app.engine.objects.unit import UnitObject
 from app.engine.game_state import game
 from app.engine.game_menus import menu_options
+from app.engine.game_menus.menu_components.generic_menu.cursor_hand import slide_hand
 from app.engine.achievements import Achievement
 from app.engine.graphics.text.text_renderer import fix_tags
 from app.engine.text_evaluator import TextEvaluator
@@ -115,6 +116,9 @@ def draw_unit_bexp(surf, topleft, unit, new_exp, new_bexp, current_bexp, include
         FONT['text'].blit(str(new_bexp), surf, (topleft[0] + 57, topleft[1] + 52))
 
 class Cursor():
+    # The rows of a menu are this many pixels apart
+    row_height = 16
+
     def __init__(self, sprite=None):
         self.counter = 0
         self.anim = [0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 3, 3, 2, 2, 2, 1, 1, 1, 1]
@@ -122,31 +126,34 @@ class Cursor():
             self.sprite = SPRITES.get('menu_hand')
         else:
             self.sprite = sprite
+        # How far the hand is from its item, in pixels, as it slides to it
         self.y_offset = 0
+        self._last_slide = None
 
-    def y_offset_up(self):
-        self.y_offset = 12
+    def y_offset_up(self, distance: int = row_height):
+        self.y_offset = distance
 
-    def y_offset_down(self):
-        self.y_offset = -12
+    def y_offset_down(self, distance: int = row_height):
+        self.y_offset = -distance
 
     def update(self):
         self.counter = (self.counter + 1) % len(self.anim)
 
     def update_y_offset(self):
-        if self.y_offset > 0:
-            self.y_offset = max(0, self.y_offset - 4)
-        elif self.y_offset < 0:
-            self.y_offset = min(0, self.y_offset + 4)
+        # Once a frame, however many times the hand is drawn
+        current_time = engine.get_time()
+        if current_time != self._last_slide:
+            self._last_slide = current_time
+            self.y_offset = slide_hand(self.y_offset)
 
     def draw(self, surf, x, y):
-        surf.blit(self.sprite, (x - 12 + self.anim[self.counter], y + 3 + self.y_offset))
         self.update_y_offset()
+        surf.blit(self.sprite, (x - 12 + self.anim[self.counter], y + 3 + self.y_offset))
         return surf
 
     def draw_vert(self, surf, x, y):
-        surf.blit(self.sprite, (x - 12, y + 3 + self.y_offset + self.anim[self.counter]))
         self.update_y_offset()
+        surf.blit(self.sprite, (x - 12, y + 3 + self.y_offset + self.anim[self.counter]))
         return surf
 
 class Simple():
@@ -267,10 +274,21 @@ class Simple():
         # If we did scroll
         return scroll != self.scroll
 
+    def _row_top(self, index: int, scroll: int) -> int:
+        """How far down the menu an option is drawn, scrolled that far"""
+        if index >= scroll:
+            return sum(option.height() for option in self.options[scroll:index])
+        return -sum(option.height() for option in self.options[index:scroll])
+
+    def _slide_cursor(self, old_index: int, old_scroll: int):
+        """The hand slides from where it was to the option now chosen, however far that is"""
+        self.cursor.y_offset = self._row_top(old_index, old_scroll) - self._row_top(self.current_index, self.scroll)
+
     def move_down(self, first_push=True) -> bool:
         should_move = first_push or self.current_index < len(self.options) - 1
         if not should_move:
             return False
+        old_index, old_scroll = self.current_index, self.scroll
         if first_push:
             self.current_index += 1
             if self.current_index > len(self.options) - 1:
@@ -278,22 +296,20 @@ class Simple():
                 self.scroll = 0
             elif self.current_index > self.scroll + self.limit - 2 and self.scroll + self.limit < len(self.options):
                 self.scroll += 1
-            else:
-                self.cursor.y_offset_down()
         else: # not at bottom of list
             self.current_index += 1
             if self.current_index > self.scroll + self.limit - 2 and self.scroll + self.limit < len(self.options):
                 self.scroll += 1
-            else:
-                self.cursor.y_offset_down()
         if self.limit < len(self.options):
             self.scroll = min(len(self.options) - self.limit, self.scroll)
+        self._slide_cursor(old_index, old_scroll)
         return True
 
     def move_up(self, first_push=True) -> bool:
         should_move = first_push or self.current_index > 0
         if not should_move:
             return False
+        old_index, old_scroll = self.current_index, self.scroll
         if first_push:
             self.current_index -= 1
             if self.current_index < 0:
@@ -301,15 +317,12 @@ class Simple():
                 self.scroll = self.current_index - self.limit + 1
             elif self.current_index < self.scroll + 1:
                 self.scroll -= 1
-            else:
-                self.cursor.y_offset_up()
         else: # not at top of list
             self.current_index -= 1
             if self.current_index < self.scroll + 1:
                 self.scroll -= 1
-            else:
-                self.cursor.y_offset_up()
         self.scroll = max(0, self.scroll)
+        self._slide_cursor(old_index, old_scroll)
         return True
 
     def update_options(self, options=None):
