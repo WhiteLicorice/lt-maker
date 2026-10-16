@@ -197,6 +197,13 @@ class AnimationCombatTimingTests(unittest.TestCase):
         '''As on the GBA. Here it was 450 ms, 27 frames'''
         self.assertEqual(31, self.frames_in(self.build(), 'exp_pause'))
 
+    def test_first_round_31_frames_after_everything_has_come_in(self):
+        '''As on the GBA. Here it was 25'''
+        combat = self.build()
+        combat.battle_background = None
+        combat.start_event = MagicMock()
+        self.assertEqual(32, self.frames_in(combat, 'init_pause'))
+
     def test_background_comes_in_over_16_frames(self):
         '''The map to black over 8 frames, then the background in over 8, as on the GBA. Here it took 25'''
         from app.utilities import utils

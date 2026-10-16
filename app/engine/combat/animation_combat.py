@@ -316,7 +316,8 @@ class AnimationCombat(BaseCombat, MockCombat):
                 self.state = 'init_pause'
 
         elif self.state == 'init_pause':
-            if self._skip or current_time > utils.frames2ms(25):
+            # As on the GBA, the first round starts 31 frames after everything has come in
+            if self._skip or current_time > utils.frames2ms(31):
                 if self.battle_background:
                     self.battle_background.set_normal()
                 self.start_event(True)
