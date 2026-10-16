@@ -5,8 +5,8 @@ from typing import Tuple, List
 from enum import Enum
 
 import app.utilities as utils
-from app.constants import (TILEHEIGHT, TILEWIDTH, TILEX, TILEY, WINHEIGHT,
-                           WINWIDTH)
+from app.constants import (FPS, TILEHEIGHT, TILEWIDTH, TILEX, TILEY,
+                           WINHEIGHT, WINWIDTH)
 from app.data.database.database import DB
 from app.engine import (combat_calcs, engine, icons, item_system,
                         skill_system, unit_funcs, text_funcs)
@@ -163,7 +163,9 @@ class MultiGenericBar():
 
 MAX_HP_PER_BAR = 40
 class CombatHealthBar(HealthBar):
-    colors = [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 4, 4, 3, 3, 2, 2, 1, 1]
+    # The shade of the glow, a frame at a time, as on the GBA (gFrameLut_EfxHPBarColorChange1):
+    # up to the lightest 2 frames a step, held 10 frames, back down, and the darkest held 10
+    colors = [1, 1, 2, 2, 3, 3, 4, 4] + [5] * 10 + [4, 4, 3, 3, 2, 2, 1, 1] + [0] * 10
     speed = utils.frames2ms(2)
     time_for_change_min = 0
 
@@ -176,6 +178,7 @@ class CombatHealthBar(HealthBar):
         self.end_full_hp_blip = engine.subsurface(self.full_hp_blip, (0, 0, 1, self.full_hp_blip.get_height()))
         self.end_damaged_hp_blip = engine.subsurface(self.empty_hp_blip, (0, 0, 1, self.empty_hp_blip.get_height()))
         self.color_tick = 0
+        self.glow_start = engine.get_time()
         self.heal_sound_update = 0
 
     def update(self, skip=False):
@@ -184,7 +187,9 @@ class CombatHealthBar(HealthBar):
         else:
             self.speed = utils.frames2ms(2)
         super().update()
-        self.color_tick = int(engine.get_time() / 16.67) % len(self.colors)
+        # Whole frames since the glow began. Rounded, since a frame is 16 or 17 ms on the clock
+        frames = round((engine.get_time() - self.glow_start) * FPS / 1000)
+        self.color_tick = frames % len(self.colors)
 
     def set_val(self, val):
         current_time = engine.get_time()

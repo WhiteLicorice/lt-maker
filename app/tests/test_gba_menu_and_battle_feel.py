@@ -277,5 +277,39 @@ class BattleExitTests(CombatTimingCase):
         self.assertEqual(20, next(idx for idx, bar in enumerate(bars) if bar < 1))
 
 
+
+class HpBarGlowTests(unittest.TestCase):
+    '''
+    The hp bar glows as on the GBA: a step lighter every 2 frames, the lightest held 10
+    frames, back down, the darkest held 10, 36 frames in all. Here it was 32, read off
+    the clock so that its steps took 1 to 3 frames
+    '''
+
+    def test_glow_a_frame_at_a_time(self):
+        from unittest.mock import patch
+        from app.engine import engine, health_bar
+        self.addCleanup(engine.constants.__setitem__, 'current_time', engine.constants.get('current_time', 0))
+        gba = [1, 1, 2, 2, 3, 3, 4, 4] + [5] * 10 + [4, 4, 3, 3, 2, 2, 1, 1] + [0] * 10
+        # The clock counts whole milliseconds, so frames are 16 or 17 of them apart
+        clocks = {
+            'rounded': lambda frame: round(frame * 1000 / 60),
+            'floored': lambda frame: frame * 1000 // 60,
+            '16, 17, 17': lambda frame: frame * 16 + frame * 2 // 3,
+        }
+        for name, clock in clocks.items():
+            bar = health_bar.CombatHealthBar.__new__(health_bar.CombatHealthBar)
+            bar.displayed_val = 10
+            bar.get_val = lambda: 10
+            engine.constants['current_time'] = 5000
+            bar.glow_start = engine.get_time()
+            seen = []
+            for frame in range(72):
+                engine.constants['current_time'] = 5000 + clock(frame)
+                with patch.object(health_bar.HealthBar, 'update'):
+                    bar.update()
+                seen.append(bar.colors[bar.color_tick])
+            self.assertEqual(gba * 2, seen, name)
+
+
 if __name__ == '__main__':
     unittest.main()
