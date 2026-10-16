@@ -166,6 +166,48 @@ class StepSoundTests(unittest.TestCase):
         self.assertEqual([0, 20, 40], [frame for frame, _ in self.steps('Flying', 41)])
         self.assertEqual([0, 20, 40], [frame for frame, _ in self.steps('Mogall', 41)])
 
+    def test_monsters_have_steps_of_their_own(self):
+        '''As on the GBA. They all walked with the infantry's steps here'''
+        self.assertEqual([(0, 'Map_Step_Zombie'), (15, 'Map_Step_Zombie')], self.steps('Zombie', 16))
+        self.assertEqual([(0, 'Map_Step_Skeleton'), (15, 'Map_Step_Skeleton')], self.steps('Skeleton', 16))
+        self.assertEqual([(0, 'Map_Step_Bael'), (10, 'Map_Step_Bael')], self.steps('Spider', 11))
+        # Map_Step_Tarvos is the GBA's Mauthe Doog walk
+        self.assertEqual([0, 3, 10, 21], [frame for frame, name in self.steps('Dog', 22) if name == 'Map_Step_Tarvos'])
+        self.assertEqual([(0, 'Map_Step_Gorgon'), (15, 'Map_Step_Gorgon')], self.steps('Gorgon', 16))
+        self.assertEqual([(0, 'Map_Step_Manakete'), (16, 'Map_Step_Manakete')], self.steps('Manakete', 17))
+        self.assertEqual([(0, 'Map_Step_Boat'), (12, 'Map_Step_Boat'), (24, 'Map_Step_Boat')], self.steps('Boat', 25))
+
+    def test_a_monster_tag_comes_before_flying(self):
+        '''A flying manakete flaps its wings rather than sounding like a pegasus'''
+        from app.engine import unit_sound
+        unit = MagicMock()
+        unit.tags = ['Flying', 'Manakete']
+        sound = unit_sound.UnitSound(unit)
+        sound.play()
+        self.assertEqual('Manakete', sound.current_sound)
+
+    def test_default_project_has_every_step_sound(self):
+        import json
+        import os
+        from app.engine import unit_sound
+        sfx = {nid for nid, _ in json.load(open(os.path.join('default.ltproj', 'resources', 'sfx', 'sfx.json')))}
+        for steps in unit_sound.UnitSound.sound_catalog.values():
+            for name in steps.values():
+                if name != 'repeat':
+                    self.assertIn('Map_Step_' + name, sfx)
+                    self.assertTrue(os.path.exists(os.path.join('default.ltproj', 'resources', 'sfx', 'Map_Step_%s.ogg' % name)))
+
+    def test_default_project_tags_its_monsters(self):
+        import json
+        import os
+        def tags(klass):
+            return json.load(open(os.path.join('default.ltproj', 'game_data', 'classes', klass + '.json')))[0]['tags']
+        for klass in ('Revenant', 'Entombed'):
+            self.assertIn('Zombie', tags(klass))
+        for klass in ('Sword_Bonewalker', 'Sword_Wight', 'Bow_Bonewalker', 'Bow_Wight'):
+            self.assertIn('Skeleton', tags(klass))
+        self.assertIn('Manakete', tags('Manakete'))
+
 
 if __name__ == '__main__':
     unittest.main()

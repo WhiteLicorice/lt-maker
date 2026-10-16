@@ -11,7 +11,8 @@
         ],
         "tags": [
             "Monster",
-            "ArenaIgnore"
+            "ArenaIgnore",
+            "Skeleton"
         ],
         "max_level": 20,
         "bases": {

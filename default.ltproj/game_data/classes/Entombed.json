@@ -9,7 +9,8 @@
         "turns_into": [],
         "tags": [
             "Monster",
-            "ArenaIgnore"
+            "ArenaIgnore",
+            "Zombie"
         ],
         "max_level": 20,
         "bases": {

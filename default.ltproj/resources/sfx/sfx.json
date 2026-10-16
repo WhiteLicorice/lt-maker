@@ -288,6 +288,14 @@
         "Map_Sounds"
     ],
     [
+        "Map_Step_Manakete",
+        "Map_Sounds"
+    ],
+    [
+        "Map_Step_Boat",
+        "Map_Sounds"
+    ],
+    [
         "CrimsonEye",
         "Monster"
     ],
@@ -941,27 +949,27 @@
     ],
     [
         "Map_Step_Bael",
-        null
+        "Map_Sounds"
     ],
     [
         "Map_Step_Gorgon",
-        null
+        "Map_Sounds"
     ],
     [
         "Map_Step_Mogall",
-        null
+        "Map_Sounds"
     ],
     [
         "Map_Step_Skeleton",
-        null
+        "Map_Sounds"
     ],
     [
         "Map_Step_Tarvos",
-        null
+        "Map_Sounds"
     ],
     [
         "Map_Step_Zombie",
-        null
+        "Map_Sounds"
     ],
     [
         "MautheDoogBite",
