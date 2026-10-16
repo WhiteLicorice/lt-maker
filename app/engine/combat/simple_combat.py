@@ -2,11 +2,12 @@ from __future__ import annotations
 from typing import List, Optional
 
 from app.data.database.database import DB
-from app.engine import (action, banner, exp_funcs, item_system, skill_system,
+from app.engine import (action, banner, engine, exp_funcs, item_system, skill_system,
                         supports)
 from app.engine.combat.playback import PlaybackBrush
 from app.engine.combat.solver import CombatPhaseSolver
 from app.engine.game_state import game
+from app.engine.input_manager import get_input_manager
 from app.engine.objects.item import ItemObject
 from app.engine.objects.unit import UnitObject
 from app.events import triggers, event_commands
@@ -24,9 +25,20 @@ class SimpleCombat():
     # for a base/prep "Use" (BaseCombat), which consumes no turn. Read when a
     # cancellable promotion defers its turn finalization to PromotionState.
     finalizes_turn: bool = True
+    # How long the cursor shows what the AI is about to strike: 46 frames on the
+    # GBA, where holding A or START cuts it short
+    target_cursor_time = utils.frames2ms(46)
+    target_cursor_start: Optional[int] = None
     """
     Does the simple mechanical effects of combat without any effects
     """
+
+    def target_cursor_done(self) -> bool:
+        """Whether the AI's target has been under the cursor for long enough, counted from the first call"""
+        if self.target_cursor_start is None:
+            self.target_cursor_start = engine.get_time()
+        hurried = get_input_manager().is_pressed('SELECT') or get_input_manager().is_pressed('START')
+        return hurried or engine.get_time() - self.target_cursor_start > self.target_cursor_time
 
     def _full_setup(self, attacker: UnitObject, main_item: ItemObject, items: list,
                     positions: list, main_target_positions: list, splash_positions: list):

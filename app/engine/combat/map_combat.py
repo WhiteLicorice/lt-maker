@@ -86,7 +86,22 @@ class MapCombat(SimpleCombat):
             game.highlight.remove_highlights()
             self.start_combat()
             self.start_event()
-            self.set_state('init_pause')
+            target_pos = self.defender.position if self.defender else self.target_positions[0]
+            if self.ai_combat and target_pos and not self._skip:
+                # As on the GBA, the cursor is put on what the AI is about to strike,
+                # counted from once the camera has got there
+                game.cursor.combat_show()
+                game.cursor.set_pos(target_pos)
+                game.state.change('move_camera')
+                self.target_cursor_start = None
+                self.set_state('target_cursor')
+            else:
+                self.set_state('init_pause')
+
+        elif self.state == 'target_cursor':
+            if self._skip or self.target_cursor_done():
+                game.cursor.hide()
+                self.set_state('init_pause')
 
         elif self.state == 'init_pause':
             if self._skip or current_time > 200:

@@ -193,5 +193,64 @@ class MapCombatPacingTests(EngineTestCase):
         self.assertIn(self.frames_in(first, 'hp_bar_wait'), (damage, damage + 1))
 
 
+class AiTargetCursorTests(EngineTestCase):
+    '''
+    On the GBA the cursor is put on what the AI is about to strike, for 46
+    frames. An animation combat showed its red cursor; a map combat showed none
+    '''
+
+    def ai_strike(self, held=None):
+        '''
+        The Fighter at (8, 6) attacks Seth, who has come to (8, 5), as the AI
+        would. Returns (the combat's state, whether the red cursor is on Seth) a frame
+        '''
+        import pygame
+        from app.engine.combat import interaction
+        from app.engine.level_cursor import LevelCursorDrawState
+        harness = self.start_harness()
+        harness.start_level('0')
+        harness.run_until_state('free')
+        game = harness.game
+        harness.wait('Seth', (8, 5))
+        harness.run_until_state('free')
+        seth, fighter = game.get_unit('Seth'), game.get_unit('102')
+        interaction.start_combat(fighter, seth.position, fighter.get_weapon(), ai_combat=True)
+        if held:
+            harness.step(events=[harness._key_event(pygame.KEYDOWN, held)])
+
+        self.addCleanup(setattr, engine_harness, 'FRAME_MS', engine_harness.FRAME_MS)
+        rows = []
+        for frame in range(400):
+            # A frame is 16 or 17 ms on a clock of whole milliseconds
+            engine_harness.FRAME_MS = 16 if frame % 3 == 2 else 17
+            harness.step()
+            if 'combat' not in game.state.state_names():
+                if rows:
+                    break
+                continue
+            combat = game.memory.get('current_combat')
+            if not combat:  # The combat state has yet to start
+                continue
+            on_target = game.cursor.draw_state == LevelCursorDrawState.Combat and game.cursor.position == seth.position
+            rows.append((combat.state, on_target))
+        return rows
+
+    def test_cursor_is_on_the_target_before_the_ai_strikes(self):
+        rows = self.ai_strike()
+        shown = [on_target for state, on_target in rows if state == 'target_cursor']
+        self.assertIn(len(shown), (46, 47))
+        self.assertTrue(all(shown))
+        # And gone before the first blow
+        self.assertFalse(any(on_target for state, on_target in rows if state != 'target_cursor'))
+
+    def test_holding_select_cuts_it_short(self):
+        rows = self.ai_strike(held='SELECT')
+        self.assertLess(sum(1 for state, _ in rows if state == 'target_cursor'), 3)
+
+    def test_player_is_not_shown_the_target_they_chose(self):
+        rows = MapCombatPacingTests.fight(self)
+        self.assertNotIn('target_cursor', [state for state, _, _ in rows])
+
+
 if __name__ == '__main__':
     unittest.main()

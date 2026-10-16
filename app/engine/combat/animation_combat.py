@@ -256,17 +256,21 @@ class AnimationCombat(BaseCombat, MockCombat):
             self.start_combat()
             # The cursor must be on the combat's view position before the attacker's
             # sprite state changes, since that's where it takes its facing from
-            game.cursor.combat_show()
+            if self.ai_combat and not self._skip:
+                # As on the GBA, the cursor is shown only on what the AI is about to
+                # strike, counted from once the camera has got there
+                game.cursor.combat_show()
             game.cursor.set_pos(self.view_pos)
             self.attacker.sprite.change_state('combat_attacker')
             self.defender.sprite.change_state('combat_defender')
             self.state = 'red_cursor'
+            self.target_cursor_start = None
             if not self._skip:
                 game.state.change('move_camera')
             self._set_stats(self.playback)  # For start combat changes
 
         elif self.state == 'red_cursor':
-            if self._skip or current_time > 400:
+            if self._skip or not self.ai_combat or self.target_cursor_done():
                 game.cursor.hide()
                 game.highlight.remove_highlights()
                 self.state = 'fade_in'
