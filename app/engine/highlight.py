@@ -10,7 +10,10 @@ from app.engine.game_state import game
 import logging
 
 class HighlightController():
-    starting_cutoff = 7
+    # As on the GBA (gOpenLimitViewImgLut), squares newly shown grow out of their
+    # bottom left corner, a frame at a time, before they are drawn whole
+    opening_sizes = (5, 7, 9, 11, 13, 15)
+    starting_cutoff = 0  # Frames into opening
 
     def __init__(self):
         self.images = {'spell': SPRITES.get('highlight_green'),
@@ -149,10 +152,15 @@ class HighlightController():
         for name, highlight_set in self.highlights.items():
             if not highlight_set:
                 continue
-            self.transitions[name] = max(0, self.transitions[name] - 1)
-            cut_off = self.transitions[name]
-            rect = (self.update_idx//4 * TILEWIDTH + cut_off, cut_off, TILEWIDTH - cut_off, TILEHEIGHT - cut_off)
+            frame = self.transitions[name]
+            if frame < len(self.opening_sizes):
+                size = self.opening_sizes[frame]
+                self.transitions[name] += 1
+            else:
+                size = TILEWIDTH
+            # The bottom left corner of the square, that size
+            rect = (self.update_idx//4 * TILEWIDTH, TILEHEIGHT - size, size, size)
             image = engine.subsurface(self.images[name], rect)
             for position in highlight_set:
-                surf.blit(image, (position[0] * TILEWIDTH - cull_rect[0], position[1] * TILEHEIGHT - cull_rect[1]))
+                surf.blit(image, (position[0] * TILEWIDTH - cull_rect[0], position[1] * TILEHEIGHT - cull_rect[1] + TILEHEIGHT - size))
         return surf

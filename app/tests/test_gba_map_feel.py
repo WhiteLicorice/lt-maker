@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import MagicMock, patch
 
 from app.engine import action  # noqa: F401 -- avoids a circular import, see test_menu_options
 from app.tests import engine_harness
@@ -85,6 +86,30 @@ class SideWindowTests(EngineTestCase):
         self.harness.press('SELECT', settle=0)
         self.assertEqual([('hidden', 0)] * 3, [(slide.state, slide.shown) for slide in
                                                 (self.ui.unit_slide, self.ui.tile_slide, self.ui.obj_slide)])
+
+
+class RangeSquareOpeningTests(EngineTestCase):
+    def test_squares_grow_out_of_their_bottom_left_corner(self):
+        '''
+        As on the GBA, 5, 7, 9, 11, 13 and 15 pixels over 6 frames, then whole.
+        Here they grew from 10 to 16 pixels out of the top left
+        '''
+        from app.engine.highlight import HighlightController
+        harness = self.start_harness()
+        harness.start_level('0')
+        harness.run_until_state('free')
+        highlight = HighlightController()
+        highlight.add_highlights({(2, 3)}, 'move')
+        seen = []
+        for _ in range(8):
+            surf = MagicMock()
+            with patch('app.engine.highlight.game') as game:
+                game.level.regions = []
+                highlight.draw(surf, (0, 0))
+            image, pos = surf.blit.call_args[0]
+            seen.append((image.get_width(), image.get_height(), pos))
+        sizes = [5, 7, 9, 11, 13, 15, 16, 16]
+        self.assertEqual([(size, size, (32, 48 + 16 - size)) for size in sizes], seen)
 
 
 if __name__ == '__main__':
