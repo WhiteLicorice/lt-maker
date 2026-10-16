@@ -20,13 +20,16 @@ from app.utilities import utils
 from app.engine.sprites import SPRITES
 from app.engine.sound import get_sound_thread
 from app.engine import engine, image_mods, gui, health_bar, equations
-from app.engine import item_funcs, item_system, skill_system, particles
+from app.engine import item_funcs, item_system, skill_system, particles, status_heal_effect
 import app.engine.config as cf
 from app.engine.animations import Animation
 from app.engine.game_state import game
 from app.utilities.typing import NID, Color3
 
 import logging
+
+# The color map sprites are outlined in, in their blue palette (color 15 on the GBA)
+MAP_SPRITE_OUTLINE: Color3 = (64, 56, 56)
 
 def swap_arc_frames(distance: int) -> int:
     """
@@ -130,6 +133,7 @@ class MapSprite():
         return palette
 
     def convert_to_team_colors(self, map_sprite):
+        self.outline_color = MAP_SPRITE_OUTLINE
         if self.team == 'black' and not self.palette_override:
             palette = RESOURCES.combat_palettes.get('map_sprite_black')
             if palette:
@@ -147,6 +151,7 @@ class MapSprite():
                 colors: List[Color3] = default_palettes['map_sprite_black']
 
         conversion_dict = {a: b for a, b in zip(default_palettes['map_sprite_blue'], colors)}
+        self.outline_color = conversion_dict.get(MAP_SPRITE_OUTLINE, MAP_SPRITE_OUTLINE)
         return image_mods.color_convert(map_sprite.standing_image, conversion_dict), \
             image_mods.color_convert(map_sprite.moving_image, conversion_dict)
 
@@ -240,6 +245,8 @@ class UnitSprite():
         self.suppress_combat_movement = False
 
         self.flicker = []
+        # When the unit began to show a bad status leaving it
+        self.status_heal_start: Optional[int] = None
         self.vibrate = []
         self.vibrate_counter = 0
         self.animations: Dict[NID, Animation] = {}
@@ -311,6 +318,10 @@ class UnitSprite():
 
     def start_flicker(self, start_time, total_time, color, direction='add', fade_out=False):
         self.flicker.append((engine.get_time() + start_time, total_time, color, direction, fade_out))
+
+    def start_status_heal(self):
+        """Shows a bad status leaving the unit, as on the GBA"""
+        self.status_heal_start = engine.get_time()
 
     def start_vibrate(self, start_time, total_time):
         self.vibrate.append((engine.get_time() + start_time, total_time))
@@ -687,8 +698,17 @@ class UnitSprite():
                 elif direction == 'sub':
                     image = image_mods.sub_tint(image.convert_alpha(), color)
 
+        if self.status_heal_start is not None:
+            # Frames since it began, to the nearest frame
+            frame = int((current_time - self.status_heal_start) * 60 / 1000 + 0.5)
+            if frame < status_heal_effect.FRAMES:
+                image = status_heal_effect.draw(image, frame, self.map_sprite.outline_color)
+            else:
+                self.status_heal_start = None
+
         # Color a unit red if they are highlighted by the boundary
-        if not self.flicker and game.boundary.draw_flag and self.unit.nid in game.boundary.displaying_units:
+        if not self.flicker and self.status_heal_start is None and \
+                game.boundary.draw_flag and self.unit.nid in game.boundary.displaying_units:
             image = image_mods.change_color(image.convert_alpha(), (60, 0, 0))
 
         # Turnwheel tint of unit sprite

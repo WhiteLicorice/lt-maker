@@ -8,10 +8,14 @@ from app.engine.sound import get_sound_thread
 from app.engine.state import MapState
 from app.events import triggers
 from app.data.resources.resources import RESOURCES
+from app.utilities import utils
 
 
 class StatusUpkeepState(MapState):
     name = 'status_upkeep'
+
+    # A unit that a bad status has just left is shown for a moment, as on the GBA
+    wear_off_time = utils.frames2ms(66)
 
     def start(self):
         game.cursor.hide()
@@ -35,6 +39,8 @@ class StatusUpkeepState(MapState):
         self.state = 'processing'
         self.last_update = 0
         self.time_for_change = 0
+        self.worn_off = False
+        self.wear_off_start = None
 
         self.actions, self.playback = [], []
 
@@ -47,6 +53,29 @@ class StatusUpkeepState(MapState):
 
     def can_process(self, cur_unit) -> bool:
         return cur_unit.position or self.is_traveler(cur_unit)
+
+    def bad_status_wears_off(self) -> bool:
+        """Whether the actions about to be done take a bad status, one the player is shown, off the unit"""
+        for act in self.actions:
+            if isinstance(act, action.RemoveSkill) and act.unit is self.cur_unit:
+                skill = act.skill
+                if isinstance(skill, str):  # Its nid
+                    skill = next((s for s in self.cur_unit.skills if s.nid == skill), None)
+                if skill and skill.negative and not skill_system.hidden(skill, self.cur_unit):
+                    return True
+        return False
+
+    def begin_wear_off(self) -> bool:
+        """Shows the unit that a bad status has just left, if there is one to show. Returns whether there is"""
+        unit = self.cur_unit
+        if not self.worn_off or not unit.position or unit.get_hp() <= 0 or not game.board.in_vision(unit.position):
+            return False
+        self.worn_off = False
+        game.cursor.set_pos(unit.position)
+        game.state.change('move_camera')
+        self.wear_off_start = None
+        self.state = 'wear_off'
+        return True
 
     def update(self):
         super().update()
@@ -73,6 +102,7 @@ class StatusUpkeepState(MapState):
                         item_system.on_upkeep(self.actions, self.playback, self.cur_unit, item)
                     for item in skill_system.get_extra_abilities(self.cur_unit).values():
                         item_system.on_upkeep(self.actions, self.playback, self.cur_unit, item)
+                self.worn_off = self.bad_status_wears_off()
                 if self.playback and self.cur_unit.position:  # Travelers skip this part
                     game.cursor.set_pos(self.cur_unit.position)
                     game.state.change('move_camera')
@@ -84,6 +114,8 @@ class StatusUpkeepState(MapState):
                     for act in self.actions:
                         action.do(act)
                     self.check_death()
+                    if self.begin_wear_off():
+                        return
                     self.cur_unit = None
                     return 'repeat'
                 else:
@@ -110,6 +142,17 @@ class StatusUpkeepState(MapState):
         elif self.state == 'running':
             if engine.get_time() > self.last_update + self.time_for_change:
                 self.check_death()
+                if not self.begin_wear_off():
+                    self.state = 'processing'
+                    self.cur_unit = None
+
+        elif self.state == 'wear_off':
+            if self.wear_off_start is None:
+                # Counted from here, once the camera has got there
+                self.wear_off_start = engine.get_time()
+                self.cur_unit.sprite.start_status_heal()
+                get_sound_thread().play_sfx('Restore')
+            elif engine.get_time() > self.wear_off_start + self.wear_off_time:
                 self.state = 'processing'
                 self.cur_unit = None
 

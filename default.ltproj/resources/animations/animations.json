@@ -565,5 +565,14 @@
         "speed": 75,
         "frame_times": "1,1,1,1,2,2,2,2,2,30",
         "use_frame_time": true
+    },
+    {
+        "nid": "StatusHeal",
+        "frame_x": 1,
+        "frame_y": 1,
+        "num_frames": 1,
+        "speed": 75,
+        "frame_times": "1",
+        "use_frame_time": false
     }
 ]
