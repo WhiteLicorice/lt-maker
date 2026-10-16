@@ -6,7 +6,7 @@ class UnitSound():
         'Mounted': {0: 'Mounted1', 3: 'Mounted2', 10: 'Mounted3', 21: 'repeat'},
         'Armor': {0: 'Armor1', 16: 'Armor2', 32: 'repeat'},
         'Infantry': {0: 'Infantry1', 8: 'Infantry2', 16: 'repeat'},
-        'Mogall': {0: 'Mogall', 19: 'repeat'}}
+        'Mogall': {0: 'Mogall', 20: 'repeat'}}  # As on the GBA (MuSoundScr_Mogall)
 
     def __init__(self, unit):
         self.unit = unit
@@ -28,13 +28,15 @@ class UnitSound():
 
     def update(self, volume=1):
         if self.current_sound:
-            if self.frame in self.sound_catalog[self.current_sound]:
-                sound = self.sound_catalog[self.current_sound][self.frame]
+            catalog = self.sound_catalog[self.current_sound]
+            if self.frame in catalog:
+                sound = catalog[self.frame]
                 if sound == 'repeat':
-                    self.frame = -1
-                else:
-                    self.playing_sound = 'Map_Step_' + sound
-                    get_sound_thread().play_sfx(self.playing_sound, volume=volume)
+                    # The cycle starts over on this frame, so it is as long as the GBA's
+                    self.frame = 0
+                    sound = catalog[0]
+                self.playing_sound = 'Map_Step_' + sound
+                get_sound_thread().play_sfx(self.playing_sound, volume=volume)
             self.frame += 1
 
     def stop(self):

@@ -144,5 +144,28 @@ class UnitWalkTests(EngineTestCase):
         self.assertIn(66, speeds)  # The GBA's fast game speed
 
 
+class StepSoundTests(unittest.TestCase):
+    def steps(self, tag: str, frames: int) -> list:
+        from app.engine import unit_sound
+        unit = MagicMock()
+        unit.tags = [tag]
+        sound = unit_sound.UnitSound(unit)
+        played = []
+        with patch.object(unit_sound, 'get_sound_thread') as thread:
+            thread.return_value.play_sfx.side_effect = lambda name, volume=1: played.append((frame, name))
+            sound.play()
+            for frame in range(frames):
+                sound.update()
+        return played
+
+    def test_cycles_as_long_as_the_gbas(self):
+        '''They took a frame more each time round: infantry stepped 8 and then 9 frames apart'''
+        self.assertEqual([0, 8, 16, 24, 32], [frame for frame, _ in self.steps('Infantry', 40)])
+        self.assertEqual([0, 3, 10, 21, 24, 31], [frame for frame, _ in self.steps('Mounted', 32)])
+        self.assertEqual([0, 16, 32], [frame for frame, _ in self.steps('Armor', 40)])
+        self.assertEqual([0, 20, 40], [frame for frame, _ in self.steps('Flying', 41)])
+        self.assertEqual([0, 20, 40], [frame for frame, _ in self.steps('Mogall', 41)])
+
+
 if __name__ == '__main__':
     unittest.main()
