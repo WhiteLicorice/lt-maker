@@ -92,5 +92,23 @@ class MenuHandSlideTests(EngineTestCase):
         self.assertEqual(0, menu.cursor.y_offset)
 
 
+class ScreenFadeTests(EngineTestCase):
+    def start(self, speed=None):
+        from app.engine import transitions
+        from app.engine.game_state import game
+        game.memory['transition_speed'] = speed
+        state = transitions.TransitionInState()
+        state.start()
+        return state
+
+    def test_fades_take_4_frames(self):
+        from app.utilities import utils
+        self.assertEqual(utils.frames2ms(4), self.start().wait_time)
+
+    def test_screen_that_asks_for_a_slower_fade_keeps_it(self):
+        '''The title screen's'''
+        self.assertEqual(4 * 133, self.start(4).wait_time)
+
+
 if __name__ == '__main__':
     unittest.main()

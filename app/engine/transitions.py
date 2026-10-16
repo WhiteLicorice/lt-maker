@@ -3,25 +3,30 @@ from app.engine.sprites import SPRITES
 from app.engine import engine, image_mods
 from app.engine.state import State
 from app.engine.game_state import game
+from app.utilities import utils
 
 transition_speed = 1
+# A fade to or from black takes 4 frames, as the GBA's quickest fades do
+fade_time = utils.frames2ms(4)
 
 class TransitionInState(State):
     name = 'transition_in'
     transparent = True
 
     start_time = 0
-    wait_time = 133
+    wait_time = fade_time
     bg = None
 
     def start(self):
         self.bg = SPRITES.get('bg_black').convert_alpha()
         self.start_time = engine.get_time()
         if game.memory.get('transition_speed'):
+            # A screen that asks for its own fade, such as the title screen's slow ones
             self.transition_speed = game.memory['transition_speed']
+            self.wait_time = self.transition_speed * 133
         else:
             self.transition_speed = transition_speed
-        self.wait_time = self.transition_speed * 133
+            self.wait_time = fade_time
 
     def update(self):
         if engine.get_time() >= self.start_time + self.wait_time:
