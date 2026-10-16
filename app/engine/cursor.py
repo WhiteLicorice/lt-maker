@@ -215,6 +215,7 @@ class BaseCursor():
                 else:
                     self.camera.cursor_x(self.position[0])
                     self.camera.cursor_y(self.position[1])
+                    self.camera.follow_cursor_speed(self._transition_speed / self.TRANSITION_FRAMES)
 
     def take_input(self):
         self.fluid.update()

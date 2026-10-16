@@ -116,5 +116,45 @@ class CursorGlideTests(EngineTestCase):
         self.assertEqual([8, 16, 16, 16, 16, 16], self.glide(2))
 
 
+class CameraFollowTests(unittest.TestCase):
+    '''
+    On the GBA the camera moves with the cursor, as fast as it does: a quarter of a tile a
+    frame, or half holding B. Here it took about 30 frames to get up to speed with B held,
+    and the cursor ran to the edge of the screen
+    '''
+
+    def camera(self):
+        from app.engine.camera import Camera
+        game = MagicMock()
+        game.tilemap.width, game.tilemap.height = 40, 40
+        return Camera(game)
+
+    def steps(self, camera, frames: int) -> list:
+        seen = []
+        for _ in range(frames):
+            camera.update()
+            seen.append(camera.current_x)
+        return seen
+
+    def test_keeps_pace_with_the_cursor_holding_b(self):
+        camera = self.camera()
+        camera.target_x = 1
+        camera.follow_cursor_speed(2 / 4)
+        self.assertEqual([0.5, 1], self.steps(camera, 2))
+
+    def test_keeps_pace_with_the_cursor(self):
+        camera = self.camera()
+        camera.target_x = 1
+        camera.follow_cursor_speed(1 / 4)
+        self.assertEqual([0.25, 0.5, 0.75, 1], self.steps(camera, 4))
+
+    def test_back_to_its_usual_pace_once_at_rest(self):
+        camera = self.camera()
+        camera.target_x = 1
+        camera.follow_cursor_speed(2 / 4)
+        self.steps(camera, 2)
+        camera.target_x = 2
+        self.assertEqual([1.25], self.steps(camera, 1))
+
 if __name__ == '__main__':
     unittest.main()
