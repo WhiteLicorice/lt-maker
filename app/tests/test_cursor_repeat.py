@@ -50,5 +50,44 @@ class CursorRepeatTests(EngineTestCase):
             self.assertEqual([0, 2, 4, 6, 8, 10], moved_on, frame_ms)
 
 
+class MoveBorderTests(EngineTestCase):
+    '''
+    As on the GBA, a held direction does not take the cursor off the edge of where the
+    unit can move, however long it is held. Here it went on after a pause
+    '''
+
+    def moves(self, pressed_on_frames: set, frames: int = 120) -> list:
+        '''
+        Holds RIGHT at the right edge of where the unit can move, pressing it anew on
+        pressed_on_frames. The frames on which the cursor was let move
+        '''
+        from app.engine import engine, fluid_scroll, level_cursor
+        from app.engine.movement.move_selection import MoveSelection
+        cursor = level_cursor.LevelCursor.__new__(level_cursor.LevelCursor)
+        cursor.fluid = fluid_scroll.FluidScroll()
+        cursor.speed_state = False
+        cursor.position = (2, 2)
+        cursor.move_selection = MoveSelection(walkable={(1, 2), (2, 2)})
+        cursor._handle_move = MagicMock()
+        held = MagicMock()
+        held.is_pressed.side_effect = lambda button: button == 'RIGHT'
+        moved_on = []
+        with patch.object(fluid_scroll, 'get_input_manager', return_value=held), \
+                patch.object(level_cursor, 'get_input_manager', return_value=held):
+            for frame in range(frames):
+                engine.constants['current_time'] = 1000 + frame * 1000 // 60
+                held.just_pressed.side_effect = lambda button: button == 'RIGHT' and frame in pressed_on_frames
+                cursor.take_input()
+                if cursor._handle_move.call_args[0][0]:
+                    moved_on.append(frame)
+        return moved_on
+
+    def test_held_direction_stops_at_the_edge(self):
+        self.assertEqual([], self.moves(pressed_on_frames=set()))
+
+    def test_pressing_again_goes_on(self):
+        self.assertEqual([0, 60], self.moves(pressed_on_frames={0, 60}))
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -49,7 +49,6 @@ class LevelCursor(BaseCursor):
         # roam the whole map outside of move selection
         self.move_selection = MoveSelection()
         self._last_valid_position = None  # Last position within movement borders
-        self.stopped_at_move_border = False
 
         self.position = (self.get_bounds()[0], self.get_bounds()[1])
 
@@ -245,33 +244,20 @@ class LevelCursor(BaseCursor):
 
     def take_input(self):
         self.fluid.update()
-        if self.stopped_at_move_border:
-            directions = self.fluid.get_directions(double_speed=self.speed_state, slow_speed=True)
-        else:
-            directions = self.fluid.get_directions(double_speed=self.speed_state)
+        directions = self.fluid.get_directions(double_speed=self.speed_state)
 
-        if self.position in self.move_selection:
-            if directions:
-                # If we would move off the current move
-                if ('LEFT' in directions and not get_input_manager().just_pressed('LEFT') and
-                        (self.position[0] - 1, self.position[1]) not in self.move_selection) or \
-                        ('RIGHT' in directions and not get_input_manager().just_pressed('RIGHT') and
-                         (self.position[0] + 1, self.position[1]) not in self.move_selection) or \
-                        ('UP' in directions and not get_input_manager().just_pressed('UP') and
-                         (self.position[0], self.position[1] - 1) not in self.move_selection) or \
-                        ('DOWN' in directions and not get_input_manager().just_pressed('DOWN') and
-                         (self.position[0], self.position[1] + 1) not in self.move_selection):
-                    # Then we can just keep going
-                    if self.stopped_at_move_border:
-                        self.stopped_at_move_border = False
-                    else:  # Ooh, we gotta stop the cursor movement
-                        directions.clear()
-                        self.fluid.reset()
-                        self.stopped_at_move_border = True
-                else:
-                    self.stopped_at_move_border = False
-        else:
-            self.stopped_at_move_border = False
+        if self.position in self.move_selection and directions:
+            # As on the GBA, a held direction stops at the edge of where the unit
+            # can move for as long as it is held. It must be pressed again to go on
+            if ('LEFT' in directions and not get_input_manager().just_pressed('LEFT') and
+                    (self.position[0] - 1, self.position[1]) not in self.move_selection) or \
+                    ('RIGHT' in directions and not get_input_manager().just_pressed('RIGHT') and
+                     (self.position[0] + 1, self.position[1]) not in self.move_selection) or \
+                    ('UP' in directions and not get_input_manager().just_pressed('UP') and
+                     (self.position[0], self.position[1] - 1) not in self.move_selection) or \
+                    ('DOWN' in directions and not get_input_manager().just_pressed('DOWN') and
+                     (self.position[0], self.position[1] + 1) not in self.move_selection):
+                directions.clear()
 
         self._handle_move(directions)
 
