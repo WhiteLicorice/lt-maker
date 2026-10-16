@@ -13,21 +13,22 @@ class CursorRepeatTests(EngineTestCase):
         from app.engine import engine, fluid_scroll
         from app.engine.cursor import BaseCursor
 
-        fluid = BaseCursor().fluid
         held = MagicMock()
         held.is_pressed.side_effect = lambda button: button == 'RIGHT'
-        # The clock counts whole milliseconds, so a frame is 16 or 17 of them
-        for frame_ms in (16, 1000 / 60, 17):
-            fluid.reset_on_change_state()
-            moved_on = []
-            with patch.object(fluid_scroll, 'get_input_manager', return_value=held):
-                for frame in range(30):
-                    engine.constants['current_time'] = 1000 + int(frame * frame_ms)
-                    held.just_pressed.side_effect = lambda button: button == 'RIGHT' and frame == 0
-                    fluid.update()
-                    if fluid.get_directions():
-                        moved_on.append(frame)
-            self.assertEqual([0, 12, 16, 20, 24, 28], moved_on, frame_ms)
+        # The map cursor's, and the one a menu gets when it asks for nothing else
+        for fluid in (BaseCursor().fluid, fluid_scroll.FluidScroll()):
+            # The clock counts whole milliseconds, so a frame is 16 or 17 of them
+            for frame_ms in (16, 1000 / 60, 17):
+                fluid.reset_on_change_state()
+                moved_on = []
+                with patch.object(fluid_scroll, 'get_input_manager', return_value=held):
+                    for frame in range(30):
+                        engine.constants['current_time'] = 1000 + int(frame * frame_ms)
+                        held.just_pressed.side_effect = lambda button: button == 'RIGHT' and frame == 0
+                        fluid.update()
+                        if fluid.get_directions():
+                            moved_on.append(frame)
+                self.assertEqual([0, 12, 16, 20, 24, 28], moved_on, frame_ms)
 
 
 if __name__ == '__main__':

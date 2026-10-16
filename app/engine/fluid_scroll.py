@@ -1,8 +1,15 @@
 from app.engine import engine
 from app.engine.input_manager import get_input_manager
+from app.utilities.utils import frames2ms
+
+# The GBA repeats a held direction after 12 frames, then every 4. Half a frame is
+# taken off each, since a frame is 16 or 17 ms on the clock: how long between
+# repeats, and how many times as long before the first one
+GBA_REPEAT = frames2ms(3.5)
+GBA_FIRST_REPEAT = 11.5 / 3.5
 
 class FluidScroll():
-    def __init__(self, speed=67, slow_speed=3):
+    def __init__(self, speed=GBA_REPEAT, slow_speed=GBA_FIRST_REPEAT):
         self.reset()
 
         self.left_update = 0
