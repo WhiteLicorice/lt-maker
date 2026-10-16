@@ -110,6 +110,50 @@ class ScreenFadeTests(EngineTestCase):
         self.assertEqual(4 * 133, self.start(4).wait_time)
 
 
+class BattleShakeTests(unittest.TestCase):
+    def test_normal_hit_shakes_as_on_the_gba(self):
+        '''The GBA's, gEfxQuakeVecs2, the other way about as the crit's is here'''
+        from app.engine.combat import mock_combat
+        combat = mock_combat.MockCombat.__new__(mock_combat.MockCombat)
+        combat._shake(1)
+        gba = [3, 0, 0, 0, -3, 0, 0, 3, 0, 0, -3, 0, 3, 0, -3, 0, 3, -3]
+        self.assertEqual([(-v, -v) for v in gba] + [(0, 0)], combat.shake_set)
+
+    def test_no_damage_does_not_shake_the_screen(self):
+        from app.engine.combat import mock_combat
+        combat = mock_combat.MockCombat.__new__(mock_combat.MockCombat)
+        combat._shake = MagicMock()
+        combat.get_damage = MagicMock(return_value=0)
+        combat.shake()
+        combat._shake.assert_not_called()
+
+    def test_no_damage_sways_toward_the_foe(self):
+        '''0, 1, 2, 3, 2, 1, 0 pixels toward the foe, then still for 6 frames, as on the GBA'''
+        from app.engine import battle_animation
+        anim = battle_animation.BattleAnimation.__new__(battle_animation.BattleAnimation)
+        anim.state = 'wait'
+        anim.child_effects = []
+        anim.under_child_effects = []
+        anim.lr_offset = battle_animation.no_damage_sway()
+        seen = []
+        for _ in range(15):
+            anim.update()
+            seen.append(anim.lr_now)
+        self.assertEqual([0, -1, -2, -3, -2, -1, 0] + [0] * 6 + [None, None], seen)
+
+    def test_sway_is_the_same_for_every_layer_drawn_that_frame(self):
+        '''It was taken once for each layer drawn, so a unit's layers came apart'''
+        from app.engine import battle_animation
+        anim = battle_animation.BattleAnimation.__new__(battle_animation.BattleAnimation)
+        anim.state = 'wait'
+        anim.child_effects = []
+        anim.under_child_effects = []
+        anim.lr_offset = [-1, -2]
+        anim.update()
+        self.assertEqual(-2, anim.lr_now)
+        self.assertEqual([-1], anim.lr_offset)
+
+
 class AnimationCombatTimingTests(unittest.TestCase):
     def setUp(self):
         from app.engine import engine

@@ -277,8 +277,10 @@ class MockCombat():
         if animation:
             anim = Animation(animation, position)
             self.animations.append(anim)
-        # Also offset battle animation by lr_offset
-        self.current_battle_anim.lr_offset = [-1, -2, -3, -2, -1]
+
+    def is_no_damage_hit(self) -> bool:
+        """Whether this is a hit that does no damage"""
+        return self.get_damage() <= 0 and any(brush.nid in ('damage_hit', 'damage_crit') for brush in self.playback)
 
     def glancing_hit(self):
         if self.current_battle_anim is self.right_battle_anim or self.current_battle_anim is self.rp_battle_anim:
@@ -311,16 +313,15 @@ class MockCombat():
             self.animations.append(anim)
 
     def shake(self):
+        # No damage: on the GBA, the screen does not shake (see no_damage_sway)
         if self.get_damage() > 0:
             self._shake(1)
-        else:
-            self._shake(2)
 
     def _shake(self, num):
         self.current_shake = 1
-        if num == 1: # Normal Hit
-            self.shake_set = [(3, 3), (0, 0), (0, 0), (-3, -3), (0, 0), (0, 0), (3, 3), (0, 0), (-3, -3), (0, 0),
-                              (3, 3), (0, 0), (-3, -3), (3, 3), (0, 0)]
+        if num == 1: # Normal Hit, as on the GBA
+            self.shake_set = [(-3, -3), (0, 0), (0, 0), (0, 0), (3, 3), (0, 0), (0, 0), (-3, -3), (0, 0), (0, 0),
+                              (3, 3), (0, 0), (-3, -3), (0, 0), (3, 3), (0, 0), (-3, -3), (3, 3), (0, 0)]
         elif num == 2: # No Damage
             self.shake_set = [(1, 1), (1, 1), (1, 1), (-1, -1), (-1, -1), (-1, -1), (0, 0)]
         elif num == 3: # Spell Hit

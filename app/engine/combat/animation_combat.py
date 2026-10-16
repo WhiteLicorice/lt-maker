@@ -1066,14 +1066,11 @@ class AnimationCombat(BaseCombat, MockCombat):
                         self._shake(3)
                     else:
                         self._shake(1)
-                else:
-                    self._shake(2)  # No damage
+                # No damage: on the GBA, the screen does not shake (see no_damage_sway)
             elif brush.nid == 'damage_crit':
                 damage = brush.damage
                 if damage > 0:
                     self._shake(4)  # Critical
-                else:
-                    self._shake(2)  # No damage
 
     def pan_back(self):
         next_state = self.state_machine.get_next_state()

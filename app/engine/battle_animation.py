@@ -20,6 +20,14 @@ import logging
 battle_anim_speed = 1
 battle_anim_registry = {}
 
+def no_damage_sway() -> list:
+    """
+    As on the GBA, a unit hit for no damage sways toward its foe, 0, 1, 2, 3, 2, 1, 0 pixels,
+    then is still for 6 frames. As lr_offset, which is taken from the end
+    """
+    sway = [0, -1, -2, -3, -2, -1, 0] + [0] * 6
+    return list(reversed(sway))
+
 class BattleAnimation():
     idle_poses = {'Stand', 'RangedStand', 'TransformStand'}
 
@@ -138,6 +146,8 @@ class BattleAnimation():
         self.pan_away: bool = False
 
         self.lr_offset = []
+        # This frame's from lr_offset, taken once a frame however many layers are drawn
+        self.lr_now = None
         self.effect_offset = (0, 0)
         self.personal_offset = (0, 0)
 
@@ -376,6 +386,7 @@ class BattleAnimation():
         return self.poses[self.current_pose].timeline
 
     def update(self):
+        self.lr_now = self.lr_offset.pop() if self.lr_offset else None
         if self.state == 'run':
             # Read script
             if self.frame_count >= self.num_frames:
@@ -485,11 +496,12 @@ class BattleAnimation():
             get_sound_thread().stop_sfx(values[0])
 
         elif command.nid == 'start_hit':
+            if self.partner_anim:  # Also offset partner, since they got hit
+                self.partner_anim.lr_offset = no_damage_sway() if self.owner.is_no_damage_hit() else [-1, -2, -3, -2, -1]
             self.owner.shake()
             self.owner.start_hit()
-            if self.partner_anim:  # Also offset partner, since they got hit
+            if self.partner_anim:
                 self.partner_anim.damaged()
-                self.partner_anim.lr_offset = [-1, -2, -3, -2, -1]
         elif command.nid == 'wait_for_hit':
             if self.wait_for_hit:
                 self.current_frame = self.get_frame(values[0])
@@ -505,6 +517,8 @@ class BattleAnimation():
         elif command.nid == 'spell_hit':
             self.state = 'wait'
             self.processing = False
+            if self.partner_anim and self.owner.is_no_damage_hit():
+                self.partner_anim.lr_offset = no_damage_sway()
             self.owner.shake()
             self.owner.spell_hit()
             self.owner.hit_modifiers()
@@ -837,8 +851,8 @@ class BattleAnimation():
             image = engine.flip_horiz(image)
         offset = frame.offset[0] + (WINWIDTH - 240)//2, frame.offset[1] + (WINHEIGHT - 160)
         # Handle offset (placement of the object on the screen)
-        if self.lr_offset:
-            offset = offset[0] + self.lr_offset.pop(), offset[1] + y_offset
+        if self.lr_now is not None:
+            offset = offset[0] + self.lr_now, offset[1] + y_offset
         if self.effect_offset:
             offset = offset[0] + self.effect_offset[0], offset[1] + self.effect_offset[1] + y_offset
         if self.personal_offset:
