@@ -109,6 +109,10 @@ class AnimationCombat(BaseCombat, MockCombat):
 
         self.viewbox_time = 250
         self.viewbox = None
+        # For leaving the battle
+        self.exit_start = 0
+        self.bars_out_start = None
+        self.bars_out_delay = 0
         self.battle_background = None
 
         self.setup_dark()
@@ -564,27 +568,34 @@ class AnimationCombat(BaseCombat, MockCombat):
                     self.right_battle_anim.finish()
                     if self.rp_battle_anim:
                         self.rp_battle_anim.finish()
-                    if self.battle_background:
-                        fade_time = utils.frames2ms(2.5 if self._skip else 10)
-                        self.battle_background.fade_out(fade_time)
+                    # As on the GBA: the name tags leave at once. The hp bars and platforms
+                    # follow 2 frames later, or once a battle background has faded back
+                    # to the map (to black over 9 frames, then the map in over 9)
+                    if self._skip:
+                        self.bars_out_delay = 0
+                    elif self.battle_background:
+                        self.battle_background.fade_out(utils.frames2ms(18))
+                        self.bars_out_delay = utils.frames2ms(19)
+                    else:
+                        self.bars_out_delay = utils.frames2ms(2)
+                    self.exit_start = engine.get_time()
+                    self.bars_out_start = None
                     self.state = 'name_tags_out'
 
         elif self.state == 'name_tags_out':
-            exit_time = utils.frames2ms(2.5 if self._skip else 10)
-            if not self.ui_should_be_hidden():
-                self.name_offset = 1 - current_time / exit_time
-            if current_time > exit_time:
-                self.name_offset = 0
+            self.update_exit_offsets()
+            if current_time >= self.bars_out_delay:
+                self.bars_out_start = engine.get_time()
                 self.state = 'all_out'
 
         elif self.state == 'all_out':
-            exit_time = utils.frames2ms(2.5 if self._skip else 10)
-            if not self.ui_should_be_hidden():
-                self.bar_offset = 1 - current_time / exit_time
-            self.platform_offset = 1 - current_time / exit_time
+            self.update_exit_offsets()
+            # The GBA waits 13 frames from the start of the bars' 11 frame slide
+            exit_time = utils.frames2ms(2.5 if self._skip else 13)
             if current_time > exit_time:
                 self.platform_offset = 0
                 self.bar_offset = 0
+                self.name_offset = 0
                 self.state = 'fade_out'
 
         elif self.state == 'fade_out':
@@ -814,6 +825,23 @@ class AnimationCombat(BaseCombat, MockCombat):
         if self.battle_music:
             # Don't battle fade back when we don't restart battle music
             get_sound_thread().battle_fade_back(self.battle_music, from_start)
+
+    def update_exit_offsets(self):
+        """
+        How far in the name tags, hp bars and platforms still are as they leave. As on
+        the GBA, the name tags take 7 frames and the rest 11, quickly at first
+        """
+        now = engine.get_time()
+        names_time = utils.frames2ms(2.5 if self._skip else 7)
+        names_left = (1 - utils.clamp((now - self.exit_start) / names_time, 0, 1)) ** 2
+        if not self.ui_should_be_hidden():
+            self.name_offset = names_left
+        if self.bars_out_start is not None:
+            bars_time = utils.frames2ms(2.5 if self._skip else 11)
+            bars_left = (1 - utils.clamp((now - self.bars_out_start) / bars_time, 0, 1)) ** 2
+            if not self.ui_should_be_hidden():
+                self.bar_offset = bars_left
+            self.platform_offset = bars_left
 
     def build_viewbox(self, current_time):
         vb_multiplier = utils.clamp(current_time / self.viewbox_time, 0, 1)

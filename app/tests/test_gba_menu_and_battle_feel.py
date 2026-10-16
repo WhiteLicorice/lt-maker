@@ -154,7 +154,9 @@ class BattleShakeTests(unittest.TestCase):
         self.assertEqual([-1], anim.lr_offset)
 
 
-class AnimationCombatTimingTests(unittest.TestCase):
+class CombatTimingCase(unittest.TestCase):
+    '''Runs an animation combat a frame at a time'''
+
     def setUp(self):
         from app.engine import engine
         self.addCleanup(engine.constants.__setitem__, 'current_time', engine.constants.get('current_time', 0))
@@ -182,6 +184,8 @@ class AnimationCombatTimingTests(unittest.TestCase):
         combat.right_hp_bar.done.return_value = True
         return combat
 
+
+class AnimationCombatTimingTests(CombatTimingCase):
     def test_at_least_30_frames_after_a_hit(self):
         '''As on the GBA. Here it was 27'''
         self.assertEqual(31, self.frames_in(self.build(), 'hp_change'))
@@ -212,6 +216,65 @@ class AnimationCombatTimingTests(unittest.TestCase):
         combat.ui_should_be_hidden = MagicMock(return_value=True)
         self.frames_in(combat, 'entrance')
         combat.battle_background.fade_in.assert_called_once_with(utils.frames2ms(16))
+
+
+class BattleExitTests(CombatTimingCase):
+    '''
+    How the battle screen leaves, as on the GBA: the name tags over 7 frames, and the hp
+    bars and platforms over 11, quickly at first. Here the name tags took 10 frames and
+    then the rest 10 more, evenly
+    '''
+
+    def leave(self, background=None):
+        '''Each frame, from the end of the wait after the exp bar, as (state, name, bars, platforms)'''
+        from app.engine import engine
+        combat = self.build()
+        combat.arena_combat = False
+        combat.left_battle_anim = MagicMock()
+        combat.right_battle_anim = MagicMock()
+        combat.lp_battle_anim = None
+        combat.rp_battle_anim = None
+        combat.battle_background = background
+        combat.ui_should_be_hidden = MagicMock(return_value=False)
+        combat.name_offset = combat.bar_offset = combat.platform_offset = 1
+        combat.state = 'fade_out_wait'
+        combat.last_update = 10000 - 820
+        rows = []
+        for frame in range(1, 60):
+            engine.constants['current_time'] = 10000 + frame * 1000 // 60
+            combat.update()
+            if combat.state == 'fade_out':
+                break
+            rows.append((combat.state, combat.name_offset, combat.bar_offset, combat.platform_offset))
+        return rows
+
+    def test_name_tags_then_the_rest_2_frames_later(self):
+        rows = self.leave()
+        names = [name for _, name, _, _ in rows]
+        bars = [bar for _, _, bar, _ in rows]
+        self.assertEqual(1, rows[0][1])  # The frame the wait ends
+        # The name tags are gone 7 frames on, and the bars start 2 frames after them
+        self.assertEqual(7, next(idx for idx, name in enumerate(names) if name == 0))
+        self.assertEqual(3, next(idx for idx, bar in enumerate(bars) if bar < 1))
+        # Quickly at first, as the GBA's do
+        self.assertGreater(1 - names[1], names[1] - names[2])
+        self.assertEqual(bars, [platforms for _, _, _, platforms in rows])
+
+    def test_zoom_back_to_the_map_16_frames_after_the_bars_start(self):
+        '''11 frames for them to go and 2 more, as on the GBA'''
+        rows = self.leave()
+        bars = [bar for _, _, bar, _ in rows]
+        start = next(idx for idx, bar in enumerate(bars) if bar < 1)
+        self.assertEqual(14, len(rows) - start + 1)
+
+    def test_with_a_background_the_bars_wait_for_the_map(self):
+        '''On the GBA the background goes to black over 9 frames and the map comes in over 9 first'''
+        from app.utilities import utils
+        background = MagicMock()
+        rows = self.leave(background)
+        background.fade_out.assert_called_once_with(utils.frames2ms(18))
+        bars = [bar for _, _, bar, _ in rows]
+        self.assertEqual(20, next(idx for idx, bar in enumerate(bars) if bar < 1))
 
 
 if __name__ == '__main__':
