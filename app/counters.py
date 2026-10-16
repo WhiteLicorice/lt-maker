@@ -124,28 +124,37 @@ class GenericAnimCounter():
 
 
 class movement_counter():
+    """
+    How many pixels a unit leans toward its target as it strikes on the map.
+    As on the GBA: out a pixel a frame, held there until it is told to
+    retreat, and back a pixel a frame
+    """
+    reach = 4
+
     def __init__(self):
         self.count = 0
-        self.movement = [0, 1, 2, 3, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 4, 3, 2, 1]
-        self.started = False
+        self.direction = 0  # 1 on the way out, -1 on the way back, 0 at rest
         self.last_update = None
 
     def value(self):
-        return self.movement[self.count]
+        return self.count
 
     def update(self, current_time):
         # One step a frame, however many times it is read during that frame
-        if self.started and current_time != self.last_update:
+        if self.direction and current_time != self.last_update:
             self.last_update = current_time
-            self.count += 1
-            if self.count >= len(self.movement):
-                self.count = 0
-                self.started = False
+            self.count = max(0, min(self.reach, self.count + self.direction))
+            if self.count == 0:
+                self.direction = 0
 
     def reset(self):
-        self.started = True
+        """Begins a lunge"""
+        self.direction = 1
         self.count = 0
         self.last_update = None
+
+    def retreat(self):
+        self.direction = -1
 
 class arrow_counter():
     def __init__(self, offset=0):

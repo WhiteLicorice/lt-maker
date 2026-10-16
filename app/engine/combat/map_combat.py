@@ -7,6 +7,7 @@ from app.engine.sound import get_sound_thread
 from app.engine import engine, combat_calcs, gui, action, item_system, skill_system
 from app.engine.health_bar import MapCombatInfo
 from app.engine.animations import MapAnimation, SpellAnimation
+from app.engine.game_counters import ANIMATION_COUNTERS
 from app.engine.game_state import game
 
 from app.events import triggers
@@ -23,8 +24,9 @@ class MapCombat(SimpleCombat):
     # and on the later ones
     quick_opening_wait = utils.frames2ms(12)
     quick_wait = utils.frames2ms(3)
-    # How long the units rest once the HP bars have settled
-    quick_rest = utils.frames2ms(22)
+    # How long the units rest once the HP bars have settled, the 4 frames the
+    # striker takes to step back among them
+    quick_rest = utils.frames2ms(23)
 
     def __init__(self, attacker, main_item, items, positions, main_target_positions, splash_positions, script, total_rounds=1):
         self._full_setup(attacker, main_item, items, positions,
@@ -78,6 +80,7 @@ class MapCombat(SimpleCombat):
     def update(self) -> bool:
         current_time = engine.get_time() - self.last_update
         current_state = self.state
+        hp_bars_updated = False
         # Only for the very first phase
         if self.state == 'init':
             game.highlight.remove_highlights()
@@ -280,6 +283,7 @@ class MapCombat(SimpleCombat):
                 # Force update hp bars so we can get timing info
                 for hp_bar in self.health_bars.values():
                     hp_bar.update()
+                hp_bars_updated = True
                 if self.health_bars:
                     self.hp_bar_time = max(hp_bar.get_time_for_change()
                                            for hp_bar in self.health_bars.values())
@@ -289,6 +293,8 @@ class MapCombat(SimpleCombat):
 
         elif self.state == 'hp_bar_wait':
             if self._skip or current_time > self.hp_bar_time:
+                # The striker has leaned in all this while
+                ANIMATION_COUNTERS.attack_movement_counter.retreat()
                 self.set_state('end_phase_anim')
 
         elif self.state == 'end_phase_anim':
@@ -337,7 +343,8 @@ class MapCombat(SimpleCombat):
         if self.state != current_state:
             self.last_update = engine.get_time()
 
-        if self.state not in ('begin_phase', 'proc_animations'):
+        # Once a frame: a second update would step a box's shake past its first frame
+        if not hp_bars_updated and self.state not in ('begin_phase', 'proc_animations'):
             for hp_bar in self.health_bars.values():
                 hp_bar.update()
 

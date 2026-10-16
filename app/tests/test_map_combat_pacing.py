@@ -1,5 +1,6 @@
 import unittest
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from app.tests import engine_harness
 from app.tests.engine_harness import EngineTestCase
@@ -15,12 +16,15 @@ class LungeCounterTests(unittest.TestCase):
         counter = movement_counter()
         counter.reset()
         seen = []
-        for frame in range(22):
+        for frame in range(20):
+            if frame == 12:
+                counter.retreat()
             counter.update(frame * 16)
             counter.update(frame * 16)
             seen.append(counter.value())
-        # Out a pixel a frame, held, back a pixel a frame, then at rest
-        self.assertEqual([1, 2, 3, 4, 5] + [5] * 11 + [4, 3, 2, 1] + [0, 0], seen)
+        # As on the GBA: out a pixel a frame, held until it is told to
+        # retreat, back a pixel a frame, then at rest
+        self.assertEqual([1, 2, 3, 4] + [4] * 8 + [3, 2, 1, 0] + [0] * 4, seen)
 
 
 class MapCombatHealthBarTests(EngineTestCase):
@@ -132,11 +136,19 @@ class MapCombatPacingTests(EngineTestCase):
     def frames_in(self, rows, state):
         return sum(1 for row in rows if row[0] == state)
 
-    def test_lunge_is_a_pixel_a_frame(self):
-        rows = self.fight()
-        lunge = [offset for state, offset, _ in rows if offset != (0, 0)]
-        # Down at the Fighter: out for 5 frames, there for 11 more, back in 4
-        self.assertEqual([(0, y) for y in [1, 2, 3, 4, 5] + [5] * 11 + [4, 3, 2, 1]], lunge[:20])
+    def test_striker_leans_in_until_the_hp_bar_settles(self):
+        '''
+        As on the GBA: 4 pixels toward the target at a pixel a frame, held there
+        while the HP bar drains, and back at a pixel a frame
+        '''
+        first = self.phases(self.fight())[0]
+        lunge = [(state, offset) for state, offset, _ in first if offset != (0, 0)]
+        # Down at the Fighter
+        self.assertEqual([(0, 1), (0, 2), (0, 3), (0, 4)], [offset for _, offset in lunge[:4]])
+        waiting = [offset for state, offset in lunge if state == 'hp_bar_wait']
+        self.assertGreater(len(waiting), 13)
+        self.assertEqual({(0, 4)}, set(waiting))
+        self.assertEqual([(0, 4), (0, 3), (0, 2), (0, 1)], [offset for state, offset in lunge if state == 'end_phase_anim'])
 
     def test_plain_strike_keeps_the_gba_pace(self):
         '''
@@ -147,10 +159,31 @@ class MapCombatPacingTests(EngineTestCase):
         first, second = self.phases(self.fight())[:2]
         for phase in (first, second):
             self.assertEqual(1, self.frames_in(phase, 'sound'))
-            self.assertIn(self.frames_in(phase, 'end_phase_anim'), (22, 23))
+            self.assertIn(self.frames_in(phase, 'end_phase_anim'), (23, 24))
         # The first strike waits for the HP boxes to open
         self.assertIn(self.frames_in(first, 'start_anim'), (12, 13))
         self.assertIn(self.frames_in(second, 'start_anim'), (3, 4))
+
+    def test_hp_boxes_are_updated_once_a_frame(self):
+        '''
+        They were updated twice on the frame a hit landed, once to learn how long
+        the HP bar would take and once with every other frame: a box's shake,
+        which steps on each update, never showed its first frame
+        '''
+        from app.engine import engine
+        from app.engine.health_bar import MapCombatInfo
+        updates = {}
+        update = MapCombatInfo.update
+
+        def counted(box, *args, **kwargs):
+            key = (id(box), engine.get_time())
+            updates[key] = updates.get(key, 0) + 1
+            return update(box, *args, **kwargs)
+
+        with patch.object(MapCombatInfo, 'update', counted):
+            self.fight()
+        self.assertTrue(updates)
+        self.assertEqual({1}, set(updates.values()))
 
     def test_strike_waits_for_the_hp_bar(self):
         rows = self.fight()
