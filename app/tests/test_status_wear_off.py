@@ -56,6 +56,24 @@ class StatusWearOffTests(EngineTestCase):
         lit = [is_lit for step, is_lit in rows if step == 'wear_off']
         self.assertGreaterEqual(sum(lit), 64)
 
+    def test_with_the_gbas_sound(self):
+        '''The GBA plays song 0xAA, which is DebuffRecover here. Restore was four seconds long'''
+        from unittest.mock import patch
+        from app.engine import status_upkeep
+        with patch.object(status_upkeep, 'get_sound_thread') as sound:
+            self.upkeep('Sleep')
+        played = [call.args[0] for call in sound.return_value.play_sfx.call_args_list]
+        self.assertEqual(['DebuffRecover'], played)
+
+    def test_no_sound_for_a_project_without_it(self):
+        '''Nothing in its place'''
+        from unittest.mock import MagicMock, patch
+        from app.engine import sound
+        resources = MagicMock()
+        resources.sfx.get.return_value = None
+        with patch.object(sound, 'RESOURCES', resources), patch.dict(sound.SFX, clear=True):
+            self.assertIsNone(sound.DefaultSoundController.play_sfx(MagicMock(), 'DebuffRecover'))
+
     def test_status_with_turns_left_stays(self):
         rows = self.upkeep('Sleep', turns=3)
         self.assertTrue(self.has('Sleep'))

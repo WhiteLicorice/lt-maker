@@ -16,6 +16,8 @@ class StatusUpkeepState(MapState):
 
     # A unit that a bad status has just left is shown for a moment, as on the GBA
     wear_off_time = utils.frames2ms(66)
+    # With the GBA's sound for it (song 0xAA). A project without it plays nothing
+    wear_off_sound = 'DebuffRecover'
 
     def start(self):
         game.cursor.hide()
@@ -151,7 +153,7 @@ class StatusUpkeepState(MapState):
                 # Counted from here, once the camera has got there
                 self.wear_off_start = engine.get_time()
                 self.cur_unit.sprite.start_status_heal()
-                get_sound_thread().play_sfx('Restore')
+                get_sound_thread().play_sfx(self.wear_off_sound)
             elif engine.get_time() > self.wear_off_start + self.wear_off_time:
                 self.state = 'processing'
                 self.cur_unit = None
