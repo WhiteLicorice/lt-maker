@@ -38,6 +38,62 @@ def first_existing_sprite(*nids: str) -> engine.Surface:
     return SPRITES.get(nids[-1])
 
 
+# How much of each side window shows, a frame at a time, as it slides in and out. As on the
+# GBA (sMMBSlideInWidthLut and the rest), where they are drawn a tile at a time: the unit
+# window 13 tiles wide, the terrain window 7 wide and the goal window 6 tall
+UNIT_WINDOW_IN = (5 / 13, 9 / 13, 11 / 13, 1)
+UNIT_WINDOW_OUT = (11 / 13, 7 / 13, 0)
+TERRAIN_WINDOW_IN = (5 / 7, 6 / 7, 1)
+TERRAIN_WINDOW_OUT = (5 / 7, 4 / 7, 0)
+GOAL_WINDOW_IN = (1 / 6, 3 / 6, 4 / 6, 5 / 6, 1)
+GOAL_WINDOW_OUT = (3 / 6, 1 / 6, 0)
+
+
+class SideWindowSlide():
+    """
+    A side window sliding in and out, a frame at a time. Once it starts to slide, it
+    finishes before it can turn back, as on the GBA
+    """
+
+    def __init__(self, slide_in: tuple, slide_out: tuple):
+        self.slide_in = slide_in
+        self.slide_out = slide_out
+        self.reset()
+
+    def reset(self):
+        self.state = 'hidden'
+        self.idx = 0
+        self.shown = 0
+
+    def show(self):
+        if self.state == 'hidden':
+            self.state, self.idx = 'in', 0
+
+    def hide(self):
+        if self.state == 'shown':
+            self.state, self.idx = 'out', 0
+
+    def update(self):
+        if self.state == 'in':
+            self.shown = self.slide_in[self.idx]
+            self.idx += 1
+            if self.idx >= len(self.slide_in):
+                self.state = 'shown'
+        elif self.state == 'out':
+            self.shown = self.slide_out[self.idx]
+            self.idx += 1
+            if self.idx >= len(self.slide_out):
+                self.state = 'hidden'
+        elif self.state == 'shown':
+            self.shown = 1
+        else:
+            self.shown = 0
+
+    def shown_width(self, width: int) -> int:
+        """How much of a window this wide shows"""
+        return round(self.shown * width)
+
+
 class UIView():
     legal_states = ('free', 'prep_formation', 'prep_formation_select')
     initiative_states = ('status_endstep', 'turn_change', 'ai', 'phase_change', 'menu', 'turnwheel')
@@ -52,82 +108,110 @@ class UIView():
         self.spell_info_disp = None
         self.initiative_info_disp = None
 
-        self.cursor_right: bool = False
-
-        self.unit_info_offset = 0
-        self.obj_info_offset = 0
         self.attack_info_offset = 0
         self.initiative_info_offset = 0
 
-        # Tile Info Offset
-        self.tile_transition_state = 'normal'
-        self.tile_progress: float = 0
-        self.tile_last_update: int = 0
+        # The side windows on the map. As on the GBA, they slide in and out a tile at a time
+        self.unit_slide = SideWindowSlide(UNIT_WINDOW_IN, UNIT_WINDOW_OUT)
+        self.tile_slide = SideWindowSlide(TERRAIN_WINDOW_IN, TERRAIN_WINDOW_OUT)
+        self.obj_slide = SideWindowSlide(GOAL_WINDOW_IN, GOAL_WINDOW_OUT)
+        self._last_slide_update = None
+        # Where each window is: the unit window on top or not, the terrain window
+        # on the left or not, the goal window on top or not
+        self.unit_info_top = True
+        self.tile_info_left = False
+        self.obj_top = True
         self.current_tile_pos = None
 
+        # The cursor has moved since the unit window last looked
         self.remove_unit_info = True
-        self.prev_unit_info_top = False
-        self.obj_top = False
 
     def remove_unit_display(self):
         self.remove_unit_info = True
 
     def get_cursor_right(self):
-        return game.cursor.position[0] > TILEX // 2 + game.camera.get_x() - 1
+        """
+        Whether the cursor is in the right half of the screen. As on the GBA, the middle
+        column counts as the left half
+        """
+        return game.cursor.position[0] > TILEX // 2 + game.camera.get_x()
+
+    def get_cursor_top(self):
+        return game.cursor.position[1] < TILEY // 2 + game.camera.get_y()
 
     def update(self):
+        """The side windows, once a frame however many times they are drawn"""
         current_time = engine.get_time()
+        if current_time == self._last_slide_update:
+            return
+        # Not drawn for a while: something else had the screen
+        put_away = self._last_slide_update is None or current_time - self._last_slide_update > 100
+        self._last_slide_update = current_time
 
-        # Tile info handling
-        if self.cursor_right == self.get_cursor_right():
-            pass  # No need to transition
-        else:
-            self.cursor_right = self.get_cursor_right()
-            self.tile_transition_state = 'out'
-            self.tile_progress = 0
-            self.tile_last_update = engine.get_time()
+        if put_away or game.state.current() not in self.legal_states:
+            # As on the GBA, they are gone at once when the cursor is put away, and
+            # slide in anew when it is back
+            self.unit_slide.reset()
+            self.tile_slide.reset()
+            self.obj_slide.reset()
+            self.unit_info_disp = None
+            self.remove_unit_info = True
+            if not put_away or game.state.current() not in self.legal_states:
+                return
 
-        # Handle tile info slide in
-        if self.tile_transition_state != 'normal':
-            diff = current_time - self.tile_last_update
-            self.tile_progress = utils.clamp(diff / utils.frames2ms(4), 0, 1)
-            if self.tile_progress >= 1:
-                self.tile_progress = 0
-                self.tile_last_update = current_time
-                if self.tile_transition_state == 'out':
-                    self.tile_transition_state = 'in'
-                    self.current_tile_pos = game.cursor.position
-                else:
-                    self.tile_transition_state = 'normal'
-        else:
+        cursor_right = self.get_cursor_right()
+        cursor_top = self.get_cursor_top()
+
+        # The unit window is at the bottom only while the cursor is in the top left
+        unit_top = not (cursor_top and not cursor_right)
+        hover = game.cursor.get_hover()
+        if self.unit_slide.state == 'hidden':
+            if hover:
+                self.unit_info_disp = self.create_unit_info(hover)
+                self.unit_info_top = unit_top
+                self.unit_slide.show()
+            self.remove_unit_info = False
+        elif self.unit_slide.state == 'shown' and self.remove_unit_info:
+            # On to another unit on the same side, it is redrawn where it is.
+            # Otherwise it slides out, and in again where it should be
+            if hover and unit_top == self.unit_info_top:
+                self.unit_info_disp = self.create_unit_info(hover)
+            else:
+                self.unit_slide.hide()
+            self.remove_unit_info = False
+        self.unit_slide.update()
+        if self.unit_slide.state == 'hidden':
+            self.unit_info_disp = None
+
+        # The terrain window is opposite the cursor
+        if self.tile_slide.state == 'hidden':
+            self.tile_info_left = cursor_right
             self.current_tile_pos = game.cursor.position
+            self.tile_slide.show()
+        elif self.tile_slide.state == 'shown':
+            if cursor_right != self.tile_info_left:
+                self.tile_slide.hide()
+            else:
+                self.current_tile_pos = game.cursor.position
+        self.tile_slide.update()
+
+        # The goal window is at the top right, unless the cursor is there
+        obj_top = not (cursor_top and cursor_right)
+        if self.obj_slide.state == 'hidden':
+            self.obj_top = obj_top
+            self.obj_slide.show()
+        elif self.obj_slide.state == 'shown' and obj_top != self.obj_top:
+            self.obj_slide.hide()
+        self.obj_slide.update()
 
     def draw(self, surf):
         self.update()
-        # Unit info handling
-        if self.remove_unit_info:
-            hover = game.cursor.get_hover()
-            if game.state.current() in self.legal_states and hover:
-                self.remove_unit_info = False
-                self.unit_info_disp = self.create_unit_info(hover)
-                self.unit_info_offset = min(self.unit_info_disp.get_width(), self.unit_info_offset)
-            elif self.unit_info_disp:
-                self.unit_info_offset += 20
-                if self.unit_info_offset >= 200:
-                    self.unit_info_disp = None
-        else:
-            self.unit_info_offset -= 20
-            self.unit_info_offset = max(0, self.unit_info_offset)
 
         # Objective info handling
         if game.state.current() in self.legal_states and cf.SETTINGS['show_objective']:
             self.obj_info_disp = self.create_obj_info()
-            self.obj_info_offset -= 10
-            self.obj_info_offset = max(0, self.obj_info_offset)
-        elif self.obj_info_disp:
-            self.obj_info_offset += 10
-            if self.obj_info_offset >= 100:
-                self.obj_info_disp = None
+        else:
+            self.obj_info_disp = None
 
         if (game.state.current() in self.legal_states or game.state.current() in self.initiative_states) \
                 and DB.constants.value('initiative') \
@@ -142,49 +226,29 @@ class UIView():
             self.initiative_info_disp = None
 
         # === Final drawing
-        # Should be in topleft, unless cursor is in topleft, in which case it should be in bottomleft
         if game.state.current() in self.legal_states and self.unit_info_disp:
-            # If in top and not in right
             if not DB.constants.value('initiative') or not game.initiative.draw_me:
-                if self.remove_unit_info:
-                    if self.prev_unit_info_top:
-                        surf.blit(self.unit_info_disp, (-self.unit_info_offset, 0))
-                    else:
-                        surf.blit(self.unit_info_disp, (-self.unit_info_offset, WINHEIGHT - self.unit_info_disp.get_height()))
-                elif game.cursor.position[1] < TILEY // 2 + game.camera.get_y() and \
-                        not (game.cursor.position[0] > TILEX // 2 + game.camera.get_x() - 1):
-                    self.prev_unit_info_top = False
-                    surf.blit(self.unit_info_disp, (-self.unit_info_offset, WINHEIGHT - self.unit_info_disp.get_height()))
-                else:
-                    self.prev_unit_info_top = True
-                    surf.blit(self.unit_info_disp, (-self.unit_info_offset, 0))
-            else:
-                pass
+                width = self.unit_info_disp.get_width()
+                x = self.unit_slide.shown_width(width) - width
+                y = 0 if self.unit_info_top else WINHEIGHT - self.unit_info_disp.get_height()
+                surf.blit(self.unit_info_disp, (x, y))
 
         # Display terrain with none, GBA, or Hybrid fog (hybrid only if in previously_visited_tile)
         if game.state.current() in self.legal_states and cf.SETTINGS['show_terrain'] and \
                 game.board.terrain_known(game.cursor.position, game.board.in_vision(game.cursor.position)):
             self.tile_info_disp = self.create_tile_info(self.current_tile_pos)
             if self.tile_info_disp:
-                right = self.cursor_right
-
-                # Handle transition offset
-                if self.tile_transition_state == 'out':
-                    right = not right  # Mirror on the way out
-                    offset = self.tile_info_disp.get_width() * self.tile_progress
-                elif self.tile_transition_state == 'in':
-                    offset = self.tile_info_disp.get_width() * (1 - self.tile_progress)
-                else:
-                    offset = 0
-
+                # It sits 5 pixels in from the edge of the screen it comes in from
+                width = self.tile_info_disp.get_width()
+                hidden = width + 5 - self.tile_slide.shown_width(width + 5)
                 # Should be in bottom. Can be in bottomleft or bottomright, depending on where cursor is. May move to the top if Initiative is enabled.
-                if right:
+                if self.tile_info_left:
                     if self.initiative_info_disp and game.cursor.position[1] < TILEY // 2 + game.camera.get_y():
-                        surf.blit(self.tile_info_disp, (5 - offset, 0)) # Topleft
+                        surf.blit(self.tile_info_disp, (5 - hidden, 0)) # Topleft
                     else:
-                        surf.blit(self.tile_info_disp, (5 - offset, WINHEIGHT - self.tile_info_disp.get_height() - 3)) # Bottomleft
+                        surf.blit(self.tile_info_disp, (5 - hidden, WINHEIGHT - self.tile_info_disp.get_height() - 3)) # Bottomleft
                 else:
-                    xpos = WINWIDTH - self.tile_info_disp.get_width() - 5 + offset
+                    xpos = WINWIDTH - width - 5 + hidden
                     if self.initiative_info_disp and game.cursor.position[1] < TILEY // 2 + game.camera.get_y():
                         surf.blit(self.tile_info_disp, (xpos, 0))
                     else:
@@ -193,24 +257,16 @@ class UIView():
 
         # Only if we actually have a simple objective
         if self.obj_info_disp and not self.initiative_info_disp and game.level.objective['simple']:
-            # Should be in topright, unless the cursor is in the topright
-            # TopRight - I believe this has RIGHT precedence
-            if game.cursor.position[1] < TILEY // 2 + game.camera.get_y() and \
-                    game.cursor.position[0] > TILEX // 2 + game.camera.get_x() - 1:
-                # Gotta place in bottomright, because cursor is in topright
-                if self.obj_top:
-                    self.obj_top = False
-                    self.obj_info_offset = self.obj_info_disp.get_height()
-                pos = (WINWIDTH - 4 - self.obj_info_disp.get_width(),
-                       WINHEIGHT - 4 + self.obj_info_offset - self.obj_info_disp.get_height())
-                surf.blit(self.obj_info_disp, pos) # Should be bottom right
+            # Topright, or bottomright while the cursor is in the topright. It comes in
+            # from the top or the bottom of the screen
+            height = self.obj_info_disp.get_height()
+            x = WINWIDTH - 4 - self.obj_info_disp.get_width()
+            if self.obj_top:
+                hidden = height + 1 - self.obj_slide.shown_width(height + 1)
+                surf.blit(self.obj_info_disp, (x, 1 - hidden))
             else:
-                # Place in topright
-                if not self.obj_top:
-                    self.obj_top = True
-                    self.obj_info_offset = self.obj_info_disp.get_height()
-                pos = (WINWIDTH - 4 - self.obj_info_disp.get_width(), 1 - self.obj_info_offset)
-                surf.blit(self.obj_info_disp, pos)
+                hidden = height + 4 - self.obj_slide.shown_width(height + 4)
+                surf.blit(self.obj_info_disp, (x, WINHEIGHT - 4 - height + hidden))
 
         if self.initiative_info_disp:
             if game.cursor.position[1] < TILEY // 2 + game.camera.get_y():
