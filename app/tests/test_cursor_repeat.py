@@ -89,5 +89,32 @@ class MoveBorderTests(EngineTestCase):
         self.assertEqual([0, 60], self.moves(pressed_on_frames={0, 60}))
 
 
+
+class CursorGlideTests(EngineTestCase):
+    def glide(self, speed: int) -> list:
+        '''Where the cursor is drawn, a frame at a time, from the frame it is moved a tile right'''
+        from app.engine import engine
+        from app.engine.cursor import BaseCursor
+        self.addCleanup(engine.constants.__setitem__, 'current_time', engine.constants.get('current_time', 0))
+        cursor = BaseCursor()
+        cursor._transition_speed = speed
+        seen = []
+        for frame in range(6):
+            # The clock counts whole milliseconds, so frames are 16 or 17 of them apart
+            engine.constants['current_time'] = 5000 + frame * 16 + frame * 2 // 3
+            if frame == 0:
+                cursor.move(1, 0, sound=False)
+            cursor.update_offset()
+            seen.append(round(cursor.position[0] * 16 - cursor.offset_x))
+        return seen
+
+    def test_first_step_on_the_frame_it_is_moved(self):
+        '''As on the GBA, 4 pixels a frame from then. Here it began a frame later'''
+        self.assertEqual([4, 8, 12, 16, 16, 16], self.glide(1))
+
+    def test_holding_b_8_pixels_a_frame(self):
+        self.assertEqual([8, 16, 16, 16, 16, 16], self.glide(2))
+
+
 if __name__ == '__main__':
     unittest.main()

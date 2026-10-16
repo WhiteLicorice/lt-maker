@@ -1,7 +1,7 @@
 import logging
 from typing import Any, Tuple
 
-from app.constants import TILEHEIGHT, TILEWIDTH, TILEX, TILEY
+from app.constants import FPS, TILEHEIGHT, TILEWIDTH, TILEX, TILEY
 from app.engine import engine
 from app.engine.camera import Camera
 from app.engine.fluid_scroll import FluidScroll
@@ -134,8 +134,9 @@ class BaseCursor():
             if sound:
                 get_sound_thread().play_sfx('Select 5')
 
-        # queue transition
-        transition_start = engine.get_time()
+        # queue transition. As on the GBA, the cursor takes its first step on the
+        # frame it is moved, so the move is counted from a frame before
+        transition_start = engine.get_time() - 1000 / FPS
         if mouse:
             duration = self.transition_duration / 2
         else:
