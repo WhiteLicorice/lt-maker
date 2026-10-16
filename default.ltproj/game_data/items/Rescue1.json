@@ -32,6 +32,10 @@
             [
                 "store_unit",
                 null
+            ],
+            [
+                "targeting_pennant",
+                "Select which character to bring next to you."
             ]
         ]
     }

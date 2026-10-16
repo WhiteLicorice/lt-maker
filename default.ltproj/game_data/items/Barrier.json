@@ -67,6 +67,10 @@
             [
                 "map_cast_pose",
                 null
+            ],
+            [
+                "targeting_pennant",
+                "Select which character's resistance to bolster."
             ]
         ]
     }

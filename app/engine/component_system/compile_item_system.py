@@ -100,6 +100,7 @@ ITEM_HOOKS: Dict[str, HookInfo] = {
     'dynamic_multiattacks':                            HookInfo(['unit', 'item', 'target', 'item2', 'mode', 'attack_info', 'base_value'], ResolvePolicy.NUMERIC_ACCUM),
     # aesthetic components that return a value
     'hover_description':                               HookInfo(['unit', 'item'], ResolvePolicy.UNIQUE),
+    'targeting_pennant':                               HookInfo(['unit', 'item'], ResolvePolicy.UNIQUE),
     'show_weapon_advantage':                           HookInfo(['unit', 'item', 'target', 'item2'], ResolvePolicy.UNIQUE),
     'show_weapon_disadvantage':                        HookInfo(['unit', 'item', 'target', 'item2'], ResolvePolicy.UNIQUE),
     'battle_music':                                    HookInfo(['unit', 'item', 'target', 'item2', 'mode'], ResolvePolicy.UNIQUE),

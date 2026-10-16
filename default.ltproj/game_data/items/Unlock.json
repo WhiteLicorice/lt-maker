@@ -59,6 +59,10 @@
             [
                 "map_cast_pose",
                 null
+            ],
+            [
+                "targeting_pennant",
+                "Select a door to open."
             ]
         ]
     }

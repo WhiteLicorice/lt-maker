@@ -71,6 +71,10 @@
             [
                 "map_cast_pose",
                 null
+            ],
+            [
+                "targeting_pennant",
+                "Select an area to light up."
             ]
         ]
     }

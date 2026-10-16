@@ -32,6 +32,10 @@
             [
                 "max_range",
                 1
+            ],
+            [
+                "targeting_pennant",
+                "Select character to warp."
             ]
         ]
     }

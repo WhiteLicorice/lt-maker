@@ -5347,6 +5347,10 @@
             [
                 "magic",
                 null
+            ],
+            [
+                "targeting_pennant",
+                "Select a character to restore HP to."
             ]
         ]
     },
@@ -5422,6 +5426,10 @@
             [
                 "magic",
                 null
+            ],
+            [
+                "targeting_pennant",
+                "Select a character to restore HP to."
             ]
         ]
     },
@@ -5497,6 +5505,10 @@
                     144,
                     232
                 ]
+            ],
+            [
+                "targeting_pennant",
+                "Select a character to restore HP to."
             ]
         ]
     },
@@ -5572,6 +5584,10 @@
             [
                 "equation_heal",
                 "HEAL"
+            ],
+            [
+                "targeting_pennant",
+                "Select a character to restore HP to."
             ]
         ]
     },
@@ -5769,6 +5785,10 @@
             [
                 "unlock_staff",
                 null
+            ],
+            [
+                "targeting_pennant",
+                "Select a door to open."
             ]
         ]
     },
@@ -5836,6 +5856,10 @@
             [
                 "restore",
                 null
+            ],
+            [
+                "targeting_pennant",
+                "Select a character to restore to normal."
             ]
         ]
     },
@@ -5923,6 +5947,10 @@
             [
                 "status_on_hold",
                 "Distance_Debuff"
+            ],
+            [
+                "targeting_pennant",
+                "Select a unit to use the staff on."
             ]
         ]
     },
@@ -6010,6 +6038,10 @@
             [
                 "status_on_hold",
                 "Distance_Debuff"
+            ],
+            [
+                "targeting_pennant",
+                "Select a unit to use the staff on."
             ]
         ]
     },
@@ -6097,6 +6129,10 @@
             [
                 "status_on_hold",
                 "Distance_Debuff"
+            ],
+            [
+                "targeting_pennant",
+                "Select a unit to use the staff on."
             ]
         ]
     },
@@ -6172,6 +6208,10 @@
             [
                 "magic",
                 null
+            ],
+            [
+                "targeting_pennant",
+                "Select the character whose weapon needs repair."
             ]
         ]
     },
@@ -6310,6 +6350,10 @@
             [
                 "eval_target_restrict_2",
                 "not game.get_region_under_pos(target_pos, 'vision')"
+            ],
+            [
+                "targeting_pennant",
+                "Select an area to light up."
             ]
         ]
     },
@@ -6377,6 +6421,10 @@
             [
                 "max_range",
                 1
+            ],
+            [
+                "targeting_pennant",
+                "Select which character's resistance to bolster."
             ]
         ]
     },
@@ -6487,6 +6535,10 @@
             [
                 "store_unit",
                 null
+            ],
+            [
+                "targeting_pennant",
+                "Select which character to bring next to you."
             ]
         ]
     },
@@ -6633,6 +6685,10 @@
             [
                 "max_range",
                 1
+            ],
+            [
+                "targeting_pennant",
+                "Select character to warp."
             ]
         ]
     },
@@ -6669,6 +6725,10 @@
             [
                 "max_equation_range",
                 "MAGIC_RANGE"
+            ],
+            [
+                "targeting_pennant",
+                "Select warp point."
             ]
         ]
     },

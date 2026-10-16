@@ -383,6 +383,17 @@ class HoverDescription(ItemComponent):
     def hover_description(self, unit, item):
         return self.value
 
+class TargetingPennant(ItemComponent):
+    nid = 'targeting_pennant'
+    desc = "Scrolls this text along the bottom of the screen while the player chooses a target for the item. Ex: Select a character to restore HP to. On a sequence item, it is shown for each subitem that has none of its own."
+    tag = ItemTags.AESTHETIC
+
+    expose = ComponentType.String
+    value = ''
+
+    def targeting_pennant(self, unit, item):
+        return self.value
+
 class ShowAdvantageArrow(ItemComponent):
     nid = 'show_advantage_arrow'
     desc = 'Shows the advantage arrow in combat.'

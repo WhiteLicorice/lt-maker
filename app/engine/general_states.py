@@ -2288,9 +2288,19 @@ class CombatTargetingState(MapState):
             game.ui_view.prepare_attack_info()
         self.display_single_attack()
 
-        self.pennant = None
+        self.pennant = self.build_pennant()
+
+    def build_pennant(self) -> Optional[banner.Pennant]:
+        """The hint scrolled along the bottom of the screen while the player chooses a target, if there is one"""
+        text = item_system.targeting_pennant(self.cur_unit, self.item)
+        if not text and self.parent_item:
+            # A sequence item's own hint does for any of its subitems without one
+            text = item_system.targeting_pennant(self.cur_unit, self.parent_item)
+        if text:
+            return banner.Pennant(text)
         if item_system.num_targets(self.cur_unit, self.item) > 1 and item_system.allow_less_than_max_targets(self.cur_unit, self.item):
-            self.pennant = banner.Pennant('Press START to confirm targets.')
+            return banner.Pennant('Press START to confirm targets.')
+        return None
 
     def begin(self):
         self.fluid.reset_on_change_state()

@@ -75,6 +75,10 @@
             [
                 "map_cast_pose",
                 null
+            ],
+            [
+                "targeting_pennant",
+                "Select the character whose weapon needs repair."
             ]
         ]
     }

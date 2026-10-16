@@ -83,6 +83,10 @@
             [
                 "map_cast_anim",
                 "MapBigHealTrans"
+            ],
+            [
+                "targeting_pennant",
+                "Select a character to restore HP to."
             ]
         ]
     }

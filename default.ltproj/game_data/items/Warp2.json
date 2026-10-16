@@ -32,6 +32,10 @@
             [
                 "max_equation_range",
                 "MAGIC_RANGE"
+            ],
+            [
+                "targeting_pennant",
+                "Select warp point."
             ]
         ]
     }
