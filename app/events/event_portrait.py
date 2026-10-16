@@ -14,29 +14,36 @@ from app.constants import COLORKEY
 from app.engine import engine, image_mods
 
 def update_talk(talk_state: int, max_state: int, reverse: bool = True) -> Tuple[int, int, bool]:
-    if talk_state == 0 or talk_state == max_state-1:
-        reverse = not reverse
-    elif random.randint(1, 10) == 1:  # 10% chance to reverse
-        reverse = not reverse
-
-    mt = 2 if random.randint(1, 10) == 1 else 1    # 10% chance to skip a frame
-    if reverse:
-        next_state = talk_state - mt
-    else:
-        next_state = talk_state + mt
-    next_state = utils.clamp(next_state, 0, max_state-1)
-
-    if next_state == 0:
-        next_update = random.randint(50, 100)
-    elif next_state == max_state-1:
-        next_update = random.randint(70, 160)
-    else:
-        next_update = random.randint(30, 50)
-
+    """
+    The mouth's next frame while talking, how long to hold it, and whether it is closing.
+    As on the GBA: shut to open and back again a frame at a time, each held 1 to 8 frames at random
+    """
+    if talk_state <= 0:
+        reverse = False
+    elif talk_state >= max_state - 1:
+        reverse = True
+    next_state = talk_state - 1 if reverse else talk_state + 1
+    next_state = utils.clamp(next_state, 0, max(max_state - 1, 0))
+    # Half a frame short, since the time is checked once a frame
+    next_update = utils.frames2ms(random.randint(1, 8) - 0.5)
     return next_state, next_update, reverse
+
+def move_frames(distance: float) -> int:
+    """On the GBA a face moves in 16 frames, or 32 if it has more than 24 pixels to go"""
+    return 32 if distance > 24 else 16
+
+def ease_out(start: float, end: float, frame: int, total: int) -> int:
+    """Where a moving face is on that frame: fast at first, slowing to a stop, as on the GBA"""
+    left = total - frame
+    return int(end - math.trunc(left * left * (end - start) / (total * total)))
 
 class EventPortrait():
     base_transition_speed = utils.frames2ms(14)
+    # A face fades in from black over 12 frames on the GBA
+    fade_in_time = utils.frames2ms(12)
+    # but the scene only waits 8 frames for it before going on.
+    # Half a frame short, since the time is checked once a frame
+    appear_wait = utils.frames2ms(7.5)
     travel_time = utils.frames2ms(15)
     bop_time = utils.frames2ms(8)
     saturation_time = utils.frames2ms(10)
@@ -55,7 +62,7 @@ class EventPortrait():
         self.position = position
         self.priority = priority
         self.transition = transition
-        self.transition_speed = self.base_transition_speed * max(speed_mult, 0.001)
+        self.transition_speed = self.fade_in_time * max(speed_mult, 0.001)
         self.transition_update = engine.get_time()
         self.slide = slide
         self.mirror = mirror
@@ -76,6 +83,10 @@ class EventPortrait():
         self.moving = False
         self.orig_position = None
         self.next_position = None
+        self.move_start = 0
+        self.move_frames = 0
+        self.move_long = False
+        self.move_dip = 0  # Pixels the face sinks by while it moves
 
         # For talking
         self.talk_state = 0
@@ -84,11 +95,7 @@ class EventPortrait():
         self.reverse = False
 
         # For blinking
-        # Blinking set up
-        self.offset_blinking = [x for x in range(-2000, 2000, 125)]
-        # 3 frames for each
-        self.blink_counter = counters.BlinkCounter(self.portrait.blink_frames,
-            [7000 + random.choice(self.offset_blinking), utils.frames2ms(3)])
+        self.blink_counter = counters.FaceBlinkCounter(self.portrait.blink_frames, engine.get_time())
 
         # For bop
         self.bops_remaining = 0
@@ -136,20 +143,38 @@ class EventPortrait():
         self.moving = True
         self.travel_speed_mult = max(0.001, speed_mult)
 
-        self.travel_time = self.determine_travel_time(utils.distance(self.next_position, self.orig_position))
-        self.travel_time = int(self.travel_time / speed_mult)
+        distance = max(abs(position[0] - self.position[0]), abs(position[1] - self.position[1]))
+        self.move_long = move_frames(distance) > 16
+        self.move_frames = max(1, int(round(move_frames(distance) / self.travel_speed_mult)))
+        self.move_start = engine.get_time()
+        self.move_dip = 0
+        self.travel_time = utils.frames2ms(self.move_frames)
+
+    def copy_movement(self, other: EventPortrait):
+        """Carries on with the move another portrait is in the middle of"""
+        for attr in ('moving', 'orig_position', 'next_position', 'travel_speed_mult', 'move_start',
+                     'move_frames', 'move_long', 'move_dip', 'travel_time'):
+            setattr(self, attr, getattr(other, attr))
 
     def quick_move(self, position):
         self.position = position
 
-    def determine_travel_time(self, distance):
-        counter = 0
-        while distance > 0:
-            counter += 1
-            change = int(round(distance / 8))
-            change = utils.clamp(change, 1, 8)
-            distance -= change
-        return utils.frames2ms(counter)
+    def update_move(self, current_time):
+        # Frames since the move began, to the nearest frame
+        frame = int((current_time - self.move_start) * 60 / 1000 + 0.5)
+        total = self.move_frames
+        if frame >= total:
+            self.position = self.next_position
+            self.moving = False
+            self.move_dip = 0
+            return
+        self.position = tuple(ease_out(start, end, frame, total)
+                              for start, end in zip(self.orig_position, self.next_position))
+        # It sinks a pixel on the way, as on the GBA: twice on a long move, once on a short
+        if self.move_long:
+            self.move_dip = 1 if total // 8 <= frame < total // 2 or total * 5 // 8 <= frame else 0
+        else:
+            self.move_dip = 1 if total // 2 <= frame else 0
 
     def start_talking(self):
         self.talk_on = True
@@ -252,32 +277,7 @@ class EventPortrait():
                     return True
 
         if self.moving:
-            distance = utils.distance(self.next_position, self.position)
-            if distance == 0:
-                self.position = self.next_position
-                self.moving = False
-                self.bop_state = False
-                # self.bop(num=1, height=1)
-            else:
-                # The below does not actually contain the CORRECT true-to-GBA algorithm
-                # Just a close simple approximation, because I could not determine the GBA algorithm perfectly
-                # 15 frames (250 ms) to lerp 24 pixels
-                # 30 frames (500 ms) to lerp 120 pixels
-                # 45 frames? (750 ms) to lerp 264 pixels
-                travel_mag = int(round(distance / 8))
-                travel_mag = utils.clamp(travel_mag, 1, 8)
-                if travel_mag in (1, 4, 5, 6, 7):
-                    self.bop_state = True
-                    self.bop_height = 1
-                # Multiply by travel speed
-                travel_mag = min(self.travel_speed_mult * travel_mag, distance)
-                diff_x = self.next_position[0] - self.position[0]
-                diff_y = self.next_position[1] - self.position[1]
-                angle = math.atan2(diff_y, diff_x)
-                updated_position = (self.position[0] + (travel_mag * math.cos(angle)),
-                                    self.position[1] + (travel_mag * math.sin(angle)))
-                # updated_position = (self.position[0] + (travel_mag * direction), self.position[1])
-                self.position = updated_position
+            self.update_move(current_time)
 
         if self.bops_remaining:
             if current_time - self.last_bop > self.bop_time:
@@ -320,6 +320,7 @@ class EventPortrait():
 
         if self.bop_state:
             position = position[0], position[1] + self.bop_height
+        position = position[0], position[1] + self.move_dip
 
         if self.outgoing:
             surf.blit(self.outgoing.get_image(), position)

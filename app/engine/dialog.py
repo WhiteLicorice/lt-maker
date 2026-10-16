@@ -603,8 +603,8 @@ class Dialog:
                 self.state = DialogState.PROCESS
 
         elif self.state == DialogState.NEW_LINE:
-            # Update y_offset
-            self.y_offset = max(0, self.y_offset - 2)
+            # The lines move up a pixel a frame, as on the GBA
+            self.y_offset = max(0, self.y_offset - 1)
             if self.y_offset == 0:
                 self.state = DialogState.PROCESS
 

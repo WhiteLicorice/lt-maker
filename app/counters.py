@@ -1,8 +1,10 @@
 from __future__  import annotations
 # Helper global object for map sprite animations
+import random
 from typing import Callable, List, Union
 
 from app.constants import FRAMERATE
+from app.utilities import utils
 
 
 class generic3counter():
@@ -206,3 +208,26 @@ class BlinkCounter():
 
     def is_open_eyes(self):
         return self.count == 0
+
+def blink_wait() -> int:
+    """How long the eyes stay open before the next blink: 30 to 541 frames at random on the GBA, a new wait each time"""
+    return utils.frames2ms(random.randint(30, 541) + 3 - 0.5)
+
+class FaceBlinkCounter(BlinkCounter):
+    """
+    A portrait's eyes, as on the GBA: open for a random wait, drawn again after each blink,
+    then half shut, shut and half shut for 3 frames each
+    """
+    # Half a frame short, since the time is checked once a frame
+    step_time = utils.frames2ms(2.5)
+
+    def __init__(self, blink_frames: int, current_time: int):
+        super().__init__(blink_frames, [blink_wait(), self.step_time])
+        # So it does not blink the moment it appears
+        self.last_update = current_time
+
+    def update(self, current_time) -> bool:
+        changed = super().update(current_time)
+        if changed and self.is_open_eyes():
+            self.update_times[0] = blink_wait()
+        return changed

@@ -156,7 +156,7 @@ def add_portrait(self: Event, portrait, screen_position: Tuple | str, slide=None
     if 'immediate' in flags or 'no_block' in flags or self.do_skip:
         pass
     else:
-        self.wait_time = engine.get_time() + new_portrait.transition_speed + 33  # 16 frames
+        self.wait_time = engine.get_time() + int(new_portrait.appear_wait * speed_mult)
         self.state = 'waiting'
 
     return True
@@ -313,9 +313,7 @@ def replace_portrait(self: Event, portrait, new_portrait, flags=None):
     replacement.saturation_direction = event_portrait.saturation_direction
     replacement.talk_on = event_portrait.talk_on
     if event_portrait.moving:
-        replacement.moving = True
-        replacement.next_position = event_portrait.next_position
-        replacement.travel_speed_mult = event_portrait.travel_speed_mult
+        replacement.copy_movement(event_portrait)
     if self.text_boxes and self.text_boxes[-1].portrait == event_portrait:
         self.text_boxes[-1].portrait = replacement
 

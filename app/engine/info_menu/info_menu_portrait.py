@@ -1,8 +1,5 @@
-import random
-
 from app.engine import engine
 from app import counters
-from app.utilities import utils
 from app.constants import COLORKEY
 
 class InfoMenuPortrait():
@@ -16,10 +13,7 @@ class InfoMenuPortrait():
         self.mouth_section = engine.subsurface(self.portrait.image, self.portrait.get_neutral_mouth())
 
         self.should_blink = should_blink
-        offset_blinking = range(-2000, 2000, 125)
-        self.blink_counter = \
-            counters.BlinkCounter(portrait.blink_frames, [7000 + random.choice(offset_blinking), utils.frames2ms(3)])
-        self.blink_counter.last_update = engine.get_time()
+        self.blink_counter = counters.FaceBlinkCounter(portrait.blink_frames, engine.get_time())
 
     def create_image(self):
         main_image = self.main_portrait.copy()
