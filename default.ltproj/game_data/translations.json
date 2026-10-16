@@ -60,6 +60,10 @@
         "text": "Select a unit to talk to."
     },
     {
+        "nid": "Support_desc",
+        "text": "Select which unit to speak to."
+    },
+    {
         "nid": "Config_desc",
         "text": "Change your settings."
     },
@@ -410,6 +414,10 @@
     {
         "nid": "Transfer_desc",
         "text": "Give paired unit to adjacent ally."
+    },
+    {
+        "nid": "Switch_desc",
+        "text": "Switch places with paired unit."
     },
     {
         "nid": "prep_gba_pick_units_desc",
