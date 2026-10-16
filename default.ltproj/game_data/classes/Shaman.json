@@ -10,7 +10,9 @@
             "Druid",
             "Summoner"
         ],
-        "tags": [],
+        "tags": [
+            "SlowMove"
+        ],
         "max_level": 20,
         "bases": {
             "HP": 16,

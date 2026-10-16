@@ -21,6 +21,8 @@ Both units and classes can be assigned tags. A unit in game has it's own tags as
 
 **Flying** - Denotes a unit as Flying. Affects movement SFX, as well as the Aid icon.
 
+**SlowMove** - The unit/class walks across the map at half the usual pace, as the armored and robed classes of the GBA games do. This is only how fast the unit is shown moving: how far it can move is unchanged. An event that moves the unit at a speed of its own is unaffected.
+
 **Dragon** - Denotes a unit as a Dragon. Used for the Aid icon.
 
 **AutoPromote** - This unit/class will automatically promote if they level past their class's maximum level.

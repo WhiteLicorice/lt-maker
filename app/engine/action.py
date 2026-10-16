@@ -17,6 +17,7 @@ from app.data.resources.resources import RESOURCES
 from app.engine import (aura_funcs, banner, equations, item_funcs, item_system,
                         particles, skill_system, unit_funcs, animations)
 from app.engine.game_state import game
+from app.engine.movement import movement_funcs
 from app.engine.objects.item import ItemObject
 from app.engine.objects.skill import SkillObject
 from app.engine.objects.unit import UnitObject
@@ -200,7 +201,7 @@ class Move(Action):
         self.has_moved = self.unit.has_moved
         self.event = event
         self.follow = follow
-        self.speed = speed or cf.SETTINGS['unit_speed']
+        self.speed = speed or movement_funcs.get_default_speed(self.unit)
         self.silent = silent
 
     def do(self):

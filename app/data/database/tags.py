@@ -23,7 +23,7 @@ class TagCatalog(Data[Tag]):
     default_tags = [
         'Lord', 'Boss', 'Required', 'Mounted', 'Flying', 'Armor', 'Dragon',
         'AutoPromote', 'NoAutoPromote', 'Convoy', 'AdjConvoy','Tile', 'Blacklist',
-        'ZeroMove', 'Horse'
+        'ZeroMove', 'Horse', 'SlowMove'
     ]
 
     def __init__(self, strs: List[str] = None):

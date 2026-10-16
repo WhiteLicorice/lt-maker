@@ -10,7 +10,8 @@
         "tags": [
             "Horse",
             "Mounted",
-            "Armor"
+            "Armor",
+            "SlowMove"
         ],
         "max_level": 20,
         "bases": {

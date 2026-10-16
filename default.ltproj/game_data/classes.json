@@ -8,7 +8,8 @@
         "promotes_from": null,
         "turns_into": [],
         "tags": [
-            "ArenaIgnore"
+            "ArenaIgnore",
+            "SlowMove"
         ],
         "max_level": 10,
         "bases": {
@@ -2376,7 +2377,8 @@
         "tags": [
             "Horse",
             "Mounted",
-            "Armor"
+            "Armor",
+            "SlowMove"
         ],
         "max_level": 20,
         "bases": {
@@ -2799,7 +2801,8 @@
             "General"
         ],
         "tags": [
-            "Armor"
+            "Armor",
+            "SlowMove"
         ],
         "max_level": 20,
         "bases": {
@@ -2934,7 +2937,8 @@
         "promotes_from": "Knight",
         "turns_into": [],
         "tags": [
-            "Armor"
+            "Armor",
+            "SlowMove"
         ],
         "max_level": 20,
         "bases": {
@@ -5098,7 +5102,9 @@
             "Druid",
             "Summoner"
         ],
-        "tags": [],
+        "tags": [
+            "SlowMove"
+        ],
         "max_level": 20,
         "bases": {
             "HP": 16,
@@ -5231,7 +5237,9 @@
         "movement_group": "Mages",
         "promotes_from": "Shaman",
         "turns_into": [],
-        "tags": [],
+        "tags": [
+            "SlowMove"
+        ],
         "max_level": 20,
         "bases": {
             "HP": 19,

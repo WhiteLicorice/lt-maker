@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Optional, List, Tuple, TYPE_CHECKING
 
-import app.engine.config as cf
 from app.engine import engine
+from app.engine.movement import movement_funcs
 from app.engine.movement.movement_component import MovementComponent
 from app.engine.movement.unit_path_movement_component import UnitPathMovementComponent
 from app.utilities import utils
@@ -58,7 +58,7 @@ class MovementSystem:
         """
 
         logging.info("Unit %s to begin moving", unit)
-        speed = speed or cf.SETTINGS['unit_speed']
+        speed = speed or movement_funcs.get_default_speed(unit)
         movement_component = \
             UnitPathMovementComponent(unit, path, event, follow, speed=speed, muted=silent)
         self.moving_entities.append(movement_component)

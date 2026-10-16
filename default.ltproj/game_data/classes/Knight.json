@@ -11,7 +11,8 @@
             "General"
         ],
         "tags": [
-            "Armor"
+            "Armor",
+            "SlowMove"
         ],
         "max_level": 20,
         "bases": {

@@ -6,12 +6,25 @@ from __future__ import annotations
 
 from typing import Tuple, TYPE_CHECKING
 
+import app.engine.config as cf
 from app.data.database.database import DB
 from app.engine import equations, skill_system, evaluate
 from app.engine.game_state import game
 
 if TYPE_CHECKING:
     from app.engine.objects.unit import UnitObject
+
+def get_default_speed(unit: UnitObject) -> int:
+    """
+    How many milliseconds a unit takes to cross a tile when nothing else sets
+    its speed: the player's Unit Speed setting, and twice that with the SlowMove
+    tag. On the GBA the armored and the robed classes walk at half the pace
+    of the rest
+    """
+    speed = cf.SETTINGS['unit_speed']
+    if 'SlowMove' in unit.tags:
+        speed *= 2
+    return speed
 
 def get_movement_group(unit_to_move: UnitObject):
     movement_group = skill_system.movement_type(unit_to_move)

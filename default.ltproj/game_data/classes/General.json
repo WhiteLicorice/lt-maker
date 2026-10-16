@@ -8,7 +8,8 @@
         "promotes_from": "Knight",
         "turns_into": [],
         "tags": [
-            "Armor"
+            "Armor",
+            "SlowMove"
         ],
         "max_level": 20,
         "bases": {
