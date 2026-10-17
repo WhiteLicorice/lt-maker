@@ -86,6 +86,25 @@ class MoveSelectionLifecycleTests(EngineTestCase):
         self.assertTrue(self.highlights['possible_move'])
         self.assertEqual(set(), self.highlights['move'])
 
+    def test_hover_range_waits_for_the_cursor_to_rest_like_the_hover_animation(self):
+        '''
+        As a unit's hover animation does on the GBA (UnitSpriteHoverUpdate), its light
+        range waits until the cursor has rested on it for 5 frames
+        '''
+        eirika = self.harness.game.get_unit('Eirika')
+        self.harness.move_cursor_to((5, 5))
+        self.harness.step(10)
+        self.assertFalse(self.highlights['possible_move'])
+        # Down and up: the cursor is on Eirika from the first of these 2 frames
+        self.harness.press('LEFT', settle=0)
+        self.assertEqual(self.cursor.position, eirika.position)
+        self.harness.step(3)
+        self.assertFalse(self.highlights['possible_move'])
+        self.assertEqual(eirika.sprite.image_state, 'passive')
+        self.harness.step()
+        self.assertTrue(self.highlights['possible_move'])
+        self.assertEqual(eirika.sprite.image_state, 'active')
+
 
 class LevelCursorMoveSelectionTests(EngineTestCase):
     def build_cursor(self):
@@ -124,7 +143,8 @@ class LevelCursorMoveSelectionTests(EngineTestCase):
             hover_unit = MagicMock()
             hover_unit.team = team
             hover_unit.skills = []
-            with patch.object(highlight, 'game') as mock_game:
+            with patch.object(highlight, 'game') as mock_game, \
+                    patch.object(highlight.UnitSprite, 'hover_wait', 0):
                 mock_game.cursor.get_hover.return_value = hover_unit
                 mock_game.path_system.get_move_selection.return_value = MoveSelection()
                 mock_game.target_system.get_all_attackable_positions_spells.return_value = set()

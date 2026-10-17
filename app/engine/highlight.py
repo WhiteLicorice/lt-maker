@@ -6,6 +6,7 @@ from app.engine.sprites import SPRITES
 from app.engine import engine, line_of_sight, aura_funcs, skill_system
 from app.engine.movement.move_selection import MoveSelection
 from app.engine.game_state import game
+from app.engine.unit_sprite import UnitSprite
 
 import logging
 
@@ -33,6 +34,9 @@ class HighlightController():
         self.update_idx = 0
 
         self.current_hover = None
+        # The unit the cursor is on, and when it came onto it
+        self.hover_candidate = None
+        self.hover_start = 0
 
         self.formation_highlights = []
         self.escape_highlights = []
@@ -60,6 +64,7 @@ class HighlightController():
                 self.highlights[k].clear()
                 self.transitions[k] = self.starting_cutoff
         self.current_hover = None
+        self.hover_candidate = None
 
     def remove_aura_highlights(self):
         self.highlights['aura'].clear()
@@ -68,12 +73,18 @@ class HighlightController():
         hover_unit = game.cursor.get_hover()
         if self.current_hover and hover_unit != self.current_hover:
             self.remove_highlights()
-        if hover_unit and hover_unit != self.current_hover:
+        if hover_unit != self.hover_candidate:
+            self.hover_candidate = hover_unit
+            self.hover_start = engine.get_time()
+        # Like a unit's hover animation (see UnitSprite.hover_wait), its range waits for
+        # the cursor to rest on it
+        if hover_unit and hover_unit != self.current_hover and \
+                engine.get_time() - self.hover_start >= UnitSprite.hover_wait:
             selection = game.path_system.get_move_selection(
                 hover_unit, zero_move=hover_unit.team != 'player')
             self.display_highlights(hover_unit, selection, light=True)
             self.display_aura_highlights(hover_unit)
-        self.current_hover = hover_unit
+            self.current_hover = hover_unit
 
     def display_moves(self, valid_moves, light=False):
         name = 'possible_move' if light else 'move'
