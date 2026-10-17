@@ -156,6 +156,14 @@ class Cursor():
         surf.blit(self.sprite, (x - 12, y + 3 + self.y_offset + self.anim[self.counter]))
         return surf
 
+    def draw_still(self, surf, x, y):
+        """
+        A hand left on a picked option. As on the GBA (DisplayFrozenUiHand), it stays put,
+        2 pixels in from where the moving hand bobs out to
+        """
+        surf.blit(self.sprite, (x - 10, y + 3))
+        return surf
+
 class Simple():
     """
     Abstract menu class. Must implement personal draw function
@@ -649,7 +657,7 @@ class Choice(Simple):
                 else:
                     choice.draw(surf, left, top)
                 if idx + self.scroll == self.fake_cursor_idx:
-                    self.stationary_cursor.draw(surf, left, top)
+                    self.stationary_cursor.draw_still(surf, left, top)
                 if idx + self.scroll == self.current_index and self.takes_input and self.draw_cursor:
                     self.cursor.draw(surf, left, top)
 
@@ -681,7 +689,7 @@ class Choice(Simple):
                 else:
                     choice.draw(surf, left, top)
                 if idx == self.fake_cursor_idx:
-                    self.stationary_cursor.draw(surf, left, top)
+                    self.stationary_cursor.draw_still(surf, left, top)
                 if idx == self.current_index and self.takes_input and self.draw_cursor:
                     self.cursor.draw(surf, left, top)
 
@@ -1342,7 +1350,7 @@ class Table(Simple):
                     else:
                         choice.draw(surf, left, top)
                     if idx + (self.scroll * self.columns) == self.fake_cursor_idx:
-                        self.stationary_cursor.draw(surf, left, top)
+                        self.stationary_cursor.draw_still(surf, left, top)
                     if idx + (self.scroll * self.columns) == self.current_index and self.takes_input and self.draw_cursor:
                         self.cursor.draw(surf, left, top)
         else:
@@ -2059,7 +2067,7 @@ class KeyboardMenu(Table):
                 else:
                     choice.draw(surf, left, top)
                 if idx + (self.scroll * self.columns) == self.fake_cursor_idx:
-                    self.stationary_cursor.draw(surf, left, top)
+                    self.stationary_cursor.draw_still(surf, left, top)
                 if idx + (self.scroll * self.columns) == self.current_index and self.takes_input and self.draw_cursor:
                     self.cursor.draw(surf, left, top)
 
@@ -2138,7 +2146,7 @@ class PrepGBA(Choice):
                 else:
                     choice.draw(surf, left, top)
                 if idx + self.scroll == self.fake_cursor_idx:
-                    self.stationary_cursor.draw(surf, left, top)
+                    self.stationary_cursor.draw_still(surf, left, top)
                 if idx + self.scroll == self.current_index and self.takes_input and self.draw_cursor:
                     self.cursor.draw(surf, left, top)
 
