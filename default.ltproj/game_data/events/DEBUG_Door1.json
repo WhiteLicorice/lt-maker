@@ -9,6 +9,7 @@
         "priority": 20,
         "_source": [
             "unlock;{unit}",
+            "sound;Unlock",
             "give_item;{unit};Iron_Sword"
         ],
         "nid": "DEBUG Door1"

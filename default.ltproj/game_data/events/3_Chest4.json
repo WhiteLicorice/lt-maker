@@ -9,6 +9,7 @@
         "priority": 20,
         "_source": [
             "unlock;{unit}",
+            "sound;Unlock",
             "show_layer;Chest4",
             "give_item;{unit};Iron_Sword"
         ],

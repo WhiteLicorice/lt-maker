@@ -1694,6 +1694,7 @@
         "priority": 20,
         "_source": [
             "unlock;{unit}",
+            "sound;Unlock",
             "give_item;{unit};Iron_Sword"
         ],
         "nid": "DEBUG Door1"
@@ -1708,6 +1709,7 @@
         "priority": 20,
         "_source": [
             "unlock;{unit}",
+            "sound;Unlock",
             "show_layer;Chest1",
             "give_item;{unit};Javelin"
         ],
@@ -1723,6 +1725,7 @@
         "priority": 20,
         "_source": [
             "unlock;{unit}",
+            "sound;Unlock",
             "show_layer;Chest4",
             "give_item;{unit};Iron_Sword"
         ],
@@ -1738,6 +1741,7 @@
         "priority": 20,
         "_source": [
             "unlock;{unit}",
+            "sound;Unlock",
             "show_layer;Chest3",
             "give_item;{unit};Hand_Axe"
         ],
@@ -1753,6 +1757,7 @@
         "priority": 20,
         "_source": [
             "unlock;{unit}",
+            "sound;Unlock",
             "show_layer;Chest2",
             "give_item;{unit};Iron_Lance"
         ],
@@ -1768,6 +1773,7 @@
         "priority": 20,
         "_source": [
             "unlock;{unit}",
+            "sound;Unlock",
             "show_layer;Door1"
         ],
         "nid": "3 Door1"
@@ -1782,6 +1788,7 @@
         "priority": 20,
         "_source": [
             "unlock;{unit}",
+            "sound;Unlock",
             "show_layer;Door2"
         ],
         "nid": "3 Door2"
@@ -1796,6 +1803,7 @@
         "priority": 20,
         "_source": [
             "unlock;{unit}",
+            "sound;Unlock",
             "show_layer;Door3"
         ],
         "nid": "3 Door3"

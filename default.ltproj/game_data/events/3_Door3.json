@@ -9,6 +9,7 @@
         "priority": 20,
         "_source": [
             "unlock;{unit}",
+            "sound;Unlock",
             "show_layer;Door3"
         ],
         "nid": "3 Door3"
