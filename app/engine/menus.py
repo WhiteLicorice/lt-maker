@@ -181,6 +181,10 @@ class Simple():
         self.hard_limit = False
         self.scroll = 0
         self.y_offset = 0  # Make room for header
+        # How far the rows are drawn from where they are scrolled to, in pixels, as they slide there
+        self.scroll_offset = 0
+        self._drawn_scroll = None
+        self._last_scroll_slide = None
 
         self.options = []
         self.create_options(options, info)
@@ -375,6 +379,46 @@ class Simple():
     def update(self):
         if self.draw_cursor == 1:
             self.cursor.update()
+
+    # As on the GBA (ShopUpdateBg2Offset, PrepItemList), a scrolled list slides this many pixels a frame
+    scroll_speed = 4
+
+    def _scroll_distance(self, old_scroll: int, new_scroll: int) -> int:
+        """How far the rows move, in pixels, when the list scrolls from old_scroll to new_scroll"""
+        return self._row_top(new_scroll, old_scroll)
+
+    def update_scroll_offset(self):
+        """Once a frame, however many times the menu is drawn, the rows slide toward their place"""
+        current_time = engine.get_time()
+        if current_time == self._last_scroll_slide:
+            return
+        self._last_scroll_slide = current_time
+        if self._drawn_scroll is not None and self.scroll != self._drawn_scroll:
+            if abs(self.scroll - self._drawn_scroll) == 1:
+                self.scroll_offset += self._scroll_distance(self._drawn_scroll, self.scroll)
+            else:  # A jump, such as wrapping round, is not slid
+                self.scroll_offset = 0
+        self._drawn_scroll = self.scroll
+        if self.scroll_offset > 0:
+            self.scroll_offset = max(0, self.scroll_offset - self.scroll_speed)
+        else:
+            self.scroll_offset = min(0, self.scroll_offset + self.scroll_speed)
+
+    def is_scrolling(self) -> bool:
+        return self.scroll_offset != 0 or (self._drawn_scroll is not None and self.scroll != self._drawn_scroll)
+
+    def _rows_in_view(self, num_rows: int, row_height, view_height: int) -> list:
+        """The rows to draw, each with how far down the list it is, as the list slides to its scroll"""
+        row, y = self.scroll, self.scroll_offset
+        while row > 0 and y > 0:
+            row -= 1
+            y -= row_height(row)
+        rows = []
+        while row < num_rows and y < view_height:
+            rows.append((row, y))
+            y += row_height(row)
+            row += 1
+        return rows
 
     def draw_scroll_bar(self, surf, topleft):
         right = topleft[0] + self.get_menu_width()
@@ -640,28 +684,29 @@ class Choice(Simple):
             draw_scroll_bar = True
             self.draw_scroll_bar(surf, topleft)
 
-        start_index = self.scroll
-        end_index = self.scroll + self.limit
-        choices = self.options[start_index:end_index]
-        running_height = self.y_offset
         menu_width = self.get_menu_width()
-        if choices:
-            for idx, choice in enumerate(choices):
-                top = topleft[1] + 4 + running_height
-                left = topleft[0]
-
-                if self.highlight and idx + self.scroll == self.current_index and self.takes_input and self.draw_cursor:
-                    choice.draw_highlight(surf, left, top, menu_width - 8 if draw_scroll_bar else menu_width)
-                # elif self.highlight and idx + self.scroll == self.fake_cursor_idx:
-                    # choice.draw_highlight(surf, left, top, menu_width)
+        if self.options[self.scroll:self.scroll + self.limit]:
+            self.update_scroll_offset()
+            list_top = topleft[1] + 4 + self.y_offset
+            left = topleft[0]
+            view_height = sum(option.height() for option in self.options[self.scroll:self.scroll + self.limit])
+            rows = self._rows_in_view(len(self.options), lambda idx: self.options[idx].height(), view_height)
+            # Rows sliding in or out are cut off at the edge of the list
+            old_clip = surf.get_clip()
+            if self.scroll_offset:
+                surf.set_clip(old_clip.clip((0, list_top, surf.get_width(), view_height)))
+            for idx, y in rows:
+                choice = self.options[idx]
+                if self.highlight and idx == self.current_index and self.takes_input and self.draw_cursor:
+                    choice.draw_highlight(surf, left, list_top + y, menu_width - 8 if draw_scroll_bar else menu_width)
                 else:
-                    choice.draw(surf, left, top)
-                if idx + self.scroll == self.fake_cursor_idx:
-                    self.stationary_cursor.draw_still(surf, left, top)
-                if idx + self.scroll == self.current_index and self.takes_input and self.draw_cursor:
-                    self.cursor.draw(surf, left, top)
-
-                running_height += choice.height()
+                    choice.draw(surf, left, list_top + y)
+            surf.set_clip(old_clip)
+            if self.fake_cursor_idx is not None and self.scroll <= self.fake_cursor_idx < self.scroll + self.limit:
+                self.stationary_cursor.draw_still(surf, left, list_top + self._row_top(self.fake_cursor_idx, self.scroll))
+            # The hand goes straight to where its option is scrolled to
+            if self.scroll <= self.current_index < self.scroll + self.limit and self.takes_input and self.draw_cursor:
+                self.cursor.draw(surf, left, list_top + self._row_top(self.current_index, self.scroll))
         else:
             FONT['text-grey'].blit("Nothing", surf, (self.topleft[0] + 16, self.topleft[1] + 4))
         return surf
@@ -1338,7 +1383,9 @@ class Table(Simple):
         width = max(option.width() for option in self.options)
         width -= width%8
         height = max(option.height() for option in self.options)
-        if choices:
+        if choices and self.mode != 'objective_menu':
+            self._draw_sliding_rows(surf, topleft, width, height, draw_scroll_bar)
+        elif choices:
             for idx, choice in enumerate(choices):
                 top = topleft[1] + 4 + (idx // self.columns * height)
                 left = topleft[0] + (idx % self.columns * width)
@@ -1361,21 +1408,47 @@ class Table(Simple):
                             surf.blit(SPRITES.get('lowlight'), (topleft[0] + 2, topleft[1] + 12 + (win_count - self.scroll + 2) * 16))
                             FONT['text-yellow'].blit("Loss Conditions", surf, (topleft[0] + 4, topleft[1] + 4 + (win_count - self.scroll + 2) * 16))
                     choice.draw(surf, left, top)
-                else:
-                    if self.mode in ('unit', 'prep_manage'):
-                        left += 16
-                    if idx + (self.scroll * self.columns) == self.current_index and self.takes_input and self.draw_cursor:
-                        choice.draw_highlight(surf, left, top, width - 8 if draw_scroll_bar else width)
-                    elif idx + (self.scroll * self.columns) == self.fake_cursor_idx:
-                        choice.draw_highlight(surf, left, top, width - 8 if draw_scroll_bar else width)
-                    else:
-                        choice.draw(surf, left, top)
-                    if idx + (self.scroll * self.columns) == self.fake_cursor_idx:
-                        self.stationary_cursor.draw_still(surf, left, top)
-                    if idx + (self.scroll * self.columns) == self.current_index and self.takes_input and self.draw_cursor:
-                        self.cursor.draw(surf, left, top)
         else:
             FONT['text-grey'].blit("Nothing", bg_surf, (topleft[0] + 16, topleft[1] + 4))
+
+    def _scroll_distance(self, old_scroll: int, new_scroll: int) -> int:
+        return (new_scroll - old_scroll) * max(option.height() for option in self.options)
+
+    def _draw_sliding_rows(self, surf, topleft, width, height, draw_scroll_bar):
+        self.update_scroll_offset()
+        list_top = topleft[1] + 4
+        num_rows = math.ceil(len(self.options) / self.columns)
+        rows = self._rows_in_view(num_rows, lambda row: height, self.rows * height)
+        left_pad = 16 if self.mode in ('unit', 'prep_manage') else 0
+        highlight_width = width - 8 if draw_scroll_bar else width
+
+        def option_left(idx):
+            return topleft[0] + left_pad + idx % self.columns * width
+
+        # Rows sliding in or out are cut off at the edge of the list
+        old_clip = surf.get_clip()
+        if self.scroll_offset:
+            surf.set_clip(old_clip.clip((0, list_top, surf.get_width(), self.rows * height)))
+        for row, y in rows:
+            for idx in range(row * self.columns, min((row + 1) * self.columns, len(self.options))):
+                choice = self.options[idx]
+                if (idx == self.current_index and self.takes_input and self.draw_cursor) or idx == self.fake_cursor_idx:
+                    choice.draw_highlight(surf, option_left(idx), list_top + y, highlight_width)
+                else:
+                    choice.draw(surf, option_left(idx), list_top + y)
+        surf.set_clip(old_clip)
+
+        def in_view(idx):
+            return self.scroll <= idx // self.columns < self.scroll + self.rows
+
+        def view_top(idx):
+            return list_top + (idx // self.columns - self.scroll) * height
+
+        if self.fake_cursor_idx is not None and in_view(self.fake_cursor_idx):
+            self.stationary_cursor.draw_still(surf, option_left(self.fake_cursor_idx), view_top(self.fake_cursor_idx))
+        # The hand goes straight to where its option is scrolled to
+        if in_view(self.current_index) and self.takes_input and self.draw_cursor:
+            self.cursor.draw(surf, option_left(self.current_index), view_top(self.current_index))
 
     # For mouse handling
     def get_rects(self):
