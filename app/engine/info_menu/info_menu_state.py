@@ -368,27 +368,30 @@ class InfoMenuState(State):
         # Left and Right
         elif self.next_state is not None:
             self.transition_counter += 1
+            # As on the GBA (sPageSlideOffsetLut), the page slides out 4, 7, 10, 12 and 14 tiles,
+            # and the next one in from 13, 9, 7, 5, 3, 2 and 1 tiles away, a step a frame
+            in_offsets = (104, 72, 56, 40, 24, 16, 8)
             # Transition in
             if self.next_state == self.state:
-                idxs = (104, 72, 56, 40, 24, 8)
                 counter = self.transition_counter - 1
-                if 0 <= counter < len(idxs):
-                    self.scroll_offset_x = idxs[counter] if self.transition == 'RIGHT' else -idxs[counter]
+                if 0 <= counter < len(in_offsets):
+                    self.scroll_offset_x = in_offsets[counter] if self.transition == 'RIGHT' else -in_offsets[counter]
                 else:
                     self.transition = None
                     self.scroll_offset_x = 0
                     self.next_state = None
                     self.transition_counter = 0
             else:
-                idxs = (-32, -56, -80, -96, -112)
+                out_offsets = (-32, -56, -80, -96, -112)
                 counter = self.transition_counter - 1
-                if 0 <= counter < len(idxs):
-                    self.scroll_offset_x = idxs[counter] if self.transition == 'RIGHT' else -idxs[counter]
+                if 0 <= counter < len(out_offsets):
+                    self.scroll_offset_x = out_offsets[counter] if self.transition == 'RIGHT' else -out_offsets[counter]
                 else:
-                    self.scroll_offset_x = -140 if self.transition == 'RIGHT' else 140
+                    # The next page comes in on the frame after the last one goes out
                     self.state = self.next_state
                     self.info_graph.set_current_state(self.state)
-                    self.transition_counter = 0
+                    self.transition_counter = 1
+                    self.scroll_offset_x = in_offsets[0] if self.transition == 'RIGHT' else -in_offsets[0]
 
     def draw(self, surf):
         if self.bg:
