@@ -2865,6 +2865,19 @@ class AIState(MapState):
 class ShopState(State):
     name = 'shop'
 
+    # Said when a project has no translation of its own for the line
+    fallback_messages = {
+        'shop_check': "That's worth {price} gold. Is that all right?",
+        'shop_sell': "What do you want to sell?",
+        'shop_nothing_to_sell': "You've got nothing to sell!",
+        'shop_convoy': "Your hands are full. Send it to your convoy?",
+        'shop_convoy_sent': "Right. I'll send it now.",
+        'shop_convoy_declined': "No? Too bad. You could take it if you made room.",
+        'shop_max_inventory': "Your hands are full.",
+        'shop_no_stock': "Sorry, I'm all out of that.",
+        'shop_preview': "Here's what I've got for sale.",
+    }
+
     def start(self):
         self.fluid = FluidScroll()
 
@@ -2883,10 +2896,15 @@ class ShopState(State):
             self.portrait = SPRITES.get('%s_portrait' % self.flavor)
             self.opening_message = apply_flavor('%s_opener')
             self.buy_message = apply_flavor('%s_buy')
+            self.sell_message = apply_flavor('%s_sell')
             self.back_message = apply_flavor('%s_back')
             self.leave_message = apply_flavor('%s_leave')
             self.buy_again_message = apply_flavor('%s_buy_again')
+            self.check_message = apply_flavor('%s_check')
+            self.nothing_to_sell_message = apply_flavor('%s_nothing_to_sell')
             self.convoy_message = apply_flavor('%s_convoy')
+            self.convoy_sent_message = apply_flavor('%s_convoy_sent')
+            self.convoy_declined_message = apply_flavor('%s_convoy_declined')
             self.no_stock_message = apply_flavor('%s_no_stock')
             self.no_money_message = apply_flavor('%s_no_money')
             self.max_inventory_message = apply_flavor('%s_max_inventory')
@@ -2898,10 +2916,15 @@ class ShopState(State):
             self.portrait = SPRITES.get('armory_portrait')
             self.opening_message = 'armory_opener'
             self.buy_message = 'armory_buy'
+            self.sell_message = 'shop_sell'
             self.back_message = 'armory_back'
             self.leave_message = 'armory_leave'
             self.buy_again_message = 'shop_buy_again'
+            self.check_message = 'shop_check'
+            self.nothing_to_sell_message = 'shop_nothing_to_sell'
             self.convoy_message = 'shop_convoy'
+            self.convoy_sent_message = 'shop_convoy_sent'
+            self.convoy_declined_message = 'shop_convoy_declined'
             self.no_stock_message = 'shop_no_stock'
             self.no_money_message = 'shop_no_money'
             self.max_inventory_message = 'shop_max_inventory'
@@ -2939,6 +2962,11 @@ class ShopState(State):
         self.choice_menu.set_horizontal(True)
         self.choice_menu.set_color(['convo-white', 'convo-white'])
         self.choice_menu.set_highlight(False)
+        # As on the GBA, every sale and purchase is asked about first
+        self.confirm_menu = menus.Choice(self.unit, ["Yes", "No"], (120, 32), background=None)
+        self.confirm_menu.set_horizontal(True)
+        self.confirm_menu.set_color(['convo-white', 'convo-white'])
+        self.confirm_menu.set_highlight(False)
         self.menu = None  # For input
 
         self.state = 'open'
@@ -2961,8 +2989,10 @@ class ShopState(State):
     def begin(self):
         self.fluid.reset_on_change_state()
 
-    def get_dialog(self, text):
-        text = text_funcs.translate_and_text_evaluate(text, self=self)
+    def get_dialog(self, text, price=None):
+        if text not in DB.translations:
+            text = self.fallback_messages.get(text, text)
+        text = text_funcs.translate_and_text_evaluate(text, self=self, local_args={'price': price})
         d = dialog.Dialog(text)
         d.position = (60, 8)
         d.text_width = WINWIDTH - 80
@@ -2974,6 +3004,65 @@ class ShopState(State):
 
     def update_options(self):
         self.sell_menu.update_options(item_funcs.get_all_tradeable_items(self.unit))
+
+    def to_list(self, state, msg):
+        self.state = state
+        self.menu = self.buy_menu if state == 'buy' else self.sell_menu
+        self.menu.set_takes_input(True)
+        self.current_msg = self.get_dialog(msg)
+
+    def to_choice(self, msg):
+        self.state = 'choice'
+        self.menu = self.choice_menu
+        self.current_msg = self.get_dialog(msg)
+
+    def ask(self, state, msg, price=None):
+        if self.menu and self.menu is not self.confirm_menu:
+            self.menu.set_takes_input(False)
+        self.state = state
+        self.menu = self.confirm_menu
+        self.confirm_menu.move_to(0)
+        self.current_msg = self.get_dialog(msg, price)
+
+    def buy(self, item, to_convoy: bool):
+        value = item_funcs.buy_price(self.unit, item)
+        new_item = item_funcs.create_item(self.unit, item.nid)
+        action.do(action.HasTraded(self.unit))
+        get_sound_thread().play_sfx('GoldExchange')
+        action.do(action.GainMoney(game.current_party, -value))
+        action.do(action.UpdateRecords('money', (game.current_party, -value)))
+        self.purchases.append(item.nid)
+        action.do(action.SetLevelVar('_shop_purchases', self.purchases.copy()))
+        stock_marker = '__shop_%s_%s' % (self.shop_id, item.nid)
+        action.do(action.SetGameVar(stock_marker, game.game_vars.get(stock_marker, 0) + 1))  # Remember that we bought one of this
+        self.buy_menu.decrement_stock()
+        self.money_counter_disp.start(-value)
+        game.register_item(new_item)
+        if to_convoy:
+            action.do(action.PutItemInConvoy(new_item))
+            self.to_list('buy', self.convoy_sent_message)
+        else:
+            action.do(action.GiveItem(self.unit, new_item))
+            self.to_list('buy', self.buy_again_message)
+        self.update_options()
+
+    def sell(self, item):
+        value = item_funcs.sell_price(self.unit, item)
+        action.do(action.HasTraded(self.unit))
+        get_sound_thread().play_sfx('GoldExchange')
+        action.do(action.GainMoney(game.current_party, value))
+        action.do(action.UpdateRecords('money', (game.current_party, value)))
+        self.money_counter_disp.start(value)
+        action.do(action.RemoveItem(self.unit, item))
+        self.update_options()
+        items_left = item_funcs.get_all_tradeable_items(self.unit)
+        if items_left:
+            # As on the GBA, the hand stays on the items, not on an empty row below them
+            self.sell_menu.move_to(min(self.sell_menu.current_index, len(items_left) - 1))
+            self.to_list('sell', self.sell_again_message)
+        else:
+            # As on the GBA, nothing left to sell goes back to Buy or Sell
+            self.to_choice(self.again_message)
 
     def take_input(self, event):
         first_push = self.fluid.update()
@@ -2987,6 +3076,10 @@ class ShopState(State):
             elif 'UP' in directions or 'LEFT' in directions:
                 if self.menu.move_up(first_push):
                     get_sound_thread().play_sfx('Select 6')
+
+        # As on the GBA, a list that is scrolling takes no other input
+        if self.state in ('buy', 'sell', 'preview') and self.menu.is_scrolling():
+            return
 
         if event == 'SELECT':
             if self.state == 'open':
@@ -3005,45 +3098,22 @@ class ShopState(State):
                 get_sound_thread().play_sfx('Select 1')
                 current = self.choice_menu.get_current()
                 if current == 'Buy':
-                    self.menu = self.buy_menu
-                    self.state = 'buy'
-                    self.current_msg = self.get_dialog(self.buy_message)
-                    self.buy_menu.set_takes_input(True)
-                elif current == 'Sell' and item_funcs.get_all_tradeable_items(self.unit):
-                    self.menu = self.sell_menu
-                    self.state = 'sell'
-                    self.sell_menu.set_takes_input(True)
+                    self.to_list('buy', self.buy_message)
+                elif current == 'Sell':
+                    if item_funcs.get_all_tradeable_items(self.unit):
+                        self.to_list('sell', self.sell_message)
+                    else:
+                        self.current_msg = self.get_dialog(self.nothing_to_sell_message)
+
+            elif self.state in ('buy', 'sell') and self.menu.info_flag:
+                # As on the GBA, A does nothing while an item's help is up
+                pass
 
             elif self.state == 'buy':
                 item = self.buy_menu.get_current()
                 if item:
                     value = item_funcs.buy_price(self.unit, item)
-                    new_item = item_funcs.create_item(self.unit, item.nid)
-                    if game.get_money() - value >= 0 and \
-                            self.buy_menu.get_stock() != 0 and \
-                            (not item_funcs.inventory_full(self.unit, new_item) or
-                             game.game_vars.get('_convoy')):
-                        action.do(action.HasTraded(self.unit))
-                        get_sound_thread().play_sfx('GoldExchange')
-                        action.do(action.GainMoney(game.current_party, -value))
-                        action.do(action.UpdateRecords('money', (game.current_party, -value)))
-                        self.purchases.append(item.nid)
-                        action.do(action.SetLevelVar('_shop_purchases', self.purchases.copy()))
-                        stock_marker = '__shop_%s_%s' % (self.shop_id, item.nid)
-                        action.do(action.SetGameVar(stock_marker, game.game_vars.get(stock_marker, 0) + 1))  # Remember that we bought one of this
-                        self.buy_menu.decrement_stock()
-                        self.money_counter_disp.start(-value)
-                        game.register_item(new_item)
-                        if not item_funcs.inventory_full(self.unit, new_item):
-                            action.do(action.GiveItem(self.unit, new_item))
-                            self.current_msg = self.get_dialog(self.buy_again_message)
-                        elif game.game_vars.get('_convoy'):
-                            action.do(action.PutItemInConvoy(new_item))
-                            self.current_msg = self.get_dialog(self.convoy_message)
-                        self.update_options()
-
-                    # How it could fail
-                    elif self.buy_menu.get_stock() == 0:
+                    if self.buy_menu.get_stock() == 0:
                         # We don't have any more of this in stock
                         get_sound_thread().play_sfx('Select 4')
                         self.current_msg = self.get_dialog(self.no_stock_message)
@@ -3052,23 +3122,15 @@ class ShopState(State):
                         get_sound_thread().play_sfx('Select 4')
                         self.current_msg = self.get_dialog(self.no_money_message)
                     else:
-                        # No inventory space
-                        get_sound_thread().play_sfx('Select 4')
-                        self.current_msg = self.get_dialog(self.max_inventory_message)
+                        get_sound_thread().play_sfx('Select 1')
+                        self.ask('buy_confirm', self.check_message, value)
 
             elif self.state == 'sell':
                 item = self.sell_menu.get_current()
                 if item:
-                    value = item_funcs.sell_price(self.unit, item)
                     if item.value:
-                        action.do(action.HasTraded(self.unit))
-                        get_sound_thread().play_sfx('GoldExchange')
-                        action.do(action.GainMoney(game.current_party, value))
-                        action.do(action.UpdateRecords('money', (game.current_party, value)))
-                        self.money_counter_disp.start(value)
-                        action.do(action.RemoveItem(self.unit, item))
-                        self.current_msg = self.get_dialog(self.sell_again_message)
-                        self.update_options()
+                        get_sound_thread().play_sfx('Select 1')
+                        self.ask('sell_confirm', self.check_message, item_funcs.sell_price(self.unit, item))
                     else:
                         # No value component, can't be sold
                         get_sound_thread().play_sfx('Select 4')
@@ -3076,6 +3138,15 @@ class ShopState(State):
                 else:
                     # You didn't choose anything to sell
                     get_sound_thread().play_sfx('Select 4')
+
+            elif self.state in ('buy_confirm', 'sell_confirm', 'convoy_confirm'):
+                if not self.current_msg.is_done_or_wait():
+                    self.current_msg.hurry_up()
+                elif self.confirm_menu.get_current() == 'Yes':
+                    self.confirm()
+                else:
+                    get_sound_thread().play_sfx('Select 1')
+                    self.decline()
 
             elif self.state == 'close':
                 get_sound_thread().play_sfx('Select 1')
@@ -3113,10 +3184,12 @@ class ShopState(State):
                     get_sound_thread().play_sfx('Info Out')
                 else:
                     get_sound_thread().play_sfx('Select 4')
-                    self.state = 'choice'
                     self.menu.set_takes_input(False)
-                    self.menu = self.choice_menu
-                    self.current_msg = self.get_dialog(self.again_message)
+                    self.to_choice(self.again_message)
+
+            elif self.state in ('buy_confirm', 'sell_confirm', 'convoy_confirm'):
+                get_sound_thread().play_sfx('Select 4')
+                self.decline()
 
             elif self.state == 'preview':
                 if self.menu.info_flag:
@@ -3134,6 +3207,33 @@ class ShopState(State):
                     get_sound_thread().play_sfx('Info In')
                 else:
                     get_sound_thread().play_sfx('Info Out')
+
+    def confirm(self):
+        """Yes, to the price or to sending it to the convoy"""
+        if self.state == 'sell_confirm':
+            self.sell(self.sell_menu.get_current())
+            return
+        item = self.buy_menu.get_current()
+        if self.state == 'convoy_confirm':
+            self.buy(item, to_convoy=True)
+        elif not item_funcs.inventory_full(self.unit, item):
+            self.buy(item, to_convoy=False)
+        elif game.game_vars.get('_convoy'):
+            # As on the GBA, a unit with full hands is asked whether to send it to the convoy
+            get_sound_thread().play_sfx('Select 1')
+            self.ask('convoy_confirm', self.convoy_message)
+        else:
+            get_sound_thread().play_sfx('Select 4')
+            self.to_choice(self.max_inventory_message)
+
+    def decline(self):
+        """No, or back out of the question"""
+        if self.state == 'buy_confirm':
+            self.to_list('buy', self.buy_message)
+        elif self.state == 'sell_confirm':
+            self.to_list('sell', self.sell_message)
+        else:
+            self.to_choice(self.convoy_declined_message)
 
     def update(self):
         if self.current_msg:
@@ -3162,7 +3262,7 @@ class ShopState(State):
     def draw(self, surf):
         surf = self._draw(surf)
 
-        if self.state == 'sell':
+        if self.state in ('sell', 'sell_confirm'):
             self.sell_menu.draw(surf)
         elif self.state == 'choice' and self.choice_menu.get_current() == 'Sell':
             self.sell_menu.draw(surf)
@@ -3175,8 +3275,11 @@ class ShopState(State):
                 FONT['text'].blit_center(text_funcs.translate('Price'), surf, (186, 64), color='yellow')
             if self.buy_menu.info_flag:
                 surf = self.buy_menu.vert_draw_info(surf)
-        if self.state == 'choice' and self.current_msg.is_done_or_wait():
-            self.choice_menu.draw(surf)
+        if self.current_msg.is_done_or_wait():
+            if self.state == 'choice':
+                self.choice_menu.draw(surf)
+            elif self.state in ('buy_confirm', 'sell_confirm', 'convoy_confirm'):
+                self.confirm_menu.draw(surf)
 
         return surf
 

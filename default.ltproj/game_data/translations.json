@@ -337,7 +337,51 @@
     },
     {
         "nid": "shop_check",
-        "text": "Are you sure?"
+        "text": "That's worth {price} gold. Is that all right?"
+    },
+    {
+        "nid": "armory_check",
+        "text": "How does {price} gold sound to you?"
+    },
+    {
+        "nid": "vendor_check",
+        "text": "That's worth {price} gold. Is that all right?"
+    },
+    {
+        "nid": "secret_check",
+        "text": "That is worth {price} gold. Is that acceptable?"
+    },
+    {
+        "nid": "shop_sell",
+        "text": "What do you want to sell?"
+    },
+    {
+        "nid": "vendor_sell",
+        "text": "What are you selling?"
+    },
+    {
+        "nid": "secret_sell",
+        "text": "What would you sell?"
+    },
+    {
+        "nid": "shop_nothing_to_sell",
+        "text": "You've got nothing to sell!"
+    },
+    {
+        "nid": "vendor_nothing_to_sell",
+        "text": "You have nothing to sell."
+    },
+    {
+        "nid": "shop_convoy_sent",
+        "text": "Right. I'll send it now."
+    },
+    {
+        "nid": "shop_convoy_declined",
+        "text": "No? Too bad. You could take it if you made room."
+    },
+    {
+        "nid": "shop_max_inventory",
+        "text": "Your hands are full. {w}{clear}If you had a convoy, I could send it there... {w}{clear}Anything else I can do for you?"
     },
     {
         "nid": "shop_no_value",
