@@ -86,8 +86,9 @@ class TradeState(MapState):
                 action.do(action.TradeItem(self.partner, self.partner, item1, item2))
         self.has_traded()
 
-        self.menu.unset_selected_option()
+        # The items as they are now, before the hand looks for one to go back to
         self.menu.update_options()
+        self.menu.unset_selected_option()
         return True
 
     def back(self):

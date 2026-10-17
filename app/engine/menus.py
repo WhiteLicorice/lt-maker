@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import List
+from typing import List, Optional
 
 import math, string
 
@@ -853,12 +853,33 @@ class Trade(Simple):
     def selected_option(self):
         return self._selected_option
 
+    @staticmethod
+    def _item_at_or_above(menu, index: int) -> Optional[int]:
+        """The last row at or above index that has an item, if any"""
+        for idx in range(min(index, len(menu.options) - 1), -1, -1):
+            option = menu.options[idx]
+            if not option.ignore and option.get():
+                return idx
+        return None
+
     def unset_selected_option(self):
         self._selected_option = None
         self.selecting_hand = self.other_hand
         self.other_hand = None
         self.menu1.set_fake_cursor(None)
         self.menu2.set_fake_cursor(None)
+        # As on the GBA (TradeMenu_OnEndSelected), the hand goes back to the item that was
+        # picked. If it was traded away, onto the last item above it, or onto the other
+        # unit's if this one has nothing left
+        side, row = self.selecting_hand
+        menus = (self.menu1, self.menu2)
+        item_row = self._item_at_or_above(menus[side], row)
+        if item_row is None:
+            item_row = self._item_at_or_above(menus[1 - side], row)
+            if item_row is not None:
+                side = 1 - side
+        if item_row is not None:
+            self.selecting_hand = (side, item_row)
         # handle cursor
         if self.selecting_hand[0] == 0:
             self.menu1.move_to(self.selecting_hand[1])
