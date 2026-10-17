@@ -3,13 +3,16 @@ from app.utilities.typing import NID, Pos
 
 from app.constants import TILEWIDTH, TILEHEIGHT, AUTOTILE_FRAMES, COLORKEY
 from app.utilities.data import Data, Prefab
+from app.utilities.utils import frames2ms
 
 from app.data.resources.resources import RESOURCES
 
 from app.engine import engine, image_mods, particles, animations, stale_save
 
 class LayerObject():
-    transition_speed = 333
+    # As on the GBA (BMXFADE), a layer fades in or out over 16 frames, its tiles seen
+    # a sixteenth more each frame
+    transition_speed = frames2ms(16)
 
     def __init__(self, nid: str, foreground: bool, parent):
         self.nid: str = nid

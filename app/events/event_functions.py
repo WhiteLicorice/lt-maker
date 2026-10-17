@@ -2850,6 +2850,7 @@ def remove_generics_from_region(self: Event, nid, flags=None):
         self.logger.error("remove_generics_from_region: Couldn't find RegionObject %s" % nid)
 
 def show_layer(self: Event, layer, layer_transition=None, flags=None):
+    flags = flags or set()
     if layer not in self.game.level.tilemap.layers:
         self.logger.error("show_layer: Could not find layer %s in tilemap" % layer)
         return
@@ -2860,8 +2861,13 @@ def show_layer(self: Event, layer, layer_transition=None, flags=None):
         self.logger.warning("show_layer: Layer %s is already visible!" % layer)
         return
     action.do(action.ShowLayer(layer, layer_transition))
+    # As on the GBA, the event waits for the layer to fade in
+    if layer_transition != 'immediate' and 'no_block' not in flags and not self.do_skip:
+        self.wait_time = engine.get_time() + self.game.level.tilemap.layers.get(layer).transition_speed
+        self.state = 'waiting'
 
 def hide_layer(self: Event, layer, layer_transition=None, flags=None):
+    flags = flags or set()
     if layer not in self.game.level.tilemap.layers:
         self.logger.error("hide_layer: Could not find layer %s in tilemap" % layer)
         return
@@ -2872,6 +2878,10 @@ def hide_layer(self: Event, layer, layer_transition=None, flags=None):
         self.logger.warning("hide_layer: Layer %s is already hidden!" % layer)
         return
     action.do(action.HideLayer(layer, layer_transition))
+    # As on the GBA, the event waits for the layer to fade out
+    if layer_transition != 'immediate' and 'no_block' not in flags and not self.do_skip:
+        self.wait_time = engine.get_time() + self.game.level.tilemap.layers.get(layer).transition_speed
+        self.state = 'waiting'
 
 def add_weather(self: Event, weather, position=None, flags=None):
     nid = weather.lower()

@@ -2748,10 +2748,17 @@ class ShowLayer(EventCommand):
     desc = \
         """
 Causes the specified map *Layer* to be displayed. The optional *LayerTransition* keyword controls whether the layer fades in (default) or is immediately displayed.
+
+As on the GBA, the event waits for the layer to fade in.
+
+Extra flags:
+
+1. *no_block*: Event script will continue while the layer fades in.
         """
 
     keywords = ["Layer"]
     optional_keywords = ["LayerTransition"]
+    _flags = ["no_block"]
 
 class HideLayer(EventCommand):
     nid = 'hide_layer'
@@ -2760,10 +2767,17 @@ class HideLayer(EventCommand):
     desc = \
         """
 Causes the specified map *Layer* to be hidden. The optional *LayerTransition* keyword controls whether the layer fades out (default) or is immediately hidden.
+
+As on the GBA, the event waits for the layer to fade out.
+
+Extra flags:
+
+1. *no_block*: Event script will continue while the layer fades out.
         """
 
     keywords = ["Layer"]
     optional_keywords = ["LayerTransition"]
+    _flags = ["no_block"]
 
 class AddWeather(EventCommand):
     nid = 'add_weather'
