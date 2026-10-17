@@ -228,6 +228,7 @@ class UnitSprite():
         self.unit = unit
         self.state = 'normal'  # What state the image sprite is in
         self.image_state = 'passive'  # What the image looks like
+        self.hover_start = None  # When the cursor came onto the unit
         self.transition_state = 'normal'
 
         self.transition_counter = 0
@@ -534,14 +535,28 @@ class UnitSprite():
         for damage_num in self.damage_numbers:
             damage_num.update()
 
+    # As on the GBA, a player unit's hover animation waits for the cursor to rest on it
+    # for 5 frames, so that it is not begun for every unit the cursor passes over
+    hover_wait = utils.frames2ms(4.5)
+
     def update_state(self):
+        hovered = self.state == 'normal' and game.cursor.draw_state and \
+            game.cursor.position == self.unit.position and self.unit.team == 'player'
+        if not hovered:
+            self.hover_start = None
+        elif self.hover_start is None:
+            self.hover_start = engine.get_time()
+
         if self.state == 'normal':
             if self.unit.finished and not self.unit.is_dying:
                 self.set_image_state('gray')
             elif DB.constants.value('initiative') and game.initiative.get_current_unit() != self.unit \
                     and not game.is_roam() and self.unit.team == 'player':
                 self.set_image_state('gray')
-            elif game.cursor.draw_state and game.cursor.position == self.unit.position and self.unit.team == 'player':
+            elif hovered and engine.get_time() - self.hover_start >= self.hover_wait:
+                if self.image_state != 'active':
+                    # and then it starts from its first frame
+                    ANIMATION_COUNTERS.active_sprite_counter.restart()
                 self.set_image_state('active')
             elif game.is_roam() and game.get_roam_unit() == self.unit:
                 self.set_image_state('passive')
