@@ -3,7 +3,8 @@ from app.data.database.item_components import ItemComponent, ItemTags
 from app.data.database.components import ComponentType
 
 from app.utilities import utils
-from app.engine import action, combat_calcs, item_funcs, image_mods, engine, item_system, skill_system
+from app.engine import action, combat_calcs, item_funcs, image_mods, item_system, skill_system
+from app.engine.game_counters import ANIMATION_COUNTERS
 from app.engine.combat import playback as pb
 from app.engine.source_type import SourceType
 
@@ -75,7 +76,7 @@ class EffectiveDamage(ItemComponent):
     def item_icon_mod(self, unit, item, target, item2, sprite):
         if self.show_flash:
             if self._check_effective(target):
-                sprite = image_mods.make_white(sprite.convert_alpha(), abs(250 - engine.get_time() % 500)/250)
+                sprite = image_mods.flash_effective(sprite.convert_alpha(), ANIMATION_COUNTERS.forecast_counter.count)
         return sprite
 
     def target_icon(self, unit, item, target) -> Optional[str]:

@@ -6,8 +6,9 @@ from typing import Optional
 from app.data.database.components import ComponentType
 from app.data.database.database import DB
 from app.data.database.item_components import ItemComponent, ItemTags
-from app.engine import (action, combat_calcs, engine, equations, image_mods, item_system,
+from app.engine import (action, combat_calcs, equations, image_mods, item_system,
                         skill_system)
+from app.engine.game_counters import ANIMATION_COUNTERS
 from app.engine.combat import playback as pb
 from app.engine.game_state import game
 from app.utilities import utils
@@ -151,7 +152,7 @@ class EffectiveIcon(ItemComponent):
         if any(tag in target.tags for tag in self.value):
             if self._check_negate(target):
                 return sprite
-            sprite = image_mods.make_white(sprite.convert_alpha(), abs(250 - engine.get_time() % 500)/250)
+            sprite = image_mods.flash_effective(sprite.convert_alpha(), ANIMATION_COUNTERS.forecast_counter.count)
         return sprite
 
     def target_icon(self, unit, item, target) -> bool:

@@ -2287,6 +2287,8 @@ class CombatTargetingState(MapState):
         else:
             game.ui_view.prepare_attack_info()
         self.display_single_attack()
+        # Backed out of, the battle forecast slides out before the state is left
+        self.closing = False
 
         self.pennant = self.build_pennant()
 
@@ -2399,6 +2401,8 @@ class CombatTargetingState(MapState):
             self._engage_combat()
 
     def take_input(self, event):
+        if self.closing:
+            return
         self.fluid.update()
         directions = self.fluid.get_directions()
 
@@ -2454,6 +2458,13 @@ class CombatTargetingState(MapState):
             # if equip_action:
             #     action.reverse(equip_action)
             # game.memory['equip_action'] = None
+            if game.ui_view.close_attack_info():
+                # As on the GBA, the target is let go at once, and the menu comes back
+                # once the battle forecast has slid out
+                self.closing = True
+                game.highlight.remove_highlights()
+                game.cursor.hide()
+                return
             game.state.back()
             return 'repeat'
 
@@ -2489,8 +2500,18 @@ class CombatTargetingState(MapState):
             game.ui_view.reset_info()
             self.display_single_attack()
 
+    def update(self):
+        super().update()
+        if self.closing and game.ui_view.attack_info_closed():
+            game.state.back()
+            return 'repeat'
+
     def draw(self, surf):
         surf = super().draw(surf)
+
+        if self.closing:
+            game.ui_view.draw_closing_attack_info(surf)
+            return surf
 
         if self.pennant:
             draw_on_top = game.cursor.position[1] >= game.tilemap.height - 1

@@ -111,6 +111,24 @@ def make_white(image, white):
 
     return image
 
+# How much an effective weapon's icon is brightened, a frame at a time, as on the GBA
+# (UpdateBattleForecastEffectivenessPalettes): quickly up, slowly down, then a rest
+EFFECTIVE_FLASH = (0, 1, 1, 2, 3, 4, 5, 5, 4, 4, 4, 3, 3, 3, 2, 2,
+                   2, 2, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+
+def flash_effective(image, frame: int):
+    """
+    Brightens the icon of a weapon effective against its target, as on the GBA: each
+    step adds 3 of 31 to each color, no brighter than the GBA's white
+    """
+    step = EFFECTIVE_FLASH[frame % len(EFFECTIVE_FLASH)]
+    if not step:
+        return image
+    image = engine.copy_surface(image)
+    engine.fill(image, (24 * step, 24 * step, 24 * step), None, engine.BLEND_RGB_ADD)
+    engine.fill(image, (248, 248, 248), None, engine.BLEND_RGB_MIN)
+    return image
+
 def change_color(image, color: tuple):
     """
     Additively blends a color with the image

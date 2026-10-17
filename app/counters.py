@@ -94,6 +94,13 @@ class GenericAnimCounter():
         else:
             self._last_update = self._get_time()
 
+    def restart(self):
+        """Starts it over from its first value, which it keeps for the rest of this frame"""
+        self._count = 0
+        if self._get_time:
+            current_time = self._get_time()
+            self._last_update = int((current_time // self._frame_duration) * self._frame_duration)
+
     @staticmethod
     def from_frames(frames: List[int], loop: bool = True, frame_duration: int = FRAMERATE, get_time: Callable[[], int] = None) -> GenericAnimCounter:
         """

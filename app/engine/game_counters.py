@@ -14,7 +14,9 @@ class Counters():
         self.move_sprite_counter = GenericAnimCounter.from_frames([13, 6, 13, 6], get_time=engine.get_time)
         self.fast_move_sprite_counter = GenericAnimCounter.from_frames([6, 3, 6, 3], get_time=engine.get_time)
         self.arrow_counter = GenericAnimCounter.from_frames([8, 8, 8], get_time=engine.get_time)
-        self.x2_counter = GenericAnimCounter.from_frames([3] * 18, get_time=engine.get_time)
+        # The battle forecast's ×2 and effective weapon flash. As on the GBA, it starts over
+        # whenever the forecast is drawn anew
+        self.forecast_counter = GenericAnimCounter(list(range(64)), get_time=engine.get_time)
         self.flag_counter = GenericAnimCounter.from_frames([15] * 4, get_time=engine.get_time)
         self.fps6_360counter = GenericAnimCounter.from_frames([6] * 360, get_time=engine.get_time)
         self.fps2_360counter = GenericAnimCounter.from_frames([2] * 360, get_time=engine.get_time)
@@ -26,7 +28,7 @@ class Counters():
         self.move_sprite_counter.reset()
         self.fast_move_sprite_counter.reset()
         self.arrow_counter.reset()
-        self.x2_counter.reset()
+        self.forecast_counter.reset()
         self.flag_counter.reset()
         self.fps6_360counter.reset()
         self.fps2_360counter.reset()
