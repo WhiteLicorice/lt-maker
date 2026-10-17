@@ -452,11 +452,11 @@
     {
         "nid": "MapPoisonShock",
         "frame_x": 5,
-        "frame_y": 2,
-        "num_frames": 9,
+        "frame_y": 3,
+        "num_frames": 12,
         "speed": 48,
-        "frame_times": "3,3,3,3,3,3,3,3,3",
-        "use_frame_time": false
+        "frame_times": "7,7,7,7,7,7,6,6,5,5,5,4",
+        "use_frame_time": true
     },
     {
         "nid": "MapFrostbite",

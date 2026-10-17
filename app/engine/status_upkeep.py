@@ -142,7 +142,8 @@ class StatusUpkeepState(MapState):
                 self.time_for_change = self.health_bar.get_time_for_change() + 800
 
         elif self.state == 'running':
-            if engine.get_time() > self.last_update + self.time_for_change:
+            # Its animations, such as poison's, play out before the next unit's turn
+            if engine.get_time() > self.last_update + self.time_for_change and not self.animations:
                 self.check_death()
                 if not self.begin_wear_off():
                     self.state = 'processing'

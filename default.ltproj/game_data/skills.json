@@ -445,6 +445,14 @@
             [
                 "gba_poison",
                 5
+            ],
+            [
+                "upkeep_animation",
+                "MapPoisonShock"
+            ],
+            [
+                "upkeep_sound",
+                "Poison"
             ]
         ]
     },
