@@ -1,8 +1,13 @@
 from app.engine.sound import get_sound_thread
 from app.engine import action, engine
 from app.engine.game_state import game
+from app.utilities import utils
 
 class DeathManager():
+    # As on the GBA, the unit is gone once it has faded away (see UnitSprite.death_fade_frames).
+    # Half a frame short, since the time is checked once a frame
+    fade_time = utils.frames2ms(30.5)
+
     def __init__(self):
         self.dying_units = {}
 
@@ -15,11 +20,13 @@ class DeathManager():
         if unit.nid in self.dying_units:
             del self.dying_units[unit.nid]
         unit.sprite.flicker.clear()
+        unit.sprite.death_fade_start = None
         unit.sprite.change_state('normal')
         unit.sprite.set_transition('normal')
 
     def force_death(self, unit):
         unit.is_dying = False
+        unit.sprite.death_fade_start = None
         action.do(action.Die(unit))
         if unit.nid in self.dying_units:
             del self.dying_units[unit.nid]
@@ -31,11 +38,10 @@ class DeathManager():
             unit = game.get_unit(unit_nid)
             if death_counter == 0:
                 get_sound_thread().play_sfx('Death')
-                unit.sprite.start_flicker(0, unit.sprite.default_transition_time, (255, 255, 255), fade_out=False)
-                unit.sprite.set_transition('fade_out')
+                unit.sprite.start_death_fade()
                 self.dying_units[unit_nid] = engine.get_time()
 
-            elif current_time - death_counter >= unit.sprite.default_transition_time - 50:
+            elif current_time - death_counter >= self.fade_time:
                 self.force_death(unit)
 
         return not self.dying_units  # Done when no dying units left

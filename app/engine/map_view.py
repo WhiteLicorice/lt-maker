@@ -77,7 +77,8 @@ class MapView():
 
         event = 'event' in game.state.state_names()
         for unit in draw_units:
-            unit.sprite.draw(unit_surf, topleft)
+            # As on the GBA, a unit fading away in death is added onto the map below it
+            unit.sprite.draw(surf if unit.sprite.death_fade_start is not None else unit_surf, topleft)
             unit.sprite.draw_hp(unit_surf, topleft, event)
         for unit in draw_units:
             unit.sprite.draw_markers(unit_surf, topleft)

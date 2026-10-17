@@ -248,6 +248,8 @@ class UnitSprite():
         self.flicker = []
         # When the unit began to show a bad status leaving it
         self.status_heal_start: Optional[int] = None
+        # When the unit began to fade away in death
+        self.death_fade_start: Optional[int] = None
         self.vibrate = []
         self.vibrate_counter = 0
         self.animations: Dict[NID, Animation] = {}
@@ -323,6 +325,33 @@ class UnitSprite():
     def start_status_heal(self):
         """Shows a bad status leaving the unit, as on the GBA"""
         self.status_heal_start = engine.get_time()
+
+    # As on the GBA (MU_StartDeathFade), a dying unit flashes white and its colors come back
+    # over 20 frames, while over 32 it fades away. It is added onto the map below it, out of
+    # 16 parts at first and one less every other frame, so it lightens the map as it goes
+    death_fade_frames = 32
+    death_flash_frames = 20
+
+    def start_death_fade(self):
+        self.death_fade_start = engine.get_time()
+
+    def death_fade_image(self, image: engine.Surface, frame: int) -> Optional[engine.Surface]:
+        """The dying unit's image on this frame of its fade, to be added onto the map. None once it is gone"""
+        strength = (self.death_fade_frames - frame) >> 1
+        if strength <= 0:
+            return None
+        image = image.convert_alpha()
+        white = max(0, self.death_flash_frames - frame) / self.death_flash_frames
+        if white:
+            # From the GBA's white back to its own colors
+            engine.fill(image, (int(255 * (1 - white)),) * 3, None, engine.BLEND_RGB_MULT)
+            engine.fill(image, (int(248 * white),) * 3, None, engine.BLEND_RGB_ADD)
+        # On black, so nothing is added where the unit is not
+        faded = engine.create_surface(image.get_size())
+        faded.fill((0, 0, 0))
+        faded.blit(image, (0, 0))
+        engine.fill(faded, (255 * strength // 16,) * 3, None, engine.BLEND_RGB_MULT)
+        return faded
 
     def start_vibrate(self, start_time, total_time):
         self.vibrate.append((engine.get_time() + start_time, total_time))
@@ -756,6 +785,13 @@ class UnitSprite():
             partner_image = partner_image.convert_alpha()
             surf.blit(partner_image, (topleft[0] + 3, topleft[1] - 3))
             surf.blit(image, (topleft[0] - 3, topleft[1] + 3))
+        elif self.death_fade_start is not None:
+            # Frames since it began, to the nearest frame
+            frame = int((current_time - self.death_fade_start) * 60 / 1000 + 0.5)
+            faded = self.death_fade_image(image, frame)
+            if faded:
+                # Onto the map itself, not the units' see-through layer (see MapView.draw_units)
+                surf.blit(faded, topleft, None, engine.BLEND_RGB_ADD)
         else:
             surf.blit(image, topleft)
 
