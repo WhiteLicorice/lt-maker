@@ -109,19 +109,21 @@ class Camera():
         self.mouse_x(x)
         self.mouse_y(y)
 
+    # As on the GBA, a position is kept at least 3 tiles in from the left and right
+    # of the screen, and 2 from the top and bottom, the same as the cursor is
     def _change_x(self, x):
-        if x <= self.target_x + 3:
+        if x < self.target_x + 3:
             new_x = x - 3
-        elif x >= self.target_x + TILEX - 3:
-            new_x = x - TILEX + 3
+        elif x > self.target_x + TILEX - 4:
+            new_x = x - TILEX + 4
         else:
             new_x = self.target_x
         return new_x
 
     def _change_y(self, y):
-        if y <= self.target_y + 3:
-            new_y = y - 3
-        elif y >= self.target_y + TILEY - 3:
+        if y < self.target_y + 2:
+            new_y = y - 2
+        elif y > self.target_y + TILEY - 3:
             new_y = y - TILEY + 3
         else:
             new_y = self.target_y

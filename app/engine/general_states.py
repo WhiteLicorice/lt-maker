@@ -2790,15 +2790,10 @@ class AIState(MapState):
         if self.cur_unit:
             has_already_moved = game.ai.move_ai_complete
             did_something, change = game.ai.act()
-            # Center camera on current unit
+            # As on the GBA, the camera moves onto the current unit only if it is near
+            # the edge of the screen or off it, and only as far as it must
             if change and self.cur_unit.position:
                 game.cursor.set_pos(self.cur_unit.position)
-                if game.ai.goal_target:
-                    game.camera.set_center2(self.cur_unit.position, game.ai.goal_target)
-                elif game.ai.goal_position:
-                    game.camera.set_center2(self.cur_unit.position, game.ai.goal_position)
-                else:
-                    game.camera.set_center(*self.cur_unit.position)  # Actually center the camera
                 if has_already_moved and not game.ai.do_skip:
                     # Only do this for non-move actions
                     game.state.change('move_camera')
