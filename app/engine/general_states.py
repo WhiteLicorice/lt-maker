@@ -849,6 +849,22 @@ class WaitState(MapState):
                 unit.wait()
         return 'repeat'
 
+class UnitWalkState(MapState):
+    """
+    As on the GBA, nothing goes on while a unit walks into, out of, or between
+    the units that carry it (UnitSprite.walk_one_tile)
+    """
+    name = 'unit_walk'
+
+    def begin(self):
+        game.cursor.hide()
+
+    def update(self):
+        super().update()
+        if not any(unit.sprite.transition_state == 'walk' for unit in game.units):
+            game.state.back()
+            return 'repeat'
+
 class CantoWaitState(MapState):
     name = 'canto_wait'
 

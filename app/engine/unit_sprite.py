@@ -646,8 +646,41 @@ class UnitSprite():
                 self.set_transition('normal')
                 self.change_state('normal')
 
+    def walk_one_tile(self, from_pos: Tuple[int, int], to_pos: Tuple[int, int], stays: bool):
+        """
+        As on the GBA (KOIDO), the unit walks one tile at its usual pace, from from_pos
+        to to_pos: into a unit that rescues it, out of the one that drops it, or from one
+        to another. If it stays, it is on the map at to_pos; otherwise it is gone once there
+        """
+        from app.engine.movement import movement_funcs
+        self.set_transition('walk')
+        self.walk_vector = (to_pos[0] - from_pos[0], to_pos[1] - from_pos[1])
+        self.walk_stays = stays
+        self.walk_start = engine.get_time()
+        self.walk_time = movement_funcs.get_default_speed(self.unit)
+        self._fake_position = None if stays else from_pos
+        self.offset = [-TILEWIDTH * self.walk_vector[0], -TILEHEIGHT * self.walk_vector[1]] if stays else [0, 0]
+        self.change_state('moving')
+        self.handle_net_position(self.walk_vector)
+        self.unit.sound.play()
+
+    def update_walk(self):
+        progress = (engine.get_time() - self.walk_start) / max(self.walk_time, 1)
+        if progress < 1:
+            # Rounded, so at the GBA's pace it steps 2 pixels a frame, as it does on a move
+            start = -1 if self.walk_stays else 0
+            self.offset = [round(TILEWIDTH * (start + progress) * self.walk_vector[0]),
+                           round(TILEHEIGHT * (start + progress) * self.walk_vector[1])]
+        else:
+            self.unit.sound.stop()
+            self.change_state('normal')
+            self.set_transition('normal')
+
     def update_transition(self):
         self.transition_counter -= engine.get_delta()
+        if self.transition_state == 'walk':
+            self.update_walk()
+            return
         if self.transition_state == 'swap_arc':
             if self.transition_counter > 0:
                 progress = 1 - self.transition_counter / self.swap_arc_time

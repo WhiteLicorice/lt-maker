@@ -80,6 +80,7 @@ class StateMachine():
              'move': general_states.MoveState,
              'movement': general_states.MovementState,
              'wait': general_states.WaitState,
+             'unit_walk': general_states.UnitWalkState,
              'canto_wait': general_states.CantoWaitState,
              'move_camera': general_states.MoveCameraState,
              'dying': general_states.DyingState,

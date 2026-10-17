@@ -3603,10 +3603,20 @@ class PairUp(EventCommand):
     nid = 'pair_up'
     nickname = 'rescue'
     tag = Tags.MISCELLANEOUS
-    desc = "Pairs the first unit into the second"
+    desc = \
+        """
+Pairs the first unit into the second.
+
+Without the pair up constant, the second unit rescues the first. If they are next to each other, as on the GBA, the first walks into the second, and the event waits for it.
+
+Extra flags:
+
+1. *immediate*: The first unit is rescued at once, without walking.
+        """
 
     keywords = ["Unit1", "Unit2"]
     keyword_types = ["Unit", "Unit"]
+    _flags = ["immediate"]
 
 class Separate(EventCommand):
     nid = 'separate'

@@ -3948,6 +3948,7 @@ def move_in_initiative(self: Event, unit, integer: int, flags=None):
     action.do(action.MoveInInitiative(unit, offset))
 
 def pair_up(self: Event, unit1, unit2, flags=None):
+    flags = flags or set()
     new_unit1 = self._get_unit(unit1)
     if not new_unit1:
         self.logger.error("pair_up: Couldn't find unit with nid %s" % unit1)
@@ -3967,7 +3968,12 @@ def pair_up(self: Event, unit1, unit2, flags=None):
     if unit_funcs.can_pairup(leader, follower):
         action.do(action.PairUp(follower, leader))
     else:
-        action.do(action.Rescue(leader, follower))
+        immediate = 'immediate' in flags or self.do_skip
+        action.do(action.Rescue(leader, follower, immediate))
+        if follower.sprite.transition_state == 'walk':
+            # As on the GBA, the event waits for it to walk into its rescuer
+            self.wait_time = engine.get_time() + follower.sprite.walk_time
+            self.state = 'waiting'
 
 def separate(self: Event, unit, flags=None):
     new_unit = self._get_unit(unit)
