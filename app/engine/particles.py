@@ -164,22 +164,39 @@ class Particle():
 
 class Raindrop(Particle):
     sprite = SPRITES.get('particle_raindrop')
-    speed = 3
+    # As on the GBA (WfxRain_Init), each drop falls at one of 16 speeds in three bands, in
+    # pixels a frame across and down: 6 slow ones, 7 middling and 3 fast
+    speeds = ((2.0625, 6.0), (2.0625, 6.5), (2.0625, 7.0), (2.0625, 7.5), (2.0625, 8.0), (2.0625, 8.5),
+              (2.8125, 10.0), (2.8125, 10.5), (2.8125, 11.0), (2.8125, 11.5), (2.8125, 12.0), (2.8125, 12.5), (2.8125, 13.0),
+              (3.0, 16.0), (2.8125, 17.0), (2.625, 18.0))
+    # There are as many of each on the GBA. A slower drop takes longer to cross the map, so
+    # each speed is picked as often as it is fast, to keep as many of each falling at once
+    weights = tuple(y for _, y in speeds)
+
+    def reset(self, pos):
+        super().reset(pos)
+        self.x_speed, self.y_speed = random.choices(self.speeds, weights=self.weights)[0]
+        return self
 
     def update(self):
-        self.x += self.speed
-        self.y += self.speed * 4
+        self.x += self.x_speed
+        self.y += self.y_speed
         if game.tilemap and (self.x > game.tilemap.width * TILEWIDTH or self.y > game.tilemap.height * TILEHEIGHT):
             self.remove_me_flag = True
 
 class Sand(Particle):
     sprite = SPRITES.get('particle_sand')
-    speed = 6
+
+    def reset(self, pos):
+        super().reset(pos)
+        # As on the GBA (WfxSandStorm_Init), sand blows straight to the left, each cloud of
+        # it at its own speed: 25 to 32 pixels every other frame
+        self.speed = random.randint(25, 32) / 2
+        return self
 
     def update(self):
-        self.x += self.speed * 2
-        self.y -= self.speed
-        if game.tilemap and (self.x > game.tilemap.width * TILEWIDTH or self.y < -32):
+        self.x -= self.speed
+        if self.x < -32:
             self.remove_me_flag = True
 
 class Smoke(Particle):
@@ -467,17 +484,28 @@ class FirePillar(Particle):
     def draw(self, surf, offset_x=0, offset_y=0):
         surf.blit(self.sprite, (self.x - offset_x, self.y - offset_y))
 
+# As on the GBA (WfxSnow_Init and the rest), there are 64 particles of rain, snow or sand to
+# every 256 by 256 pixels, about 37 on the screen, and each is drawn every other frame: so
+# about 19 on the screen at a time. Some of each kind are always off the map, coming in from
+# its edges, so each kind needs its own abundance to put that many on the screen
+RAIN_ABUNDANCE = 0.16
+SNOW_ABUNDANCE = 0.19
+SAND_ABUNDANCE = 0.16
+
 def create_system(nid, width, height, position):
     twidth, theight = width * TILEWIDTH, height * TILEHEIGHT
     if nid == 'rain':
-        creation_bounds = -theight // 4, twidth, -16, -8
-        ps = MapParticleSystem(nid, Raindrop, .1, creation_bounds, (width, height))
+        # From far enough to the left that the slowest drops, which slant the most, still
+        # cover the whole map
+        creation_bounds = -theight * 3 // 8, twidth, -16, -8
+        ps = MapParticleSystem(nid, Raindrop, RAIN_ABUNDANCE, creation_bounds, (width, height))
     elif nid == 'snow':
         creation_bounds = -theight, twidth, -16, -8
-        ps = MapParticleSystem(nid, Snow, .2, creation_bounds, (width, height))
+        ps = MapParticleSystem(nid, Snow, SNOW_ABUNDANCE, creation_bounds, (width, height))
     elif nid == 'sand':
-        creation_bounds = -2 * theight, twidth, theight + 16, theight + 32
-        ps = MapParticleSystem(nid, Sand, .075, creation_bounds, (width, height))
+        # Blown in from the right, from top to bottom
+        creation_bounds = twidth, twidth + 32, -16, theight - 16
+        ps = MapParticleSystem(nid, Sand, SAND_ABUNDANCE, creation_bounds, (width, height))
     elif nid == 'smoke':
         creation_bounds = -theight, twidth, theight, theight + 16
         ps = MapParticleSystem(nid, Smoke, .075, creation_bounds, (width, height))
