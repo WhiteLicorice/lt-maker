@@ -120,8 +120,8 @@ class MapCombatHealthBar(HealthBar):
 
     def set_val(self, val):
         if self.transition_flag and val > self.displayed_val:
-            get_sound_thread().stop_sfx('HealBoop')
-            get_sound_thread().play_sfx('HealBoop')
+            get_sound_thread().stop_sfx('HP_Recovery')
+            get_sound_thread().play_sfx('HP_Recovery')
         super().set_val(val)
 
 class BarType(Enum):
@@ -195,8 +195,8 @@ class CombatHealthBar(HealthBar):
         current_time = engine.get_time()
         if self.displayed_val < self.get_val() and current_time - self.heal_sound_update > self.speed:
             self.heal_sound_update = current_time
-            get_sound_thread().stop_sfx('HealBoop')
-            get_sound_thread().play_sfx('HealBoop')
+            get_sound_thread().stop_sfx('HP_Recovery')
+            get_sound_thread().play_sfx('HP_Recovery')
         super().set_val(val)
 
     def big_number(self) -> bool:
