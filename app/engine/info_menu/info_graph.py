@@ -223,3 +223,7 @@ class InfoGraph():
                     else:
                         pos = (pos[0] + self.current_bb.help_box.get_width() - 16, pos[1] - 4)
                     render_text(surf, ['small-yellow'], ['%d/%d' % (self.current_bb._page + 1, len(self.current_bb._help_box))], [], pos, HAlignment.RIGHT)
+        elif self.last_bb and self.last_bb.help_box.is_closing():
+            # As on the GBA, the help box let go of shrinks away
+            pos = (max(0, self.last_bb.aabb[0] - 32), self.last_bb.aabb[1] + 13)
+            self.last_bb.help_box.draw(surf, pos)

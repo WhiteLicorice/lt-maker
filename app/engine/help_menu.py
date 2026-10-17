@@ -103,12 +103,18 @@ class HelpDialog():
         self.transition_out = 0
         self.start_time = engine.get_time()
 
+    # As on the GBA (HelpBox_OnLoop, HelpBox_WaitClose), a help box grows to its full size
+    # over 12 frames, quickly at first and slowing at the end, and shrinks away over 4
+    grow_time = utils.frames2ms(12)
+    shrink_time = utils.frames2ms(4)
+
     def handle_transition_in(self, time, h_surf):
         if self.transition_in:
-            progress = utils.clamp((time - self.start_time) / 130., 0, 1)
+            progress = utils.clamp((time - self.start_time) / self.grow_time, 0, 1)
             if progress >= 1:
                 self.transition_in = False
             else:
+                progress = 1 - (1 - progress) ** 3
                 h_surf = engine.transform_scale(h_surf, (int(progress * h_surf.get_width()), int(progress * h_surf.get_height())))
         return h_surf
 
@@ -116,13 +122,17 @@ class HelpDialog():
         self.transition_out = engine.get_time()
 
     def handle_transition_out(self, time, h_surf):
+        """The help box as it shrinks away, or None once it is gone"""
         if self.transition_out:
-            progress = 1 - (time - self.transition_out) / 100.
-            if progress <= 0.1:
+            progress = 1 - (time - self.transition_out) / self.shrink_time
+            if progress <= 0:
                 self.transition_out = 0
-                progress = 0.1
+                return None
             h_surf = engine.transform_scale(h_surf, (int(progress * h_surf.get_width()), int(progress * h_surf.get_height())))
         return h_surf
+
+    def is_closing(self) -> bool:
+        return bool(self.transition_out)
 
     def top_left(self, pos, right=False):
         if right:
@@ -146,7 +156,8 @@ class HelpDialog():
         elif self.transition_out:
             h_surf = self.handle_transition_out(time, h_surf)
 
-        surf.blit(h_surf, pos)
+        if h_surf:
+            surf.blit(h_surf, pos)
         return surf
 
     def draw(self, surf, pos, right=False):

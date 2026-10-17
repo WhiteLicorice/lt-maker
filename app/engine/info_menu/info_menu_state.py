@@ -411,7 +411,7 @@ class InfoMenuState(State):
         self.draw_portrait(surf)
         self.draw_slide(surf)
 
-        if self.info_graph.current_bb:
+        if self.info_graph.current_bb or self.info_graph.last_bb:  # The last one, as it shrinks away
             self.info_graph.draw(surf)
 
         if not self.transition:
