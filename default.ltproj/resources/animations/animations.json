@@ -199,21 +199,21 @@
     },
     {
         "nid": "MapBigHealTrans",
-        "frame_x": 5,
-        "frame_y": 4,
-        "num_frames": 16,
+        "frame_x": 8,
+        "frame_y": 5,
+        "num_frames": 39,
         "speed": 24,
-        "frame_times": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1",
-        "use_frame_time": false
+        "frame_times": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,4,4,4,4,4,4,4,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1",
+        "use_frame_time": true
     },
     {
         "nid": "MapMediumHealTrans",
-        "frame_x": 5,
-        "frame_y": 4,
-        "num_frames": 16,
+        "frame_x": 8,
+        "frame_y": 5,
+        "num_frames": 39,
         "speed": 24,
-        "frame_times": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1",
-        "use_frame_time": false
+        "frame_times": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,4,4,4,4,4,4,4,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1",
+        "use_frame_time": true
     },
     {
         "nid": "MapMiss",
@@ -244,12 +244,12 @@
     },
     {
         "nid": "MapSmallHealTrans",
-        "frame_x": 5,
-        "frame_y": 4,
-        "num_frames": 16,
+        "frame_x": 8,
+        "frame_y": 5,
+        "num_frames": 39,
         "speed": 24,
-        "frame_times": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1",
-        "use_frame_time": false
+        "frame_times": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,4,4,4,4,4,4,4,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1",
+        "use_frame_time": true
     },
     {
         "nid": "MissBlue",
