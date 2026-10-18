@@ -11,8 +11,11 @@ class InputManager():
     def __init__(self):
         self.refresh_gamepads()
 
-        self.buttons = ('UP', 'DOWN', 'LEFT', 'RIGHT', 'SELECT', 'BACK', 'INFO', 'AUX', 'START')
-        self.toggle_buttons = self.buttons[4:]  # These buttons cause state to change
+        self.buttons = ('UP', 'DOWN', 'LEFT', 'RIGHT', 'SELECT', 'BACK', 'INFO', 'AUX', 'START', 'SPEED')
+        self.directions = ('UP', 'DOWN', 'LEFT', 'RIGHT')
+        self.toggle_buttons = ('SELECT', 'BACK', 'INFO', 'AUX', 'START')  # These buttons cause state to change
+        # SPEED changes how fast the whole game runs (see driver.run), so it is
+        # never an event for a state
 
         self.update_key_map()
 
@@ -160,6 +163,7 @@ class InputManager():
         self.key_map['BACK'] = cf.SETTINGS['key_BACK']
         self.key_map['AUX'] = cf.SETTINGS['key_AUX']
         self.key_map['INFO'] = cf.SETTINGS['key_INFO']
+        self.key_map['SPEED'] = cf.SETTINGS['key_SPEED']
 
         self.map_keys = {v: k for k, v in self.key_map.items()}
 
@@ -169,9 +173,13 @@ class InputManager():
             self.controller_map[button] = joy_bindings.parse_bindings(cf.SETTINGS['joy_' + button])
         self.controller_map.update(joy_bindings.CONTROLLER_DIRECTIONS)
 
-    def process_input(self, events):
+    def clear_events(self):
+        """Forgets the buttons just pressed and released. Held buttons stay held"""
         self.key_up_events.clear()
         self.key_down_events.clear()
+
+    def process_input(self, events):
+        self.clear_events()
 
         # Check keyboard
         for event in events:
@@ -241,8 +249,9 @@ class InputManager():
             if button in self.toggle_buttons:
                 return button
         # If only arrow keys pressed, return last one pressed
-        if self.key_down_events:
-            return self.key_down_events[-1]
+        for button in reversed(self.key_down_events):
+            if button in self.directions:
+                return button
 
     def is_controller_pushed(self, button: str) -> bool:
         return any(binding.is_active(pad)

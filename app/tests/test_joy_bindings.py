@@ -198,8 +198,8 @@ class InputManagerGamepadTests(unittest.TestCase):
 
     def test_captured_input_does_not_fire_under_new_binding(self):
         self.manager.start_joymap_capture('SELECT')
-        rightstick = joy_bindings.CONTROLLER_BUTTONS['rightstick']
-        self.pad.buttons.add(rightstick)
+        leftstick = joy_bindings.CONTROLLER_BUTTONS['leftstick']
+        self.pad.buttons.add(leftstick)
         self.assertTrue(self.capture())
         self.manager.rebind_controller('SELECT', self.manager.captured_binding)
         self.manager.stop_joymap_capture()

@@ -205,6 +205,7 @@ class EngineHarness():
         for _ in range(frames):
             engine.constants['last_time'] = engine.constants['current_time']
             engine.constants['current_time'] += FRAME_MS
+            engine.constants['input_time'] += FRAME_MS
             engine.constants['delta_t'] = FRAME_MS
 
             raw_events = events or []

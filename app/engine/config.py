@@ -44,17 +44,19 @@ def base_config() -> OrderedDict:
                         ('key_RIGHT', 'K_RIGHT'),
                         ('key_UP', 'K_UP'),
                         ('key_DOWN', 'K_DOWN'),
+                        ('key_SPEED', 'K_TAB'),
                         ('joy_SELECT', 'button:a'),
                         ('joy_BACK', 'button:b'),
                         ('joy_INFO', 'button:x,button:rightshoulder,axis:triggerright+'),
                         ('joy_AUX', 'button:leftshoulder,axis:triggerleft+'),
-                        ('joy_START', 'button:start,button:y,button:back')])
+                        ('joy_START', 'button:start,button:y,button:back'),
+                        ('joy_SPEED', 'button:rightstick')])
 
 float_vals = ('music_volume', 'sound_volume')
 string_vals = ('animation', 'hp_map_team', 'hp_map_cull', 'forecast')
 key_vals = ('key_SELECT', 'key_BACK', 'key_INFO', 'key_AUX',
-            'key_START', 'key_LEFT', 'key_RIGHT', 'key_UP', 'key_DOWN')
-joy_vals = ('joy_SELECT', 'joy_BACK', 'joy_INFO', 'joy_AUX', 'joy_START')
+            'key_START', 'key_LEFT', 'key_RIGHT', 'key_UP', 'key_DOWN', 'key_SPEED')
+joy_vals = ('joy_SELECT', 'joy_BACK', 'joy_INFO', 'joy_AUX', 'joy_START', 'joy_SPEED')
 
 def convert_setting(k, v):
     if k in float_vals:

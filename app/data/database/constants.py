@@ -73,6 +73,7 @@ constants = ConstantCatalog([
     Constant('fatigue', "Fatigue", ConstantType.BOOL, False, ConstantTag.MAJOR_FEATURES),
     Constant('reset_fatigue', "Automatically reset fatigue to 0 for benched units", ConstantType.BOOL, False, ConstantTag.MAJOR_FEATURES),
     Constant('minimap', "Enable Minimap", ConstantType.BOOL, True, ConstantTag.MAJOR_FEATURES),
+    Constant('speed_up', "Players can speed the game up to x2, x3 or x4", ConstantType.BOOL, True, ConstantTag.MAJOR_FEATURES),
     Constant('pairup', "Pair Up", ConstantType.BOOL, False, ConstantTag.PAIR_UP),
     Constant('limit_attack_stance', "Limit Attack Stance to first attack only", ConstantType.BOOL, False, ConstantTag.PAIR_UP),
     Constant('attack_stance_only', "Only attack stance allowed", ConstantType.BOOL, False, ConstantTag.PAIR_UP),

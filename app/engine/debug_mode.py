@@ -36,7 +36,8 @@ class DebugState(MapState):
         self.overflow = False
 
     def take_input(self, event):
-        current_time = engine.get_time()
+        # Held backspace repeats by the clock held buttons do
+        current_time = engine.get_input_time()
         game.cursor.take_input()
 
         for event in engine.events:

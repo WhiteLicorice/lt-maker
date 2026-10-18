@@ -5,7 +5,8 @@ import collections
 from datetime import datetime
 import time
 from app import lt_log
-from app.utilities import file_utils
+from app.data.database.database import DB
+from app.utilities import file_utils, utils
 
 from app.constants import WINWIDTH, WINHEIGHT, VERSION, FPS
 from app.engine import engine
@@ -99,6 +100,39 @@ def draw_soft_reset(surf, remaining_time: int):
     from app.engine.fonts import FONT
     FONT['chapter-yellow'].blit(str(remaining_time), surf, (surf.get_width()//2 - 4, surf.get_height()//2 - 4))
 
+# Updates a frame may run to catch up when the last frame took too long, so the
+# game keeps its speed down to 30 frames a second. Each update draws as well, so
+# a frame catches up only when that many updates fit in a frame. If updating is
+# what takes too long, more updates only make each frame slower still
+MAX_CATCH_UP = 2
+MAX_GAME_SPEED = 4
+
+def update_game_speed(inp, game_speed: int) -> int:
+    """The SPEED button steps the game's speed through x1 to x4, if the game allows it"""
+    if not DB.constants.value('speed_up'):
+        return 1
+    if inp.just_pressed('SPEED'):
+        return game_speed % MAX_GAME_SPEED + 1
+    return game_speed
+
+def plan_updates(behind: float, update_ms: float, game_speed: int) -> tuple[int, float]:
+    """
+    How many updates this frame runs, given the real time not yet run as game
+    time and how long one update took last frame, and the time still behind after
+    them. Sped up, the game runs that many updates a frame and never catches up,
+    so a computer that cannot keep up runs it as fast as it can instead
+    """
+    if game_speed > 1:
+        return game_speed, 0
+    max_updates = MAX_CATCH_UP if update_ms * MAX_CATCH_UP <= engine.FRAME_MS else 1
+    num_updates = utils.clamp(int(behind // engine.FRAME_MS), 1, max_updates)
+    behind = utils.clamp(behind - num_updates * engine.FRAME_MS, -engine.FRAME_MS, engine.FRAME_MS)
+    return num_updates, behind
+
+def draw_game_speed(surf, game_speed: int):
+    from app.engine.fonts import FONT
+    FONT['small-white'].blit('x%d' % game_speed, surf, (2, 0))
+
 def check_soft_reset(game, inp) -> bool:
     return game.state.current() != 'title_start' and \
         inp.is_pressed('SELECT') and inp.is_pressed('BACK') and \
@@ -124,12 +158,15 @@ def run(game):
     _error_msg = ''
     _soft_reset_start_time: int = None  # UTC time.time()
     SOFT_RESET_TIME = 3  # seconds
+    game_speed = 1
+    # Real time not yet run as game time, in milliseconds. Below zero when the
+    # game is ahead of the clock. It starts a frame behind, for the first frame's
+    # update, which runs before any time has been measured
+    behind = engine.FRAME_MS
+    # How long one update took last frame, in milliseconds
+    update_ms = 0
     while True:
         start = time.perf_counter_ns()
-
-        engine.update_time()
-        fps_records.append(engine.get_delta())
-        # print(engine.get_delta())
 
         raw_events = engine.get_events()
 
@@ -137,6 +174,9 @@ def run(game):
             break
 
         event = inp.process_input(raw_events)
+
+        game_speed = update_game_speed(inp, game_speed)
+        num_updates, behind = plan_updates(behind, update_ms, game_speed)
 
         # Handle soft reset
         if check_soft_reset(game, inp):
@@ -169,14 +209,25 @@ def run(game):
                     file_utils.startfile(log_file)
         else:
             try:
-                surf, repeat = game.state.update(event, surf)
-                while repeat:  # Let's the game traverse through state chains
-                    # print("Repeating States:\t", game.state.state)
-                    surf, repeat = game.state.update([], surf)
-                # print("States:\t\t\t", game.state.state)
+                updates_start = time.perf_counter()
+                for update in range(num_updates):
+                    engine.update_time(held_buttons_too=game_speed == 1 or update == 0)
+                    # The frame's presses go to its first update only
+                    if update > 0:
+                        inp.clear_events()
+                        engine.clear_events()
+                        event = None
+                    surf, repeat = game.state.update(event, surf)
+                    while repeat:  # Let's the game traverse through state chains
+                        # print("Repeating States:\t", game.state.state)
+                        surf, repeat = game.state.update([], surf)
+                    # print("States:\t\t\t", game.state.state)
+                update_ms = (time.perf_counter() - updates_start) * 1000 / num_updates
 
                 if cf.SETTINGS['display_fps']:
                     draw_fps(surf, fps_records)
+                if game_speed > 1:
+                    draw_game_speed(surf, game_speed)
                 if _soft_reset_start_time:
                     draw_soft_reset(surf, math.ceil(SOFT_RESET_TIME - (time.time() - _soft_reset_start_time)))
             except Exception as e:
@@ -204,7 +255,10 @@ def run(game):
             else:
                 print(f"Engine took: {ms_elapsed}", flush=True)
 
-        game.playtime += clock.tick()
+        frame_ms = clock.tick()
+        fps_records.append(frame_ms)
+        game.playtime += frame_ms
+        behind += frame_ms
 
 def run_in_isolation(obj):
     """

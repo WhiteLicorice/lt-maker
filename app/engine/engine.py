@@ -15,6 +15,7 @@ import logging
 
 constants = {'current_time': 0,
              'last_time': 0,
+             'input_time': 0,
              'delta_t': 0,
              'standalone': True,
              'running': True}
@@ -96,14 +97,32 @@ def on_end(crash=False):
     cf.save_settings()
 
 # === timing functions ===
-def update_time():
-    # All measured in milliseconds
+# Game time moves on one frame each update, however long the computer took
+# over it, so everything timed in milliseconds keeps pace with everything
+# counted in frames. driver.run decides how many updates a frame of real time gets
+FRAME_MS = 1000 / FPS
+_frames = 0
+
+def update_time(held_buttons_too: bool = True):
+    # All measured in milliseconds. Whole milliseconds, a frame of 16 or 17
+    global _frames
+    _frames += 1
     constants['last_time'] = constants['current_time']
-    constants['current_time'] = pygame.time.get_ticks()
-    constants['delta_t'] = constants['current_time'] - constants['last_time']
+    constants['delta_t'] = round(_frames * FRAME_MS) - round((_frames - 1) * FRAME_MS)
+    constants['current_time'] += constants['delta_t']
+    if held_buttons_too:
+        constants['input_time'] += constants['delta_t']
 
 def get_time() -> int:
     return constants['current_time']
+
+def get_input_time() -> int:
+    """
+    The clock held buttons repeat by. Game time, but for the updates a sped-up
+    game runs on top of one a frame, so a held button repeats on the same frames
+    at any game speed
+    """
+    return constants['input_time']
 
 def get_last_time():
     return constants['last_time']
@@ -283,6 +302,15 @@ key_map = {"enter": pygame.K_RETURN,
            }
 
 events = []
+
+def clear_events():
+    """
+    Forgets the frame's events, for the updates a sped-up game runs after the
+    first, so a key typed once is read once. The list get_events gave keeps them
+    """
+    global events
+    events = []
+
 def get_events():
     global events, fast_quit
     events.clear()
