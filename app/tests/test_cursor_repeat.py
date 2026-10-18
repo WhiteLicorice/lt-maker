@@ -23,7 +23,7 @@ class CursorRepeatTests(EngineTestCase):
                 moved_on = []
                 with patch.object(fluid_scroll, 'get_input_manager', return_value=held):
                     for frame in range(30):
-                        engine.constants['current_time'] = 1000 + int(frame * frame_ms)
+                        engine.constants['current_time'] = engine.constants['input_time'] = 1000 + int(frame * frame_ms)
                         held.just_pressed.side_effect = lambda button: button == 'RIGHT' and frame == 0
                         fluid.update()
                         if fluid.get_directions():
@@ -42,12 +42,40 @@ class CursorRepeatTests(EngineTestCase):
             moved_on = []
             with patch.object(fluid_scroll, 'get_input_manager', return_value=held):
                 for frame in range(12):
-                    engine.constants['current_time'] = 1000 + int(frame * frame_ms)
+                    engine.constants['current_time'] = engine.constants['input_time'] = 1000 + int(frame * frame_ms)
                     held.just_pressed.side_effect = lambda button: button == 'RIGHT' and frame == 0
                     fluid.update()
                     if fluid.get_directions(double_speed=True):
                         moved_on.append(frame)
             self.assertEqual([0, 2, 4, 6, 8, 10], moved_on, frame_ms)
+
+    def test_first_repeat_waits_as_long_at_any_game_speed(self):
+        '''
+        Sped up, the game runs several updates a frame. A held direction still waits
+        12 frames for its first repeat, so a quick press at x4 moves once (it used to
+        skip whole pages of the info menu). The repeats after it go as fast as the game
+        '''
+        from app.engine import engine, fluid_scroll
+
+        held = MagicMock()
+        held.is_pressed.side_effect = lambda button: button == 'RIGHT'
+        expected = {1: [0, 12, 16, 20, 24, 28],
+                    2: [0, 12] + list(range(14, 30, 2)),
+                    4: [0] + list(range(12, 30))}
+        for game_speed in (1, 2, 4):
+            engine.constants['current_time'] = engine.constants['input_time'] = 1000
+            fluid = fluid_scroll.FluidScroll()
+            fluid.reset_on_change_state()
+            moved_on = []
+            with patch.object(fluid_scroll, 'get_input_manager', return_value=held):
+                for frame in range(30):
+                    for update in range(game_speed):
+                        engine.update_time(held_buttons_too=update == 0)
+                        held.just_pressed.side_effect = lambda button: button == 'RIGHT' and frame == update == 0
+                        fluid.update()
+                        if fluid.get_directions():
+                            moved_on.append(frame)
+            self.assertEqual(expected[game_speed], moved_on, game_speed)
 
 
 class MoveBorderTests(EngineTestCase):
@@ -75,7 +103,7 @@ class MoveBorderTests(EngineTestCase):
         with patch.object(fluid_scroll, 'get_input_manager', return_value=held), \
                 patch.object(level_cursor, 'get_input_manager', return_value=held):
             for frame in range(frames):
-                engine.constants['current_time'] = 1000 + frame * 1000 // 60
+                engine.constants['current_time'] = engine.constants['input_time'] = 1000 + frame * 1000 // 60
                 held.just_pressed.side_effect = lambda button: button == 'RIGHT' and frame in pressed_on_frames
                 cursor.take_input()
                 if cursor._handle_move.call_args[0][0]:

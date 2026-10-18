@@ -16,6 +16,8 @@ class FluidScroll():
         self.right_update = 0
         self.up_update = 0
         self.down_update = 0
+        # When the last move was, by the game's clock (the updates above are by the input clock)
+        self.last_move_time = 0
         self.fast_speed = speed
         self.slow_speed = int(speed*slow_speed)
         self.move_counter = 0
@@ -27,11 +29,12 @@ class FluidScroll():
         self.move_down = False
 
     def reset_on_change_state(self):
-        current_time = engine.get_time()
+        current_time = engine.get_input_time()
         self.left_update = current_time
         self.right_update = current_time
         self.up_update = current_time
         self.down_update = current_time
+        self.last_move_time = engine.get_time()
         self.move_counter = 0
 
     def update_speed(self, speed=64, slow_speed=3):
@@ -91,31 +94,43 @@ class FluidScroll():
 
     def get_directions(self, double_speed=False, slow_speed=False):
         directions = []
+        input_time = engine.get_input_time()
         current_time = engine.get_time()
 
+        quick = False
         if slow_speed:
             speed = self.slow_speed
         elif self.move_counter >= 2 or double_speed:
             # Double speed has no wait before the repeats: on the GBA, holding B
             # moves the cursor every 2 frames from the first
             speed = self.fast_speed
+            quick = True
         else:
             speed = self.slow_speed
 
         if double_speed:
             speed //= 2
 
-        if self.move_left and current_time - self.left_update > speed:
+        # The wait for the first repeat is by the input clock, so a quick press
+        # moves once however fast the game runs. The quick repeats after it keep
+        # pace with the game. A direction just pressed (its update 0) moves at once
+        def due(last_update: int) -> bool:
+            if quick and last_update:
+                return current_time - self.last_move_time > speed
+            return input_time - last_update > speed
+
+        if self.move_left and due(self.left_update):
             directions.append('LEFT')
-        if self.move_right and current_time - self.right_update > speed:
+        if self.move_right and due(self.right_update):
             directions.append('RIGHT')
-        if self.move_up and current_time - self.up_update > speed:
+        if self.move_up and due(self.up_update):
             directions.append('UP')
-        if self.move_down and current_time - self.down_update > speed:
+        if self.move_down and due(self.down_update):
             directions.append('DOWN')
 
         if directions:  # If any move was made
-            self.set_all_updates(current_time)
+            self.set_all_updates(input_time)
+            self.last_move_time = current_time
             self.move_counter += 1
 
         # If we didn't make any moves, reset the move counter

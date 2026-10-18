@@ -21,7 +21,7 @@ AXIS_THRESHOLD = 0.5
 # Controller axes report raw SDL values in [-32768, 32767]
 CONTROLLER_AXIS_MAX = 32768
 
-REBINDABLE_ACTIONS = ('SELECT', 'BACK', 'INFO', 'AUX', 'START')
+REBINDABLE_ACTIONS = ('SELECT', 'BACK', 'INFO', 'AUX', 'START', 'SPEED')
 
 CONTROLLER_BUTTONS: dict[str, int] = {
     'a': pygame.CONTROLLER_BUTTON_A,
@@ -173,6 +173,7 @@ RAW_JOYSTICK_BINDINGS: dict[str, tuple[JoystickBinding, ...]] = {
     'START': (JoyButton(3), JoyButton(6), JoyButton(7)),  # Y, Select, Start
     'INFO': (JoyButton(2), JoyButton(5), JoyAxis(2, -1)),  # X, RB, R2
     'AUX': (JoyButton(4), JoyAxis(2, 1)),  # LB, L2
+    'SPEED': (JoyButton(9),),  # Right stick click
     'LEFT': (JoyHat(0, 0, -1), JoyAxis(0, -1)),
     'RIGHT': (JoyHat(0, 0, 1), JoyAxis(0, 1)),
     'UP': (JoyHat(0, 1, 1), JoyAxis(1, -1)),

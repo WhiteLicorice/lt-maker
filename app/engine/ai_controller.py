@@ -233,7 +233,7 @@ class AIController():
             return valid_moves
 
     def think(self):
-        time = engine.get_time()
+        time = engine.get_true_time()
         success = False
         self.did_something = False
         orig_pos = self.unit.position
