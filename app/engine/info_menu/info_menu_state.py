@@ -96,7 +96,7 @@ class InfoMenuState(State):
             self.state = 'personal_data'
         self.growth_flag = False
 
-        self.fluid = FluidScroll(200, 1)
+        self.fluid = FluidScroll()
 
         self.build_arrows()
 
