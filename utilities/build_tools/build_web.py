@@ -18,6 +18,7 @@ Run it from the repo root under Python 3.12, the browser's, with the packages
 in web/requirements_web.txt installed
 '''
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -38,6 +39,17 @@ WEB_DIR = Path(__file__).resolve().parent / 'web'
 APP_EXCLUDES = ('editor', 'tests', 'map_maker', 'dungeon_maker', 'world_maker', 'shaders')
 # page.js shows the Lex Talionis logo around the game, and the icon on a phone's home screen
 PAGE_IMAGES = ('lt_logo.png', 'apple-touch-icon.png')
+# In place of pygbag's two viewports in index.html's head, so that the page has
+# its last from the start: a viewport set later moves what iOS draws but not
+# where it takes touches, until the phone is turned. The page fills the whole
+# screen, under the notch and status bar too, and page.js keeps the game and
+# its buttons clear of them. Added to the home screen, it opens without
+# Safari's bars, under the icon
+HEAD_ADDITIONS = '''
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+'''
 # Added to the end of pygbag's index.html, to run before the game does.
 # pygbag starts the game on the first click after loading, as a browser lets a
 # page play sound only once it has been touched. iOS sends no click for a tap
@@ -159,6 +171,8 @@ def main(args: list[str]):
     if not serve:
         index = web / 'index.html'
         html = index.read_text(encoding='utf-8')
+        html = re.sub(r'\s*<meta name="viewport"[^>]*>', '', html)
+        html = html.replace('</head>', HEAD_ADDITIONS + '</head>', 1)
         index.write_text(html.replace('</body>', INDEX_ADDITIONS + '</body>', 1), encoding='utf-8')
 
 if __name__ == '__main__':

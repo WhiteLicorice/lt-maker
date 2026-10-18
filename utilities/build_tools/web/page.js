@@ -642,17 +642,6 @@
     // pygbag would otherwise size the canvas to half the window
     window.config.user_canvas_managed = 1;
     document.body.style.background = BACKGROUND;
-    const viewport = document.querySelector('meta[name=viewport]');
-    viewport.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover');
-    // Added to the home screen, the page opens without Safari's bars, under this icon
-    const statusBar = document.createElement('meta');
-    statusBar.name = 'apple-mobile-web-app-status-bar-style';
-    statusBar.content = 'black-translucent';
-    document.head.appendChild(statusBar);
-    const icon = document.createElement('link');
-    icon.rel = 'apple-touch-icon';
-    icon.href = 'apple-touch-icon.png';
-    document.head.appendChild(icon);
     const style = document.createElement('style');
     style.textContent = STYLE;
     document.head.appendChild(style);
@@ -669,26 +658,41 @@
     // SDL's canvas stays where the screen is, unseen, to take the mouse
     const screen = startScreen(canvas);
 
-    // The game as large as the window allows, keeping its shape. Held to the
-    // top in portrait with the buttons below it; centred otherwise, with the
-    // buttons either side
+    // How far in from each edge of the window the phone's notch, status bar
+    // and home bar reach (the page draws under them, viewport-fit=cover)
+    const safeArea = document.createElement('div');
+    safeArea.style.cssText = 'position: fixed; visibility: hidden; pointer-events: none; padding: ' +
+      'env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);';
+    document.body.appendChild(safeArea);
+    const insets = () => {
+      const style = getComputedStyle(safeArea);
+      return {top: parseFloat(style.paddingTop) || 0, right: parseFloat(style.paddingRight) || 0,
+              bottom: parseFloat(style.paddingBottom) || 0, left: parseFloat(style.paddingLeft) || 0};
+    };
+
+    // The game as large as the window allows, keeping its shape, clear of the
+    // notch, status bar and home bar. Held to the top in portrait with the
+    // buttons below it; centred otherwise, with the buttons either side
     const layout = () => {
       const width = window.innerWidth, height = window.innerHeight, dpr = window.devicePixelRatio || 1;
       const portrait = height > width;
+      const inset = insets();
+      const room = {width: width - inset.left - inset.right, height: height - inset.top - inset.bottom};
       let w, h;
       if (integer) {
-        const scale = Math.max(1, Math.floor(Math.min(width * dpr / ratio, height * dpr) / (canvas.height || 160)));
+        const scale = Math.max(1, Math.floor(Math.min(room.width * dpr / ratio, room.height * dpr) / (canvas.height || 160)));
         h = Math.round(scale * (canvas.height || 160) / dpr);
         w = Math.round(h * ratio);
       } else {
         // Whole pixels, which the style reads back exactly as written
-        w = width; h = Math.round(width / ratio);
-        if (h > height) { h = height; w = Math.round(height * ratio); }
+        w = room.width; h = Math.round(room.width / ratio);
+        if (h > room.height) { h = room.height; w = Math.round(room.height * ratio); }
       }
+      const left = inset.left + Math.round((room.width - w) / 2);
+      const top = inset.top + (pad && portrait ? 0 : Math.round((room.height - h) / 2));
       const wanted = {
         position: 'absolute', margin: '0px', right: 'auto', bottom: 'auto',
-        width: w + 'px', height: h + 'px',
-        left: Math.round((width - w) / 2) + 'px', top: (pad && portrait ? 0 : Math.round((height - h) / 2)) + 'px',
+        width: w + 'px', height: h + 'px', left: left + 'px', top: top + 'px',
         opacity: screen ? '0' : '1',
       };
       // Only on a change, as a change calls this again (below)
@@ -703,9 +707,9 @@
       }
       if (pad) {
         pad.className = portrait ? 'portrait' : 'landscape';
-        pad.style.top = portrait ? h + 'px' : '0';
+        pad.style.top = portrait ? (top + h) + 'px' : '0';
       }
-      placeLogos(width, height, portrait, w, h, parseInt(wanted.top));
+      placeLogos(width, height, portrait, w, h, left, top);
     };
 
     // A logo where there is room for one at least 64 pixels across: under the
@@ -718,24 +722,26 @@
         left: Math.round(centreX - size / 2) + 'px', top: Math.round(centreY - size / 2) + 'px',
       });
     };
-    const placeLogos = (width, height, portrait, w, h, top) => {
+    const placeLogos = (width, height, portrait, w, h, left, top) => {
       if (portrait) {
         // The portrait buttons reach 266 pixels below the game
         const below = top + h + (pad ? 280 : 0);
         place(logos[0], width / 2, (below + height) / 2, Math.min(height - below - 24, width * 0.55, 260), 0.9);
         place(logos[1], 0, 0, 0, 0);
       } else {
-        const side = (width - w) / 2;
+        const [leftSide, rightSide] = [left, width - left - w];
         // Below L and R (46 pixels down), above the D-pad (178 up from the bottom)
         // and A (158 up), on both sides alike
         const [above, below] = pad ? [46, height - 178] : [0, height];
-        const size = Math.min(side - 16, below - above - 16, 260);
+        const size = Math.min(Math.min(leftSide, rightSide) - 16, below - above - 16, 260);
         const centreY = (above + below) / 2;
-        place(logos[0], side / 2, centreY, size, pad ? 0.85 : 0.6);
-        place(logos[1], width - side / 2, centreY, size, pad ? 0.85 : 0.6);
+        place(logos[0], leftSide / 2, centreY, size, pad ? 0.85 : 0.6);
+        place(logos[1], width - rightSide / 2, centreY, size, pad ? 0.85 : 0.6);
       }
     };
     window.addEventListener('resize', layout);
+    // On a phone, the window's size and the notch's place settle a moment after a turn
+    window.addEventListener('orientationchange', () => setTimeout(layout, 250));
     // pygbag places the canvas itself on timers set before this ran, and the
     // engine sizes it when it opens its display; put it back
     new MutationObserver(layout).observe(canvas, {attributes: true, attributeFilter: ['style', 'width', 'height']});
