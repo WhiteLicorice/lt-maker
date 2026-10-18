@@ -7,9 +7,9 @@ pygbag packs everything in the folder holding main.py, so this first stages
 what the engine needs (the engine's code, its sprites, one project) into
 build/web_stage/<project>/, then runs pygbag on that folder. The result is
 build/web_stage/<project>/build/web/, which index.html serves. Most of the
-project's music, sound effects and combat animation sheets sit beside it in
-deferred/ instead of in the game's download, for the page to fetch while the
-game runs (DEFERRED).
+project's music, sound effects and combat animation sheets sit beside it in a
+few bundles in deferred/ instead of in the game's download, for the page to
+fetch while the game runs (DEFERRED).
 
 --serve starts pygbag's test server on http://localhost:8000 after building,
 serving its own index.html without INDEX_ADDITIONS, so that a tap on an
@@ -74,6 +74,10 @@ INDEX_ADDITIONS = '''
 # the soonest wanted first: (folder in the project's resources, file extension).
 # The engine opens each through app/engine/deferred_files.py
 DEFERRED = (('sfx', '.ogg'), ('music', '.ogg'), ('combat_effects', '.png'), ('combat_anims', '.png'))
+# The page fetches deferred files in bundles of about this many bytes: few
+# enough files for any host (itch.io takes 1,000 at most), and small enough
+# that the soonest wanted arrive soon
+BUNDLE_SIZE = 4 * 2**20
 # The one editor module the engine does import
 EDITOR_MODULES = ('editor/__init__.py', 'editor/lib/math/math_utils.py')
 
@@ -116,9 +120,12 @@ def stage_files(stage: Path, project: Path):
 def defer_files(stage: Path, project: Path, web: Path):
     '''
     Moves the files DEFERRED names out of the stage, and so out of the game's
-    download, into web/deferred/, and lists them in web/deferred.json for the
-    page to fetch while the game runs. The title screen's music stays, as the
-    game plays it at once
+    download, into bundles in web/deferred/ (0.bin, 1.bin, ...), for the page
+    to fetch while the game runs. A bundle is its files' bytes one after
+    another, in the order the game is likely to want them. web/deferred.json
+    lists the bundles in that order, each with the path, offset and size of
+    each file in it: [{"name": "0.bin", "files": [[path, offset, size], ...]}, ...].
+    The title screen's music stays, as the game plays it at once
     '''
     constants = dict(json.loads((project / 'game_data' / 'constants.json').read_text(encoding='utf-8')))
     title_music = constants.get('music_main')
@@ -126,18 +133,24 @@ def defer_files(stage: Path, project: Path, web: Path):
     deferred = web / 'deferred'
     if deferred.exists():
         shutil.rmtree(deferred)
-    paths = []
-    for folder, extension in DEFERRED:
-        for source in sorted((stage / project.name / 'resources' / folder).rglob('*' + extension)):
-            if folder == 'music' and source.name in keep:
-                continue
-            path = source.relative_to(stage).as_posix()
-            target = deferred / path
-            target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.move(source, target)
-            paths.append(path)
-    (web / 'deferred.json').write_text(json.dumps(paths), encoding='utf-8')
-    print('Deferred %d files, %.1f MB' % (len(paths), sum((deferred / path).stat().st_size for path in paths) / 2**20))
+    deferred.mkdir(parents=True)
+    sources = [source for folder, extension in DEFERRED
+               for source in sorted((stage / project.name / 'resources' / folder).rglob('*' + extension))
+               if not (folder == 'music' and source.name in keep)]
+    bundles = []
+    for source in sources:
+        if not bundles or bundles[-1]['size'] >= BUNDLE_SIZE:
+            bundles.append({'name': '%d.bin' % len(bundles), 'files': [], 'size': 0})
+        bundle = bundles[-1]
+        data = source.read_bytes()
+        with (deferred / bundle['name']).open('ab') as out:
+            out.write(data)
+        bundle['files'].append([source.relative_to(stage).as_posix(), bundle['size'], len(data)])
+        bundle['size'] += len(data)
+        source.unlink()
+    (web / 'deferred.json').write_text(json.dumps([{'name': bundle['name'], 'files': bundle['files']} for bundle in bundles]),
+                                       encoding='utf-8')
+    print('Deferred %d files, %.1f MB, in %d bundles' % (len(sources), sum(bundle['size'] for bundle in bundles) / 2**20, len(bundles)))
 
 def main(args: list[str]):
     if sys.version_info[:2] != BROWSER_PYTHON:

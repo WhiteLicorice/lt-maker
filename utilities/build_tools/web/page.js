@@ -237,47 +237,75 @@
     window.addEventListener('touchend', resume, WATCH_FIRST);
   }
 
-  // The files the build left out of the game's download (deferred.json lists
-  // them, the soonest wanted first), fetched a few at a time into the game's
-  // filesystem beside the rest, under root. The engine fetches any it opens
-  // before they arrive itself, with fetchNow (app/engine/deferred_files.py)
-  const DOWNLOADS_AT_ONCE = 4;
+  // The files the build left out of the game's download, in bundles that
+  // deferred.json lists, the soonest wanted first (build_web.py's
+  // defer_files). The bundles are fetched a few at a time, and their files
+  // put in the game's filesystem beside the rest, under root. The engine
+  // fetches any it opens before they arrive itself, with fetchNow
+  // (app/engine/deferred_files.py)
+  const DOWNLOADS_AT_ONCE = 2;
+  // Each deferred file's [bundle, offset, size], by its path
+  let bundled = null;
+  const learn = (bundles) => {
+    bundled = new Map();
+    for (const bundle of bundles) {
+      for (const [path, offset, size] of bundle.files) bundled.set(path, [bundle.name, offset, size]);
+    }
+  };
   window.__ltDeferred = {
     start(root) {
-      fetch('deferred.json').then((response) => response.json()).then((paths) => {
+      fetch('deferred.json').then((response) => response.json()).then((bundles) => {
+        if (!bundled) learn(bundles);
         const next = () => {
-          const path = paths.shift();
-          if (path === undefined) return;
-          fetch(url(path)).then((response) => {
-            if (!response.ok) throw new Error(response.status + ' for ' + path);
+          const bundle = bundles.shift();
+          if (bundle === undefined) return;
+          fetch('deferred/' + bundle.name).then((response) => {
+            if (!response.ok) throw new Error(response.status + ' for ' + bundle.name);
             return response.arrayBuffer();
           }).then((data) => {
-            const target = root + '/' + path;
-            if (!python.FS.analyzePath(target).exists) python.FS.writeFile(target, new Uint8Array(data));
+            for (const [path, offset, size] of bundle.files) {
+              const target = root + '/' + path;
+              if (!python.FS.analyzePath(target).exists) python.FS.writeFile(target, new Uint8Array(data, offset, size));
+            }
           }).catch((error) => console.warn('LTDEFERRED', error)).finally(next);
         };
         for (let i = 0; i < DOWNLOADS_AT_ONCE; i++) next();
       }).catch((error) => console.warn('LTDEFERRED no deferred.json', error));
     },
-    // Holds the game until the file is in place, at target
+    // Holds the game until the file is in place, at target. It asks for only
+    // the file's own bytes of its bundle; a server that sends the whole
+    // bundle anyway takes longer
     fetchNow(path, target) {
-      const request = new XMLHttpRequest();
-      request.open('GET', url(path), false);
-      // A request that holds the page must take text; this keeps each byte as it is
-      request.overrideMimeType('text/plain; charset=x-user-defined');
-      request.send();
-      if (request.status !== 200) {
-        console.warn('LTDEFERRED', request.status, 'for', path);
+      if (!bundled) learn(JSON.parse(holdFor('deferred.json').text));
+      const [name, offset, size] = bundled.get(path) || [];
+      if (name === undefined) {
+        console.warn('LTDEFERRED', path, 'is in no bundle');
         return;
       }
-      const text = request.responseText;
-      const data = new Uint8Array(text.length);
-      for (let i = 0; i < text.length; i++) data[i] = text.charCodeAt(i) & 0xff;
+      const response = holdFor('deferred/' + name, 'bytes=' + offset + '-' + (offset + size - 1));
+      if (response.status !== 206 && response.status !== 200) {
+        console.warn('LTDEFERRED', response.status, 'for', path);
+        return;
+      }
+      const start = response.status === 206 ? 0 : offset;
+      const data = new Uint8Array(size);
+      for (let i = 0; i < size; i++) data[i] = response.text.charCodeAt(start + i) & 0xff;
       python.FS.writeFile(target, data);
       console.log('LTDEFERRED waited for', path);
     },
   };
-  const url = (path) => 'deferred/' + path.split('/').map(encodeURIComponent).join('/');
+  // Fetches url's text, or a range of its bytes, holding the page until it arrives
+  function holdFor(url, range) {
+    const request = new XMLHttpRequest();
+    request.open('GET', url, false);
+    if (range) {
+      request.setRequestHeader('Range', range);
+      // A request that holds the page must take text; this keeps each byte as it is
+      request.overrideMimeType('text/plain; charset=x-user-defined');
+    }
+    request.send();
+    return {status: request.status, text: request.responseText};
+  }
 
   // The game's filesystem is only memory, and empties when the page closes.
   // The saves folder (save files, settings, records) is kept in the browser's
