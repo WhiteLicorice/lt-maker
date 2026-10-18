@@ -31,7 +31,9 @@ From this screen, you can now also update the engine by clicking the 'Fetch orig
 
 ## Installing and setting up the correct Python version for lt-maker
 
-As most Linux distributions already come with a Python version, you cannot simply install multiple Python versions. For example, Linux Mint 22.3 comes with Python 3.12.3. <span style="color: red; font-weight: bold;">LT-maker requires a Python 3.11 environment to work optimally.</span> For this, we can use a tool called 'pyenv'.
+<span style="color: red; font-weight: bold;">LT-maker requires a Python 3.12 environment to work optimally.</span> Most Linux distributions already come with a Python version. Type `python3 --version` in a terminal: if it returns `Python 3.12` and any last number (Linux Mint 22.3 comes with Python 3.12.3, for example), your system's Python will do: skip to [Using your system's Python](#using-your-systems-python).
+
+Otherwise you need a second Python beside your system's, as you cannot simply replace the one it came with. For this, we can use a tool called 'pyenv'.
 
 https://github.com/pyenv/pyenv
 
@@ -39,17 +41,30 @@ Follow the instructions on setting up the shell environment as explained on the 
 
 https://github.com/pyenv/pyenv/wiki#suggested-build-environment
 
-Once pyenv is installed correctly, type `pyenv install -l` to see all available versions of Python the program can download. Since we want a Python 3.11 version, you can use the command `pyenv install 3.11.7` for example.
+Once pyenv is installed correctly, type `pyenv install -l` to see all available versions of Python the program can download. Since we want a Python 3.12 version, you can use the command `pyenv install 3.12.10` for example.
 
-Once the installation is complete, navigate to the folder where you stored the `lt-maker` folder. Open a terminal window in this folder (NOT inside the `lt-maker` folder), and type `pyenv local 3.11.7`. Then, in this same folder, type `python3 --version`. It should now return `Python 3.11.7`. If you have hidden files visible, there should be a `.python-version` file that contains the python version you specified. Ideally, your folder layout should now look like this:
+Once the installation is complete, navigate to the folder where you stored the `lt-maker` folder. Open a terminal window in this folder (NOT inside the `lt-maker` folder), and type `pyenv local 3.12.10`. Then, in this same folder, type `python3 --version`. It should now return `Python 3.12.10`. If you have hidden files visible, there should be a `.python-version` file that contains the python version you specified. Ideally, your folder layout should now look like this:
 
 ![FolderLayout](images/FolderLayout.png)
 
 <span style="color: red; font-weight: bold;">Do NOT run `pyenv global`. Always stick to `pyenv local` to set Python versions, unless you know exactly what you are doing!</span>
 
-To make sure your main system is unaffected, open a normal terminal window and type `python3 --version`. It should return a different version than the local version you set up previously (on Linux Mint 22.3, it returns `Python 3.12.3` for example).
+To make sure your main system is unaffected, open a normal terminal window and type `python3 --version`. It should return a different version than the local version you set up previously: your system's own (on Debian 12, it returns `Python 3.11.2` for example).
 
 ![PyTerminalVisual](images/PyTerminalVisual.png)
+
+Now skip to [Installing Pip](#installing-pip).
+
+## Using your system's Python
+
+If your system's Python is 3.12, give LT-maker a virtual environment of its own: most distributions won't let pip install into the system's Python, answering `error: externally-managed-environment`. Open a terminal window inside the lt-maker folder and type:
+
+```
+python3 -m venv venv
+source venv/bin/activate
+```
+
+On Debian, Ubuntu and Mint, the first command may ask you to install the `python3-venv` package first (`sudo apt install python3-venv`). Type `source venv/bin/activate` again in each new terminal window before installing packages or starting LT-maker. In that window, `python3` is then the virtual environment's Python.
 
 ## Installing Pip
 
@@ -66,7 +81,7 @@ Next, you need to install some extra dependencies. These can be found in the `re
 pygame-ce
 
 ```
-python3 -m pip install pygame-ce==2.3.2
+python3 -m pip install pygame-ce==2.5.7
 ```
 
 pyinstaller

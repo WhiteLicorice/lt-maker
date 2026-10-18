@@ -123,19 +123,19 @@ If you are unsure, contact the developer(s) of the LT game you wish to play.
 
 ========
 
-1) Install a version of Python 3.11*;
-Linux distributions often ship with newer versions of Python. This means you will need to install python 3.11 on your device without interfering with other python versions. This can be accomplished with pyenv:
+1) Install a version of Python 3.12*;
+Type "python3 --version" in a terminal. If it shows Python 3.12 (many current distributions ship it), your system's Python will do, and you can skip pyenv here and in step 5. Instead, install the programs in step 3 in a virtual environment inside the "lt-maker" folder ("python3 -m venv venv", then "source venv/bin/activate" in each new terminal), as most distributions refuse pip installs into the system's Python. Otherwise you will need to install python 3.12 on your device without interfering with your system's python. This can be accomplished with pyenv:
 https://github.com/pyenv/pyenv/
 
 Follow the instructions on the github page to install the program. Depending on your distribution, you may need to install additional dependencies. You can see these dependencies here:
 https://github.com/pyenv/pyenv/wiki#suggested-build-environment
 
-*LT is potentially unstable or will not boot on newer versions of python. While using python 3.12 or newer can work, functionality is not guaranteed. Use at your own risk.
+*LT is tested only on python 3.12, and is potentially unstable or will not boot on other versions. Use another at your own risk.
 
 2) Install python3pip
 
 3) Because of pyenv, the following programs must be installed in a terminal window that is inside the "lt-maker" folder:
-    pygame-ce==2.3.2
+    pygame-ce==2.5.7
     pyinstaller==6.2.0
     typing-extensions==4.8.0
     PyQt5==5.15.10**
@@ -151,7 +151,7 @@ Grab the folder named "GAMETITLE.ltproj" from the .exe version and put it inside
 4.2) If the developer(s) have published the python version of their game:
 Download that repository and store it in your preferred storage location.
 
-5) Open a terminal window in the folder where the game is stored, and type "pyenv local 3.11.XX" (with XX being the specific python 3.11 version you installed. You can check which versions you have installed at any time with "pyenv versions"). To check if the correct version of python is now active in the game folder, type "python3 --version".
+5) Open a terminal window in the folder where the game is stored, and type "pyenv local 3.12.XX" (with XX being the specific python 3.12 version you installed. You can check which versions you have installed at any time with "pyenv versions"). To check if the correct version of python is now active in the game folder, type "python3 --version".
 
 6) Open a terminal window in the folder where "GAMETITLE.ltproj" is stored and type "python3 run_engine.py". The engine should now boot up with the desired game.*** You can also create a script to perform this command. It is recommended to run this script in the terminal, as the game uses the terminal as a log.
     ***If the desired game does not boot up, change the command to "python3 run_editor.py", click the "Open other" button and select the "GAMENAME.ltproj" folder. Once the editor opens, click the play icon in the icon bar and then select the "Test Full Game..." option. From there, you can play as normal.
@@ -189,15 +189,15 @@ Download that repository and store it in your preferred storage location.
 
 6) Execute the following commands before first boot;
     cd lt-maker
-    conda create -n fe-i-lt python=3.11.7
+    conda create -n fe-i-lt python=3.12.10
     conda activate fe-i-lt
 7) Setup Windows Python;
-    curl -O https://www.python.org/ftp/python/3.11.7/python-3.11.7-amd64.exe
-    wine python-3.11.7-amd64.exe
+    curl -O https://www.python.org/ftp/python/3.12.10/python-3.12.10-amd64.exe
+    wine python-3.12.10-amd64.exe
 8) Install the following requirements IN Wine Python;
     wine pip install -r
     python3pip
-    pygame-ce==2.3.2
+    pygame-ce==2.5.7
     pyinstaller==6.2.0
     typing-extensions==4.8.0
     PyQt5==5.15.10

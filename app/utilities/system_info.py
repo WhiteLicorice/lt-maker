@@ -1,9 +1,9 @@
 import sys
 from typing import Optional
 
-# The docs say "use python version 3.11 only" and .gitlab-ci.yml builds on
-# 3.11.8. Nothing else is tested.
-SUPPORTED_PYTHON = (3, 11)
+# The docs say "use python version 3.12 only" and .gitlab-ci.yml builds on
+# 3.12, as does the browser build (pygbag runs 3.12). Nothing else is tested.
+SUPPORTED_PYTHON = (3, 12)
 
 def is_editor_engine_built_version() -> bool:
     return hasattr(sys, 'frozen')
