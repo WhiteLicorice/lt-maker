@@ -53,6 +53,12 @@
 
   const changes = [];
   window.__ltTouch = { take() { return JSON.stringify(changes.splice(0)); } };
+  // The page's listeners only watch touches. A listener that could cancel one
+  // has iOS wait for the page to answer each touch, holding up the screen's
+  // next refresh; touch-action in STYLE already keeps touches from scrolling
+  // or zooming the page
+  const WATCH = {passive: true};
+  const WATCH_FIRST = {passive: true, capture: true};
 
   function holdable(element, button) {
     const release = () => {
@@ -61,13 +67,12 @@
       changes.push([button, false]);
     };
     element.addEventListener('pointerdown', (event) => {
-      event.preventDefault();
       element.setPointerCapture(event.pointerId);
       element.classList.add('pressed');
       changes.push([button, true]);
-    });
-    element.addEventListener('pointerup', release);
-    element.addEventListener('pointercancel', release);
+    }, WATCH);
+    element.addEventListener('pointerup', release, WATCH);
+    element.addEventListener('pointercancel', release, WATCH);
   }
 
   // One pad for all four directions, so a thumb can roll from one to the next
@@ -102,13 +107,12 @@
       hold(wanted);
     };
     pad.addEventListener('pointerdown', (event) => {
-      event.preventDefault();
       pad.setPointerCapture(event.pointerId);
       aim(event);
-    });
-    pad.addEventListener('pointermove', (event) => { if (pad.hasPointerCapture(event.pointerId)) aim(event); });
-    pad.addEventListener('pointerup', () => hold(new Set()));
-    pad.addEventListener('pointercancel', () => hold(new Set()));
+    }, WATCH);
+    pad.addEventListener('pointermove', (event) => { if (pad.hasPointerCapture(event.pointerId)) aim(event); }, WATCH);
+    pad.addEventListener('pointerup', () => hold(new Set()), WATCH);
+    pad.addEventListener('pointercancel', () => hold(new Set()), WATCH);
     return pad;
   }
 
@@ -139,7 +143,7 @@
   // the past starts late and would overlap the next
   const RESTART_AFTER = 0.01;  // s
   // For ?audio_log (main.py)
-  window.__ltSound = {node: 'none yet', buffers: 0, holds: 0, silentMs: 0};
+  window.__ltSound = {node: 'none yet', buffers: 0, holds: 0, silentMs: 0, busyMs: 0, longestMs: 0};
   function playAhead(Context) {
     const create = Context.prototype.createScriptProcessor;
     Context.prototype.createScriptProcessor = function (size, inputs, outputs) {
@@ -149,6 +153,7 @@
       __ltSound.node = size + ' frames, ' + outputs + ' channels at ' + context.sampleRate + ' Hz';
       clock.onaudioprocess = () => {
         if (!fill || !destination) return;
+        const began = performance.now();
         if (playAt < context.currentTime) {
           if (playAt) {
             __ltSound.holds++;
@@ -166,6 +171,9 @@
           playAt += size / context.sampleRate;
           __ltSound.buffers++;
         }
+        const took = performance.now() - began;
+        __ltSound.busyMs += took;
+        __ltSound.longestMs = Math.max(__ltSound.longestMs, took);
       };
       // What SDL sees as the node
       return {
@@ -199,8 +207,8 @@
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') resume(); });
     window.addEventListener('pageshow', resume);
     window.addEventListener('focus', resume);
-    window.addEventListener('pointerup', resume, true);
-    window.addEventListener('touchend', resume, true);
+    window.addEventListener('pointerup', resume, WATCH_FIRST);
+    window.addEventListener('touchend', resume, WATCH_FIRST);
   }
 
   // The files the build left out of the game's download (deferred.json lists

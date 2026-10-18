@@ -14,6 +14,8 @@ The page's address takes options:
                             in place of the sound_buffer_size setting (2)
     ?audio_log              logs to the browser's console whether the sound
                             keeps up (AUDIO_LOG_JS)
+    ?frame_log              logs to the browser's console each screen refresh
+                            the page missed, and what held it up (FRAME_LOG_JS)
     ?touch                  draws the on-screen buttons (page.js) even where
                             the screen isn't a touch screen
     ?integer                shows the game only at whole multiples of its size,
@@ -154,6 +156,38 @@ AUDIO_LOG_JS = """setInterval(() => {
   __ltSound.buffers = 0; __ltSound.holds = 0; __ltSound.silentMs = 0;
 }, 2000);"""
 
+# Logs to the browser's console each time the page's animation frames, which
+# the engine runs in, come more than 20 ms apart: how late the frame's
+# callbacks started after its time, how long each of the last frame's took
+# (the engine's is the longest), and how long feeding the sound took between
+# them (page.js). Every two seconds it sums up
+FRAME_LOG_JS = """(() => {
+  const request = window.requestAnimationFrame.bind(window);
+  let last = null, current = null, frames = 0, missed = 0;
+  window.requestAnimationFrame = (callback) => request((stamp) => {
+    if (!current || current.stamp !== stamp) {
+      last = current;
+      current = {stamp: stamp, start: performance.now(), took: [], sound: __ltSound.busyMs};
+      frames++;
+      if (last && stamp - last.stamp > 20) {
+        missed++;
+        console.log('LTFRAME ' + (stamp - last.stamp).toFixed(1) + ' ms since the last frame, started ' +
+                    (current.start - stamp).toFixed(1) + ' ms late; last frame callbacks ' +
+                    last.took.map((ms) => ms.toFixed(1)).join(', ') + ' ms, started ' +
+                    (last.start - last.stamp).toFixed(1) + ' ms late; sound since ' +
+                    (current.sound - last.sound).toFixed(1) + ' ms (longest ' + __ltSound.longestMs.toFixed(1) + ')');
+        __ltSound.longestMs = 0;
+      }
+    }
+    const began = performance.now();
+    try { callback(stamp); } finally { current.took.push(performance.now() - began); }
+  });
+  setInterval(() => {
+    console.log('LTFRAME ' + (frames / 2).toFixed(1) + ' frames/s, ' + missed + ' late');
+    frames = 0; missed = 0;
+  }, 2000);
+})();"""
+
 def setup_page():
     """
     Lays out the page, with on-screen buttons on a touch screen or for ?touch.
@@ -186,10 +220,14 @@ async def pump_touch_controls():
 async def main():
     setup_page()
     print('*** Lex Talionis Engine Version %s on Python %s (%s) ***' % (VERSION, sys.version.split()[0], sys.platform))
+    print('Built', Path('built.txt').read_text())
     print('Working directory:', os.getcwd())
     if 'audio_log' in OPTIONS:
         import platform
         platform.window.eval(AUDIO_LOG_JS)
+    if 'frame_log' in OPTIONS:
+        import platform
+        platform.window.eval(FRAME_LOG_JS)
     if 'audio_buffer' in OPTIONS:
         # The mixer's buffer is 128 * 2 ** this many frames
         cf.SETTINGS['sound_buffer_size'] = int(OPTIONS['audio_buffer'])

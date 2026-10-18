@@ -21,6 +21,7 @@ import json
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import typing_extensions
@@ -53,7 +54,7 @@ INDEX_ADDITIONS = '''
       if (window.MM && !MM.UME) {
         MM.UME = 1;
       }
-    }, true);
+    }, {passive: true, capture: true});
   }
 </script>
 '''
@@ -97,6 +98,8 @@ def stage_files(stage: Path, project: Path):
     shutil.copy(WEB_DIR / 'main.py', stage / 'main.py')
     shutil.copy(WEB_DIR / 'bench.py', stage / 'bench.py')
     shutil.copy(WEB_DIR / 'page.js', stage / 'page.js')
+    # main.py prints it, to tell which build a device ran
+    (stage / 'built.txt').write_text(time.strftime('%Y-%m-%d %H:%M:%S'), encoding='utf-8')
 
 def defer_files(stage: Path, project: Path, web: Path):
     '''
