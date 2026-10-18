@@ -1,3 +1,4 @@
+import copy
 from typing import Dict, Optional, Tuple
 from functools import lru_cache
 from app.data.resources.fonts import Font, FontIndex
@@ -101,6 +102,13 @@ class BmpFont():
             else:
                 palette_map = {orig: new for orig, new in zip(map(tuple, base_palette), map(tuple, palette))}
                 self.surfaces[color_name] = image_mods.color_convert_alpha(base_surf.copy(), palette_map)
+
+    def with_default_color(self, color: str) -> 'BmpFont':
+        """This font, writing in color when given none. It shares this font's
+        sheets, each palette recolored once at load"""
+        recolored = copy.copy(self)
+        recolored.default_color = color
+        return recolored
 
     @property
     def all_uppercase(self) -> bool:
