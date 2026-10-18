@@ -1,6 +1,7 @@
 
 from __future__ import annotations
 
+import functools
 import logging
 from typing import List, Optional, Tuple, TYPE_CHECKING
 
@@ -665,7 +666,7 @@ class InfoMenuState(State):
                 contribution = self.unit.stat_contribution(stat_nid)
                 contribution['Base Value'] = base_value
             desc_text = text_funcs.translate_and_text_evaluate(curr_stat.desc, self=curr_stat, unit=self.unit)
-            help_box = help_menu.StatDialog(desc_text or ('%s_desc' % stat_nid), contribution)
+            help_box = functools.partial(help_menu.StatDialog, desc_text or ('%s_desc' % stat_nid), contribution)
             self.info_graph.register((96 + 8, 16 * idx + 24, 64, 16), help_box, state, first=(idx == 0))
 
         for idx, stat_nid in enumerate(self.right_stats):
@@ -687,7 +688,7 @@ class InfoMenuState(State):
                 contribution = self.unit.stat_contribution(stat_nid)
                 contribution['Base Value'] = base_value
             desc_text = text_funcs.translate_and_text_evaluate(curr_stat.desc, self=curr_stat, unit=self.unit)
-            help_box = help_menu.StatDialog(desc_text or ('%s_desc' % stat_nid), contribution)
+            help_box = functools.partial(help_menu.StatDialog, desc_text or ('%s_desc' % stat_nid), contribution)
             self.info_graph.register((96 + 72, 16 * idx + 24, 64, 16), help_box, state)
 
         other_stats = []
