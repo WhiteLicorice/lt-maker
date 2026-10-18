@@ -1,4 +1,4 @@
-import os, shutil, glob, re
+import os, shutil, glob, re, sys
 from datetime import datetime
 from typing import Optional
 
@@ -17,6 +17,11 @@ from app.engine.objects.skill import SkillObject
 import logging
 
 SAVE_THREAD: Optional[threads.Work] = None
+# A save at the start of every phase, for the title screen's list of all saves
+# (with the debug or all_saves setting). The browser build (sys.platform
+# 'emscripten') makes none: it keeps its saves in the browser's storage, which
+# they would soon fill
+MAKES_PHASE_SAVES = sys.platform != 'emscripten'
 
 def GAME_NID():
     return str(DB.constants.value('game_nid'))

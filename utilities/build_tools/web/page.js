@@ -1,6 +1,7 @@
 // Sets up the page for the game: shows the game's screen as large as the
-// window allows, keeps its sound going, and on a touch screen draws the
-// buttons a keyboard would give. main.py runs this file, then __ltSetupPage.
+// window allows, keeps its sound going, keeps its saves, and on a touch screen
+// draws the buttons a keyboard would give. main.py runs this file, then
+// __ltSaves.restore, then __ltSetupPage once the engine is imported.
 // Presses wait in a queue that main.py drains each frame (__ltTouch.take) and
 // hands the engine as presses of the player's keys for those buttons.
 (() => {
@@ -252,6 +253,72 @@
     },
   };
   const url = (path) => 'deferred/' + path.split('/').map(encodeURIComponent).join('/');
+
+  // The game's filesystem is only memory, and empties when the page closes.
+  // The saves folder (save files, settings, records) is kept in the browser's
+  // IndexedDB instead: restore puts it back before the engine starts, and from
+  // then on each file written or removed there is written to IndexedDB at the
+  // next look, every second and when the page is hidden. A page at another
+  // address keeps its own
+  const SAVES_LOOK_EVERY = 1000;  // ms
+  const SAVES_DATABASE = 'lex-talionis saves ' + location.pathname;
+  window.__ltSaves = {
+    ready: false,
+    restore(folder) {
+      const opened = new Promise((resolve, reject) => {
+        const request = indexedDB.open(SAVES_DATABASE, 1);
+        request.onupgradeneeded = () => request.result.createObjectStore('files');
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      opened.then((database) => new Promise((resolve, reject) => {
+        const store = database.transaction('files').objectStore('files');
+        const names = store.getAllKeys();
+        const files = store.getAll();
+        files.onsuccess = () => {
+          names.result.forEach((name, i) => python.FS.writeFile(folder + '/' + name, files.result[i]));
+          console.log('LTSAVES restored', names.result.length, 'files');
+          resolve(database);
+        };
+        files.onerror = () => reject(files.error);
+      })).then((database) => {
+        const written = new Map(savedFiles(folder));
+        const look = () => {
+          const now = new Map(savedFiles(folder));
+          const changed = [...now].filter(([name, stamp]) => written.get(name) !== stamp).map(([name]) => name);
+          const removed = [...written.keys()].filter((name) => !now.has(name));
+          if (!changed.length && !removed.length) return;
+          const transaction = database.transaction('files', 'readwrite');
+          const store = transaction.objectStore('files');
+          for (const name of changed) store.put(python.FS.readFile(folder + '/' + name), name);
+          for (const name of removed) store.delete(name);
+          // Taken as written now; a failed write forgets them, to try again at the next look
+          for (const name of changed) written.set(name, now.get(name));
+          for (const name of removed) written.delete(name);
+          transaction.onerror = () => {
+            console.warn('LTSAVES could not write', changed, removed, transaction.error);
+            for (const name of changed.concat(removed)) written.set(name, null);
+          };
+        };
+        setInterval(look, SAVES_LOOK_EVERY);
+        document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') look(); });
+        window.addEventListener('pagehide', look);
+        // Asks the browser not to clear them when it runs short of space
+        if (navigator.storage && navigator.storage.persist) {
+          navigator.storage.persist().then((granted) => console.log('LTSAVES kept for good:', granted));
+        }
+      }).catch((error) => {
+        console.warn('LTSAVES no IndexedDB, so saves last only until the page closes:', error);
+      }).finally(() => { window.__ltSaves.ready = true; });
+    },
+  };
+  // Each file in the folder, with when it last changed and its size
+  function savedFiles(folder) {
+    return python.FS.readdir(folder).filter((name) => name !== '.' && name !== '..').map((name) => {
+      const stat = python.FS.stat(folder + '/' + name);
+      return python.FS.isFile(stat.mode) ? [name, +stat.mtime + ':' + stat.size] : null;
+    }).filter(Boolean);
+  }
 
   // The game's screen, drawn from SDL's canvas, at the game's own size, onto
   // one the size of the window. Each game pixel becomes a block of the same

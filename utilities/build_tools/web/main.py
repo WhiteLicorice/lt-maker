@@ -109,16 +109,8 @@ loaded('main.py running')
 # Read by the driver at import
 os.environ['LT_FRAME_STATS'] = '1'
 
-from app.constants import VERSION, WINWIDTH, WINHEIGHT
-from app.data.metadata import Metadata
-from app.data.resources.resources import RESOURCES
-from app.data.database.database import DB
-from app.data.serialization.dataclass_serialization import dataclass_from_dict
-from app.data.serialization.versions import CURRENT_SERIALIZATION_VERSION
-from app.engine import config as cf
-from app.engine import driver
-from app.engine import game_state
-loaded('engine imported')
+# The engine is imported in main(), once the saves are back: it reads the
+# player's settings from them as it is imported
 
 def find_project() -> str:
     projects = [name for name in os.listdir('.') if name.endswith('.ltproj')]
@@ -128,6 +120,7 @@ def find_project() -> str:
 
 async def run_c_timed(game, start: int, frames: int):
     import bench
+    from app.engine import driver
     main_loop = driver.MainLoop(game, wait_out_frame=True)
     timer = bench.CCallTimer()
     frame, wall = 0, 0.0
@@ -188,13 +181,26 @@ FRAME_LOG_JS = """(() => {
   }, 2000);
 })();"""
 
+async def restore_saves():
+    """
+    Puts the saves page.js kept in the browser back in the saves folder, the
+    one the engine reads and writes, and from then on keeps what it writes
+    """
+    import platform
+    os.makedirs('saves', exist_ok=True)
+    platform.window.__ltSaves.restore(os.getcwd() + '/saves')
+    while not json.loads(str(platform.window.eval('JSON.stringify(__ltSaves.ready)'))):
+        await asyncio.sleep(0)
+    loaded('saves restored')
+
 def setup_page():
     """
     Lays out the page, with on-screen buttons on a touch screen or for ?touch.
     The engine draws at the game's own size, and the page scales it up
     """
     import platform
-    platform.window.eval(Path('page.js').read_text())
+    from app.constants import WINWIDTH, WINHEIGHT
+    from app.engine import config as cf
     show_pad = json.loads(str(platform.window.eval(
         'JSON.stringify(__ltSetupPage(%s || matchMedia("(pointer: coarse)").matches, %s, %s))'
         % (json.dumps('touch' in OPTIONS), WINWIDTH / WINHEIGHT, json.dumps('integer' in OPTIONS)))))
@@ -211,6 +217,7 @@ async def pump_touch_controls():
     the player has for those buttons, so it takes them as it does a keyboard
     """
     import platform
+    from app.engine import config as cf
     while True:
         for button, down in json.loads(str(platform.window.eval('__ltTouch.take()'))):
             event_type = pygame.KEYDOWN if down else pygame.KEYUP
@@ -218,15 +225,26 @@ async def pump_touch_controls():
         await asyncio.sleep(0)
 
 async def main():
+    import platform
+    platform.window.eval(Path('page.js').read_text())
+    await restore_saves()
+    from app.constants import VERSION
+    from app.data.metadata import Metadata
+    from app.data.resources.resources import RESOURCES
+    from app.data.database.database import DB
+    from app.data.serialization.dataclass_serialization import dataclass_from_dict
+    from app.data.serialization.versions import CURRENT_SERIALIZATION_VERSION
+    from app.engine import config as cf
+    from app.engine import driver
+    from app.engine import game_state
+    loaded('engine imported')
     setup_page()
     print('*** Lex Talionis Engine Version %s on Python %s (%s) ***' % (VERSION, sys.version.split()[0], sys.platform))
     print('Built', Path('built.txt').read_text())
     print('Working directory:', os.getcwd())
     if 'audio_log' in OPTIONS:
-        import platform
         platform.window.eval(AUDIO_LOG_JS)
     if 'frame_log' in OPTIONS:
-        import platform
         platform.window.eval(FRAME_LOG_JS)
     if 'audio_buffer' in OPTIONS:
         # The mixer's buffer is 128 * 2 ** this many frames
@@ -239,13 +257,11 @@ async def main():
     metadata = dataclass_from_dict(Metadata, json.loads(Path(project, 'metadata.json').read_text()))
     if metadata.has_fatal_errors:
         raise ValueError("Fatal errors detected in game. Aborting launch.")
-    os.makedirs('saves', exist_ok=True)
     RESOURCES.load(project, CURRENT_SERIALIZATION_VERSION)
     loaded('resources loaded')
     DB.load(project, CURRENT_SERIALIZATION_VERSION)
     loaded('database loaded')
     title = DB.constants.value('title')
-    import platform
     platform.window.__ltSetTitle(title)
     level_nid = OPTIONS.get('level')
     driver.start(title, from_editor=bool(level_nid))

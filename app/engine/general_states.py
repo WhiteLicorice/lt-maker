@@ -282,6 +282,8 @@ class PhaseChangeState(MapState):
             game.action_log.set_first_free_action()
 
     def save_state(self):
+        if not save.MAKES_PHASE_SAVES:
+            return
         GAME_NID = str(DB.constants.value('game_nid'))
         if game.phase.get_current() == 'player':
             logging.info("Saving as we enter player phase!")
