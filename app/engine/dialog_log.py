@@ -8,6 +8,7 @@ from app.data.resources.resources import RESOURCES
 from app.data.database.database import DB
 
 from app.engine import engine, icons
+from app.engine.dialog import speaker_name
 from app.engine.graphics.dialog.dialog_log_ui import DialogLogUI
 from app.engine.state import State
 from app.engine.fluid_scroll import FluidScroll
@@ -49,7 +50,7 @@ class DialogLog():
     def append(self, dialog_tuple: Tuple[str, str]):
         speaker, text = dialog_tuple
         text = DialogLog.clean_speak_text(text)
-        self.ui.add_entry(speaker, self.get_chibi(speaker), text)
+        self.ui.add_entry(speaker_name(speaker), self.get_chibi(speaker), text)
         self.entries.append((speaker, text))
 
     def pop(self):

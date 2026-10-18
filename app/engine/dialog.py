@@ -4,6 +4,7 @@ import re
 from typing import Callable, List, Dict, Tuple
 
 from app.constants import WINHEIGHT, WINWIDTH
+from app.data.database.database import DB
 from app.engine import config as cf
 from app.events import event_portrait, screen_positions
 from app.engine import engine, image_mods, text_funcs
@@ -44,6 +45,19 @@ def process_dialog_shorthand(text: str) -> str:
     text = text.replace("{lt}", "<").replace("{gt}", ">")
     text = text.replace("{lcb}", "{").replace("{rcb}", "}")
     return text
+
+
+def speaker_name(speaker: str) -> str:
+    """
+    The name to show for a speaker. A unit speaks under its nid,
+    so this is the unit's name; any other speaker shows as written
+    """
+    unit = game.get_unit(speaker)
+    if unit:
+        return unit.name
+    if speaker in DB.units:
+        return DB.units.get(speaker).name
+    return speaker
 
 
 class DialogState(Enum):
@@ -758,7 +772,7 @@ class Dialog:
                 self.draw_tail(surf, self.portrait)
             # Draw nametag
             if not self.portrait and self.speaker and self.speaker != "Narrator":
-                self.draw_nametag(surf, self.speaker)
+                self.draw_nametag(surf, speaker_name(self.speaker))
             # Draw text
             end_pos = self.draw_text(surf)
 
