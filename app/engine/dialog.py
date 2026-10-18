@@ -27,7 +27,7 @@ from app.utilities.enums import Alignments, HAlignment
 
 from app.utilities.str_utils import SHIFT_NEWLINE
 
-MATCH_DIALOG_COMMAND_RE = re.compile("(\{[^\{]*?\})")
+MATCH_DIALOG_COMMAND_RE = re.compile(r"(\{[^\{]*?\})")
 
 
 def process_dialog_shorthand(text: str) -> str:

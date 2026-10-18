@@ -36,7 +36,7 @@ class PythonHighlighter(QtGui.QSyntaxHighlighter):
 
     # Python braces
     braces = [
-        '\{', '\}', '\(', '\)', '\[', '\]',
+        r'\{', r'\}', r'\(', r'\)', r'\[', r'\]',
     ]
 
     def __init__(self, parent: QtGui.QTextDocument) -> None:
