@@ -33,6 +33,12 @@ class Handler(SimpleHTTPRequestHandler):
         self.send_response(204)
         self.end_headers()
 
+    def end_headers(self):
+        # A browser otherwise goes on using what it fetched before for a while,
+        # guessing from when the file last changed, and a new build goes unseen
+        self.send_header('Cache-Control', 'no-cache')
+        super().end_headers()
+
     def log_message(self, format, *args):
         # Only the reports, not every file fetched
         pass

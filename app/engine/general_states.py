@@ -49,15 +49,15 @@ class LoadingState(State):
 
     # For A E S T H E T I C S
     duration = 1000  # How long to wait after we load in everything to actually move to the turn_change state
-    # How long the stopped music plays out its silence before loading begins. In
-    # the browser, loading runs on the page's only thread, which also feeds the
-    # sound, and the last sound it was fed goes on sounding until loading is done
-    silence_before_loading = 100  # ms
+    # How many frames of black screen are drawn before loading begins. In the
+    # browser, loading holds the game, and the screen with it, where it starts.
+    # The page shows each frame the game draws on its next one
+    frames_before_loading = 2
 
     def start(self):
         logging.debug("Loading state...")
-        self.start_time = engine.get_time()
         self.completed_time = None
+        self.frames_waited = 0
         self.loading_threads: Optional[List[threads.Work]] = None
 
         # stop current music before loading new assets to prevent
@@ -89,8 +89,11 @@ class LoadingState(State):
 
     def update(self):
         if self.loading_threads is None:
-            if engine.get_time() - self.start_time >= self.silence_before_loading:
+            if self.frames_waited == self.frames_before_loading:
                 self.start_loading()
+            else:
+                # This frame draws the black screen
+                self.frames_waited += 1
             return
         if not self.completed_time and not any([thread.is_alive() for thread in self.loading_threads]):
             self.completed_time = engine.get_time()

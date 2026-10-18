@@ -127,6 +127,57 @@
     return pad;
   }
 
+  // SDL plays sound through a ScriptProcessorNode, which asks the page's
+  // thread for each next 10 ms of it. While the game holds the thread (a song
+  // takes most of a second to load on a phone), the node plays its last 10 ms
+  // over and over, a robotic buzz. Here SDL fills buffers scheduled to play
+  // PLAY_AHEAD later instead, so that a hold runs out into silence. The node
+  // SDL asked for still runs, silent, to ask for them on time, as the page's
+  // timers slow down while it is in the background
+  const PLAY_AHEAD = 0.04;  // s
+  // How long the buffers after a hold wait to start, as a buffer scheduled for
+  // the past starts late and would overlap the next
+  const RESTART_AFTER = 0.01;  // s
+  // For ?audio_log (main.py)
+  window.__ltSound = {node: 'none yet', buffers: 0, holds: 0, silentMs: 0};
+  function playAhead(Context) {
+    const create = Context.prototype.createScriptProcessor;
+    Context.prototype.createScriptProcessor = function (size, inputs, outputs) {
+      const clock = create.call(this, size, inputs, outputs);
+      const context = this;
+      let fill = null, destination = null, playAt = 0;
+      __ltSound.node = size + ' frames, ' + outputs + ' channels at ' + context.sampleRate + ' Hz';
+      clock.onaudioprocess = () => {
+        if (!fill || !destination) return;
+        if (playAt < context.currentTime) {
+          if (playAt) {
+            __ltSound.holds++;
+            __ltSound.silentMs += (context.currentTime + RESTART_AFTER - playAt) * 1000;
+          }
+          playAt = context.currentTime + RESTART_AFTER;
+        }
+        while (playAt < context.currentTime + PLAY_AHEAD) {
+          const buffer = context.createBuffer(outputs, size, context.sampleRate);
+          fill({outputBuffer: buffer, playbackTime: playAt});
+          const source = context.createBufferSource();
+          source.buffer = buffer;
+          source.connect(destination);
+          source.start(playAt);
+          playAt += size / context.sampleRate;
+          __ltSound.buffers++;
+        }
+      };
+      // What SDL sees as the node
+      return {
+        bufferSize: size,
+        get onaudioprocess() { return fill; },
+        set onaudioprocess(callback) { fill = callback; },
+        connect(target) { destination = target; clock.connect(target); },
+        disconnect() { destination = null; clock.disconnect(); },
+      };
+    };
+  }
+
   // iOS stops the page's sound when the phone locks and leaves it stopped, so
   // every audio context the page makes is restarted when the page is back,
   // and on the next touch, where iOS only allows it from one
@@ -135,6 +186,7 @@
     for (const name of ['AudioContext', 'webkitAudioContext']) {
       const Original = window[name];
       if (!Original) continue;
+      playAhead(Original);
       window[name] = class extends Original {
         constructor(...args) { super(...args); contexts.push(this); }
       };
@@ -150,6 +202,48 @@
     window.addEventListener('pointerup', resume, true);
     window.addEventListener('touchend', resume, true);
   }
+
+  // The files the build left out of the game's download (deferred.json lists
+  // them, the soonest wanted first), fetched a few at a time into the game's
+  // filesystem beside the rest, under root. The engine fetches any it opens
+  // before they arrive itself, with fetchNow (app/engine/deferred_files.py)
+  const DOWNLOADS_AT_ONCE = 4;
+  window.__ltDeferred = {
+    start(root) {
+      fetch('deferred.json').then((response) => response.json()).then((paths) => {
+        const next = () => {
+          const path = paths.shift();
+          if (path === undefined) return;
+          fetch(url(path)).then((response) => {
+            if (!response.ok) throw new Error(response.status + ' for ' + path);
+            return response.arrayBuffer();
+          }).then((data) => {
+            const target = root + '/' + path;
+            if (!python.FS.analyzePath(target).exists) python.FS.writeFile(target, new Uint8Array(data));
+          }).catch((error) => console.warn('LTDEFERRED', error)).finally(next);
+        };
+        for (let i = 0; i < DOWNLOADS_AT_ONCE; i++) next();
+      }).catch((error) => console.warn('LTDEFERRED no deferred.json', error));
+    },
+    // Holds the game until the file is in place, at target
+    fetchNow(path, target) {
+      const request = new XMLHttpRequest();
+      request.open('GET', url(path), false);
+      // A request that holds the page must take text; this keeps each byte as it is
+      request.overrideMimeType('text/plain; charset=x-user-defined');
+      request.send();
+      if (request.status !== 200) {
+        console.warn('LTDEFERRED', request.status, 'for', path);
+        return;
+      }
+      const text = request.responseText;
+      const data = new Uint8Array(text.length);
+      for (let i = 0; i < text.length; i++) data[i] = text.charCodeAt(i) & 0xff;
+      python.FS.writeFile(target, data);
+      console.log('LTDEFERRED waited for', path);
+    },
+  };
+  const url = (path) => 'deferred/' + path.split('/').map(encodeURIComponent).join('/');
 
   // The game's screen, drawn from SDL's canvas, at the game's own size, onto
   // one the size of the window. Each game pixel becomes a block of the same

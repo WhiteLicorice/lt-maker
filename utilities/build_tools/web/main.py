@@ -12,8 +12,8 @@ The page's address takes options:
                             C functions and Python (bench.CCallTimer)
     ?audio_buffer=<n>       opens the mixer with 128 * 2 ** n frames of buffer,
                             in place of the sound_buffer_size setting (2)
-    ?audio_log              logs to the browser's console whether the audio
-                            callback keeps up (AUDIO_LOG_JS)
+    ?audio_log              logs to the browser's console whether the sound
+                            keeps up (AUDIO_LOG_JS)
     ?touch                  draws the on-screen buttons (page.js) even where
                             the screen isn't a touch screen
     ?integer                shows the game only at whole multiples of its size,
@@ -145,40 +145,14 @@ async def run_c_timed(game, start: int, frames: int):
             timer.report(frames, wall)
         await asyncio.sleep(0)
 
-# Logs to the browser's console, every two seconds, whether SDL's audio
-# callback keeps up. It runs on the page's main thread through a
-# ScriptProcessorNode, so anything that holds the thread past one buffer
-# (10.7 ms of 512 frames at 48 kHz) drops sound
-AUDIO_LOG_JS = """(() => {
-  const create = AudioContext.prototype.createScriptProcessor;
-  AudioContext.prototype.createScriptProcessor = function (size, inputs, outputs) {
-    const node = create.call(this, size, inputs, outputs);
-    const context = this;
-    let handler = null, calls = 0, late = 0, worst = 1e9, longestGap = 0, last = null;
-    console.log('LTAUDIO context ' + context.sampleRate + ' Hz, buffer ' + node.bufferSize + ' frames (' +
-                (node.bufferSize / context.sampleRate * 1000).toFixed(1) + ' ms)');
-    Object.defineProperty(node, 'onaudioprocess', {
-      get() { return handler; },
-      set(callback) {
-        handler = callback;
-        node.addEventListener('audioprocess', (event) => {
-          const now = performance.now();
-          if (last !== null) longestGap = Math.max(longestGap, now - last);
-          last = now;
-          handler(event);
-          const lead = (event.playbackTime - context.currentTime) * 1000;
-          calls++; worst = Math.min(worst, lead); if (lead < 0) late++;
-        });
-      },
-    });
-    setInterval(() => {
-      console.log('LTAUDIO ' + (calls / 2).toFixed(1) + ' callbacks/s, ' + late + ' late, closest ' +
-                  worst.toFixed(1) + ' ms before due, longest gap ' + longestGap.toFixed(1) + ' ms');
-      calls = 0; late = 0; worst = 1e9; longestGap = 0;
-    }, 2000);
-    return node;
-  };
-})();"""
+# Logs to the browser's console, every two seconds, how the sound kept up:
+# page.js has SDL fill buffers ahead of time, and any the game's thread held
+# up past their time leave a gap of silence (holds)
+AUDIO_LOG_JS = """setInterval(() => {
+  console.log('LTAUDIO ' + (__ltSound.buffers / 2).toFixed(1) + ' buffers/s of ' + __ltSound.node + ', ' +
+              __ltSound.holds + ' holds, ' + __ltSound.silentMs.toFixed(0) + ' ms silent');
+  __ltSound.buffers = 0; __ltSound.holds = 0; __ltSound.silentMs = 0;
+}, 2000);"""
 
 def setup_page():
     """
@@ -190,6 +164,8 @@ def setup_page():
     show_pad = json.loads(str(platform.window.eval(
         'JSON.stringify(__ltSetupPage(%s || matchMedia("(pointer: coarse)").matches, %s, %s))'
         % (json.dumps('touch' in OPTIONS), WINWIDTH / WINHEIGHT, json.dumps('integer' in OPTIONS)))))
+    # The files the build left out of the download, from here on
+    platform.window.__ltDeferred.start(os.getcwd())
     cf.SETTINGS['screen_size'] = 1
     if show_pad:
         # A touch on the game's screen would press SELECT where it touched; the buttons do instead
