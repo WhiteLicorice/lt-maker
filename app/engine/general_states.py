@@ -2993,7 +2993,11 @@ class ShopState(State):
         if text not in DB.translations:
             text = self.fallback_messages.get(text, text)
         text = text_funcs.translate_and_text_evaluate(text, self=self, local_args={'price': price})
-        d = dialog.Dialog(text)
+        # Shopkeepers talk at twice the speed of other dialog, pauses and all
+        d = dialog.Dialog(text, speed=0.5)
+        d.transition_speed = dialog.Dialog.transition_speed / 2
+        d.pause_before_wait_time = dialog.Dialog.pause_before_wait_time / 2
+        d.pause_time = dialog.Dialog.pause_time / 2
         d.position = (60, 8)
         d.text_width = WINWIDTH - 80
         d.width = d.text_width + 16

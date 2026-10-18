@@ -190,5 +190,28 @@ class ShopTests(EngineTestCase):
         self.assertEqual('buy_confirm', self.shop.state)
 
 
+class ShopTextSpeedTests(EngineTestCase):
+    '''Shopkeepers talk at twice the speed of other dialog'''
+
+    def frames_to_say(self, d):
+        for frame in range(1000):
+            if d.is_done_or_wait():
+                return frame
+            engine.constants['last_time'] = engine.constants['current_time']
+            engine.constants['current_time'] += 16
+            engine.constants['delta_t'] = 16
+            d.update()
+
+    def test_a_shopkeeper_line_takes_half_as_long(self):
+        from app.engine import dialog
+        from app.engine.general_states import ShopState
+        self.start_harness()
+        text = 'That is worth 480 gold. Is that acceptable?'
+        shop = ShopState.__new__(ShopState)
+        shopkeeper = self.frames_to_say(shop.get_dialog(text))
+        regular = self.frames_to_say(dialog.Dialog(text))
+        self.assertAlmostEqual(regular / 2, shopkeeper, delta=2)
+
+
 if __name__ == '__main__':
     unittest.main()
