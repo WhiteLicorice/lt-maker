@@ -456,6 +456,8 @@ class Choice(Simple):
 
         self.stationary_cursor = Cursor()
         self.fake_cursor_idx = None
+        # How far across the rows are drawn, as a page slides in or out (Convoy)
+        self.rows_x_offset = 0
 
     def set_horizontal(self, val):
         self.horizontal = val
@@ -693,14 +695,17 @@ class Choice(Simple):
             rows = self._rows_in_view(len(self.options), lambda idx: self.options[idx].height(), view_height)
             # Rows sliding in or out are cut off at the edge of the list
             old_clip = surf.get_clip()
-            if self.scroll_offset:
+            if self.rows_x_offset:
+                surf.set_clip(old_clip.clip((left, list_top, menu_width, view_height)))
+            elif self.scroll_offset:
                 surf.set_clip(old_clip.clip((0, list_top, surf.get_width(), view_height)))
+            row_left = left + self.rows_x_offset
             for idx, y in rows:
                 choice = self.options[idx]
                 if self.highlight and idx == self.current_index and self.takes_input and self.draw_cursor:
-                    choice.draw_highlight(surf, left, list_top + y, menu_width - 8 if draw_scroll_bar else menu_width)
+                    choice.draw_highlight(surf, row_left, list_top + y, menu_width - 8 if draw_scroll_bar else menu_width)
                 else:
-                    choice.draw(surf, left, list_top + y)
+                    choice.draw(surf, row_left, list_top + y)
             surf.set_clip(old_clip)
             if self.fake_cursor_idx is not None and self.scroll <= self.fake_cursor_idx < self.scroll + self.limit:
                 self.stationary_cursor.draw_still(surf, left, list_top + self._row_top(self.fake_cursor_idx, self.scroll))
@@ -1500,6 +1505,10 @@ class Convoy():
         self.owner_surf = create_base_surf(96, 24)
         self.owner_surf = image_mods.make_translucent(self.owner_surf, .4)
 
+        # [page slid away from, direction, frame] while a new page slides in
+        self._page_slide = None
+        self._last_page_slide = None
+
         for name, menu in self.menus.items():
             menu.set_takes_input(False)
 
@@ -1621,7 +1630,27 @@ class Convoy():
         else:
             return self.get_menu().move_up(first_push)
 
+    def _slide_page(self, old_index: int, old_menu: Choice, direction: int):
+        """Moving from one page of the convoy to another slides the new page in"""
+        if old_index > 0 and self.selection_index > 0 and self.selection_index != old_index:
+            self._page_slide = [old_menu, direction, 0]
+
+    def is_sliding(self) -> bool:
+        return self._page_slide is not None
+
     def move_left(self, first_push=True):
+        old_index, old_menu = self.selection_index, self.get_menu()
+        moved = self._move_left(first_push)
+        self._slide_page(old_index, old_menu, -1)
+        return moved
+
+    def move_right(self, first_push=True):
+        old_index, old_menu = self.selection_index, self.get_menu()
+        moved = self._move_right(first_push)
+        self._slide_page(old_index, old_menu, 1)
+        return moved
+
+    def _move_left(self, first_push=True):
         if self.selection_index == 0:
             if self.locked:
                 return False
@@ -1650,7 +1679,7 @@ class Convoy():
             self.left_arrow.pulse()
         return True
 
-    def move_right(self, first_push=True):
+    def _move_right(self, first_push=True):
         if self.selection_index == 0:
             if self.locked:
                 return False
@@ -1750,7 +1779,7 @@ class Convoy():
                 icons.draw_weapon(surf, weapon_nid, topleft)
                 surf.blit(SPRITES.get('weapon_shine'), topleft)
 
-        self.get_menu().draw(surf)
+        self.draw_page(surf)
         if self.inventory:
             self.inventory.draw(surf)
 
@@ -1764,6 +1793,38 @@ class Convoy():
         self.left_arrow.draw(surf)
         self.right_arrow.draw(surf)
         return surf
+
+    def draw_page(self, surf):
+        """
+        As on the GBA (PrepItemSupply_SwitchPageLeft), a new page slides in over 8 frames: the old
+        page's items slide 96 pixels out, easing out, and on the 4th frame the new page's slide in
+        from the other side, easing in. The hand stays where it was until the new page comes
+        """
+        menu = self.get_menu()
+        if not self._page_slide:
+            menu.draw(surf)
+            return
+        old_menu, direction, frame = self._page_slide
+        current_time = engine.get_time()
+        if current_time != self._last_page_slide:
+            self._last_page_slide = current_time
+            frame += 1
+            self._page_slide[2] = frame
+        if frame >= 8:
+            self._page_slide = None
+            menu.draw(surf)
+            return
+        if frame < 4:
+            shown, x = old_menu, -direction * (96 - (4 - frame) ** 2 * 6)
+        else:
+            shown, x = menu, direction * (8 - frame) ** 2 * 6
+        takes_input = shown.takes_input
+        if shown is old_menu:
+            shown.takes_input = menu.takes_input
+        shown.rows_x_offset = x
+        shown.draw(surf)
+        shown.rows_x_offset = 0
+        shown.takes_input = takes_input
 
     def handle_mouse(self) -> bool:
         mouse_position = get_input_manager().get_mouse_position()

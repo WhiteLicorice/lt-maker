@@ -1097,6 +1097,10 @@ class PrepItemsState(State):
         first_push = self.fluid.update()
         directions = self.fluid.get_directions()
 
+        # As on the GBA, nothing can be done while a page of the convoy slides in
+        if self.menu.is_sliding():
+            return
+
         if self.state in ('free', 'trade_convoy', 'trade_inventory'):
             self.menu.handle_mouse()
             if 'DOWN' in directions:
