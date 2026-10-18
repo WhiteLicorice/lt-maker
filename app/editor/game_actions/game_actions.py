@@ -90,6 +90,11 @@ def test_combat(left_combat_anim, left_weapon_anim, left_palette_name, left_pale
 def test_event(event_prefab, starting_command_idx=0, strategy=None):
     try:
         driver.start("Event Test", from_editor=True)
+        # The event evaluates against the global game, which outlives each launch
+        # from the editor, so give it a fresh new game instead of the last playthrough
+        game = game_state.game
+        game.clear()
+        game.build_new()
         from app.events.mock_event import MockEvent
         mock_event = MockEvent('Test Event', event_prefab, starting_command_idx, strategy)
         driver.run_event(mock_event)
