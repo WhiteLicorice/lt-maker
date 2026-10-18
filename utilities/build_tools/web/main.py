@@ -14,6 +14,14 @@ The page's address takes options:
                             in place of the sound_buffer_size setting (2)
     ?audio_log              logs to the browser's console whether the audio
                             callback keeps up (AUDIO_LOG_JS)
+    ?touch                  draws the on-screen buttons (page.js) even where
+                            the screen isn't a touch screen
+    ?integer                shows the game only at whole multiples of its size,
+                            with a border, rather than filling the window
+    ?report                 sends Python's output, the browser's console and
+                            the page's errors to the server it came from, for
+                            a phone whose browser can't be inspected
+                            (serve.py writes them down)
 '''
 import asyncio
 import json
@@ -33,11 +41,73 @@ def page_options() -> dict[str, str]:
     query = parse_qs(str(platform.window.location.search).lstrip('?'), keep_blank_values=True)
     return {key: values[0] for key, values in query.items()}
 
+def loaded(step: str):
+    """Notes how long after the page was opened a step of loading finished"""
+    import platform
+    print('LTLOAD %-20s %6.0f ms' % (step, float(platform.window.performance.now())), flush=True)
+
+# Sends what it is given to the server's /report once a second, along with the
+# browser's console and the page's errors, starting with what device this is
+REPORT_JS = """(() => {
+  const pending = [];
+  window.__ltReport = (line) => { pending.push(line); };
+  const send = () => {
+    if (!pending.length) return;
+    const body = pending.splice(0).join('\\n');
+    fetch('/report', {method: 'POST', body: body, keepalive: true}).catch(() => {});
+  };
+  setInterval(send, 1000);
+  window.addEventListener('pagehide', send);
+  for (const level of ['log', 'warn', 'error']) {
+    const original = console[level];
+    console[level] = function (...args) {
+      pending.push('console.' + level + ' ' + args.map(String).join(' '));
+      original.apply(console, args);
+    };
+  }
+  window.addEventListener('error', (event) => {
+    pending.push('page error: ' + event.message + ' at ' + event.filename + ':' + event.lineno);
+  });
+  window.addEventListener('unhandledrejection', (event) => {
+    pending.push('page error: unhandled rejection ' + event.reason);
+  });
+  document.addEventListener('visibilitychange', () => { pending.push('page ' + document.visibilityState); });
+  pending.push('device ' + navigator.userAgent + '; screen ' + screen.width + 'x' + screen.height +
+               ' at ' + devicePixelRatio + 'x; window ' + innerWidth + 'x' + innerHeight +
+               '; ' + navigator.hardwareConcurrency + ' cores');
+})();"""
+
+class ReportingStream():
+    """Passes writes on to the stream it wraps, and each finished line to REPORT_JS"""
+    def __init__(self, stream, window):
+        self.stream = stream
+        self.window = window
+        self.partial = ''
+
+    def write(self, text: str) -> int:
+        self.partial += text
+        *lines, self.partial = self.partial.split('\n')
+        for line in lines:
+            self.window.eval('__ltReport(%s)' % json.dumps(line))
+        return self.stream.write(text)
+
+    def flush(self):
+        self.stream.flush()
+
+def start_reporting():
+    import platform
+    platform.window.eval(REPORT_JS)
+    sys.stdout = ReportingStream(sys.stdout, platform.window)
+    sys.stderr = ReportingStream(sys.stderr, platform.window)
+
 OPTIONS = page_options()
+if 'report' in OPTIONS:
+    start_reporting()
+loaded('main.py running')
 # Read by the driver at import
 os.environ['LT_FRAME_STATS'] = '1'
 
-from app.constants import VERSION
+from app.constants import VERSION, WINWIDTH, WINHEIGHT
 from app.data.metadata import Metadata
 from app.data.resources.resources import RESOURCES
 from app.data.database.database import DB
@@ -46,6 +116,7 @@ from app.data.serialization.versions import CURRENT_SERIALIZATION_VERSION
 from app.engine import config as cf
 from app.engine import driver
 from app.engine import game_state
+loaded('engine imported')
 
 def find_project() -> str:
     projects = [name for name in os.listdir('.') if name.endswith('.ltproj')]
@@ -109,7 +180,35 @@ AUDIO_LOG_JS = """(() => {
   };
 })();"""
 
+def setup_page():
+    """
+    Lays out the page, with on-screen buttons on a touch screen or for ?touch.
+    The engine draws at the game's own size, and the page scales it up
+    """
+    import platform
+    platform.window.eval(Path('page.js').read_text())
+    show_pad = json.loads(str(platform.window.eval(
+        'JSON.stringify(__ltSetupPage(%s || matchMedia("(pointer: coarse)").matches, %s, %s))'
+        % (json.dumps('touch' in OPTIONS), WINWIDTH / WINHEIGHT, json.dumps('integer' in OPTIONS)))))
+    cf.SETTINGS['screen_size'] = 1
+    if show_pad:
+        # A touch on the game's screen would press SELECT where it touched; the buttons do instead
+        cf.SETTINGS['mouse'] = 0
+
+async def pump_touch_controls():
+    """
+    Hands the engine the on-screen buttons' presses as presses of the keys
+    the player has for those buttons, so it takes them as it does a keyboard
+    """
+    import platform
+    while True:
+        for button, down in json.loads(str(platform.window.eval('__ltTouch.take()'))):
+            event_type = pygame.KEYDOWN if down else pygame.KEYUP
+            pygame.event.post(pygame.event.Event(event_type, key=cf.SETTINGS['key_' + button], mod=0, scancode=0, unicode=''))
+        await asyncio.sleep(0)
+
 async def main():
+    setup_page()
     print('*** Lex Talionis Engine Version %s on Python %s (%s) ***' % (VERSION, sys.version.split()[0], sys.platform))
     print('Working directory:', os.getcwd())
     if 'audio_log' in OPTIONS:
@@ -128,15 +227,22 @@ async def main():
         raise ValueError("Fatal errors detected in game. Aborting launch.")
     os.makedirs('saves', exist_ok=True)
     RESOURCES.load(project, CURRENT_SERIALIZATION_VERSION)
+    loaded('resources loaded')
     DB.load(project, CURRENT_SERIALIZATION_VERSION)
+    loaded('database loaded')
     title = DB.constants.value('title')
+    import platform
+    platform.window.__ltSetTitle(title)
     level_nid = OPTIONS.get('level')
     driver.start(title, from_editor=bool(level_nid))
     print('Mixer (frequency, format, channels):', pygame.mixer.get_init())
+    loaded('engine started')
     if level_nid:
         game = game_state.start_level(level_nid)
     else:
         game = game_state.start_game()
+    loaded('game started')
+    asyncio.create_task(pump_touch_controls())
     if 'cprofile' in OPTIONS:
         start, frames = (int(n) for n in OPTIONS['cprofile'].split(','))
         await run_c_timed(game, start, frames)

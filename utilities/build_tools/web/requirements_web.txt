@@ -1,0 +1,7 @@
+# The browser build's tools (build_web.py, and measure.py beside this file).
+# Install them under the Python the browser runs, which build_web.py checks:
+#   py -3.12 -m venv venv_web
+#   venv_web\Scripts\python -m pip install -r utilities/build_tools/web/requirements_web.txt
+pygbag==0.9.3
+typing_extensions==4.16.0
+playwright==1.64.0

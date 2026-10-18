@@ -47,6 +47,10 @@ def set_title(text):
     pygame.display.set_caption(text)
 
 def build_display(size):
+    if sys.platform == 'emscripten':
+        # The page scales the display to the window. Resizable, SDL would keep
+        # resizing it to the size the page shows it at
+        return pygame.display.set_mode(size)
     try:
         if cf.SETTINGS['fullscreen']:
             return pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
