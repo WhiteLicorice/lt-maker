@@ -15,11 +15,11 @@
             "add_portrait;{unit};Left",
             "speak;Woman2;The most wonderful man rescued me.|He was dressed like a mercenary, but he had an air of elegance about him...|He gave me this elixir. I'm sure it will help you on the battlefield.",
             "transition;Close",
-            "show_layer;Village2",
             "remove_region;DestroyVillage2",
             "change_background",
             "transition;Open",
             "give_item;{unit};Elixir",
+            "show_layer;Village2",
             "has_visited;{unit}"
         ],
         "nid": "2 Village2"

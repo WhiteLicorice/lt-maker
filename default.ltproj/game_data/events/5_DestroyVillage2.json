@@ -9,8 +9,10 @@
         "priority": 20,
         "_source": [
             "flicker_cursor;{position}",
-            "show_layer;Ruin2",
-            "wait;500"
+            "sound;VillageDestroyed",
+            "show_layer;Ruin2;no_block",
+            "sound;ItemBreak",
+            "alert;The village was destroyed."
         ],
         "nid": "5 DestroyVillage2"
     }

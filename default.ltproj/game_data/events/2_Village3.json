@@ -15,11 +15,11 @@
             "add_portrait;{unit};Left",
             "speak;Man3;Hm? What is it? What's all the ruckus?|What? B-bandits?!|Spread the word, everyone!{br}Close the village gates!|Thank you for your warning.{br}Please, accept this small token.",
             "transition;Close",
-            "show_layer;Village3",
             "remove_region;DestroyVillage3",
             "change_background",
             "transition;Open",
             "give_item;{unit};Pure_Water",
+            "show_layer;Village3",
             "has_visited;{unit}"
         ],
         "nid": "2 Village3"

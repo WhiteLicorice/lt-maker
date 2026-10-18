@@ -15,10 +15,10 @@
             "add_portrait;Man1;Right",
             "speak;Man1;Do you see that old snag to the south of here?|Bet it would make a handy bridge if you could knock it over.|Take a weapon to it and give it a few good whacks. That should do it.|Here, take this and give it a try.{br}It ought to do the trick.",
             "transition;Close",
-            "show_layer;Village1",
             "change_background",
             "transition;Open",
             "give_item;{unit};Iron_Axe",
+            "show_layer;Village1",
             "has_visited;{unit}"
         ],
         "nid": "4 Village1"

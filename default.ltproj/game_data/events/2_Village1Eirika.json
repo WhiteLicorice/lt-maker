@@ -32,11 +32,11 @@
             "remove_portrait;Selena",
             "speak;Eirika;......",
             "transition;Close",
-            "show_layer;Village1",
             "remove_region;DestroyVillage1",
             "change_background",
             "transition;Open",
             "give_item;Eirika;Red_Gem",
+            "show_layer;Village1",
             "has_visited;{unit}"
         ],
         "nid": "2 Village1Eirika"

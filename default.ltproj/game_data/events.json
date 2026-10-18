@@ -927,10 +927,10 @@
             "remove_portrait;Selena",
             "speak;Eirika;......",
             "transition;Close",
-            "show_layer;Village1",
             "change_background",
             "transition;Open",
             "give_item;Eirika;Red_Gem",
+            "show_layer;Village1",
             "has_visited;{unit}"
         ],
         "nid": "2 Village1Eirika"
@@ -951,10 +951,10 @@
             "add_portrait;Selena;Right",
             "speak;Selena;And who are you? You don't look like one of the local peasantry.{w}{clear}As you can see, these villagers have some bandit troubles.|I would like to help, but I have orders to follow...|I am required to quit this area at once.|I would ask you to aid them in this fight.|I will pay for your trouble, of course.",
             "transition;Close",
-            "show_layer;Village1",
             "change_background",
             "transition;Open",
             "give_item;{unit};Red_Gem",
+            "show_layer;Village1",
             "has_visited;{unit}"
         ],
         "nid": "2 Village1"
@@ -1073,10 +1073,10 @@
             "add_portrait;Man1;Right",
             "speak;Man1;Do you see that old snag to the south of here?|Bet it would make a handy bridge if you could knock it over.|Take a weapon to it and give it a few good whacks. That should do it.|Here, take this and give it a try.{br}It ought to do the trick.",
             "transition;Close",
-            "show_layer;Village1",
             "change_background",
             "transition;Open",
             "give_item;{unit};Iron_Axe",
+            "show_layer;Village1",
             "has_visited;{unit}"
         ],
         "nid": "4 Village1"
@@ -1119,12 +1119,12 @@
             "speak;Lute;Your flesh shows no sign of putrefaction.|It seems you're not a revenant.|I've decided to join you in battle now.|My name is Lute. I'm a mage of superior wisdom and rare ability.|I've been reading up on these revenants.{br}They are, quite simply, no match for me.|I am superior after all.",
             "end",
             "transition;Close",
-            "show_layer;Village1",
             "change_background",
             "# Recruit Lute",
             "change_team;Lute;player",
             "add_unit;Lute;1,12;immediate;closest",
             "transition;Open",
+            "show_layer;Village1",
             "has_visited;{unit}"
         ],
         "nid": "4 Village2"
@@ -1169,10 +1169,10 @@
             "add_portrait;{unit};Left",
             "speak;Woman2;The most wonderful man rescued me.|He was dressed like a mercenary, but he had an air of elegance about him...|He gave me this elixir. I'm sure it will help you on the battlefield.",
             "transition;Close",
-            "show_layer;Village2",
             "change_background",
             "transition;Open",
             "give_item;{unit};Elixir",
+            "show_layer;Village2",
             "has_visited;{unit}"
         ],
         "nid": "2 Village2"
@@ -1193,10 +1193,10 @@
             "add_portrait;{unit};Left",
             "speak;Man3;Hm? What is it? What's all the ruckus?|What? B-bandits?!|Spread the word, everyone!{br}Close the village gates!|Thank you for your warning.{br}Please, accept this small token.",
             "transition;Close",
-            "show_layer;Village3",
             "change_background",
             "transition;Open",
             "give_item;{unit};Pure_Water",
+            "show_layer;Village3",
             "has_visited;{unit}"
         ],
         "nid": "2 Village3"
@@ -1506,8 +1506,10 @@
         "priority": 20,
         "_source": [
             "flicker_cursor;4,2",
-            "show_layer;Ruin1",
-            "wait;500"
+            "sound;VillageDestroyed",
+            "show_layer;Ruin1;no_block",
+            "sound;ItemBreak",
+            "alert;The village was destroyed."
         ],
         "nid": "2 DestroyVillage1"
     },
@@ -1521,8 +1523,10 @@
         "priority": 20,
         "_source": [
             "flicker_cursor;{position}",
-            "show_layer;Ruin1",
-            "wait;500"
+            "sound;VillageDestroyed",
+            "show_layer;Ruin1;no_block",
+            "sound;ItemBreak",
+            "alert;The village was destroyed."
         ],
         "nid": "5 DestroyVillage1"
     },
@@ -1536,8 +1540,10 @@
         "priority": 20,
         "_source": [
             "flicker_cursor;{position}",
-            "show_layer;Ruin2",
-            "wait;500"
+            "sound;VillageDestroyed",
+            "show_layer;Ruin2;no_block",
+            "sound;ItemBreak",
+            "alert;The village was destroyed."
         ],
         "nid": "5 DestroyVillage2"
     },
@@ -1551,8 +1557,10 @@
         "priority": 20,
         "_source": [
             "flicker_cursor;{position}",
-            "show_layer;Ruin3",
-            "wait;500"
+            "sound;VillageDestroyed",
+            "show_layer;Ruin3;no_block",
+            "sound;ItemBreak",
+            "alert;The village was destroyed."
         ],
         "nid": "5 DestroyVillage3"
     },
@@ -1566,8 +1574,10 @@
         "priority": 20,
         "_source": [
             "flicker_cursor;{position}",
-            "show_layer;Ruin4",
-            "wait;500"
+            "sound;VillageDestroyed",
+            "show_layer;Ruin4;no_block",
+            "sound;ItemBreak",
+            "alert;The village was destroyed."
         ],
         "nid": "5 DestroyVillage4"
     },
@@ -1581,8 +1591,10 @@
         "priority": 20,
         "_source": [
             "flicker_cursor;7,2",
-            "show_layer;Ruin2",
-            "wait;500"
+            "sound;VillageDestroyed",
+            "show_layer;Ruin2;no_block",
+            "sound;ItemBreak",
+            "alert;The village was destroyed."
         ],
         "nid": "2 DestroyVillage2"
     },
@@ -1596,8 +1608,10 @@
         "priority": 20,
         "_source": [
             "flicker_cursor;1,12",
-            "show_layer;Ruin3",
-            "wait;500"
+            "sound;VillageDestroyed",
+            "show_layer;Ruin3;no_block",
+            "sound;ItemBreak",
+            "alert;The village was destroyed."
         ],
         "nid": "2 DestroyVillage3"
     },

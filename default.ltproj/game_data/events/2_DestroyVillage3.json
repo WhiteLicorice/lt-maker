@@ -9,9 +9,11 @@
         "priority": 20,
         "_source": [
             "flicker_cursor;1,12",
-            "show_layer;Ruin3",
+            "sound;VillageDestroyed",
+            "show_layer;Ruin3;no_block",
             "remove_region;Village3",
-            "wait;500"
+            "sound;ItemBreak",
+            "alert;The village was destroyed."
         ],
         "nid": "2 DestroyVillage3"
     }
