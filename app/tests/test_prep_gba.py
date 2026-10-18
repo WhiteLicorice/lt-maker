@@ -131,7 +131,7 @@ class ConvoyPageSlideTests(EngineTestCase):
         real_draw = menus.Choice.draw
 
         def draw(menu, surf):
-            if menu in self.convoy.menus.values():
+            if menu in self.convoy.menus.values() or menu.disp_value:
                 self.drawn.append((menu, menu.rows_x_offset))
             return real_draw(menu, surf)
         p = patch.object(menus.Choice, 'draw', draw)
@@ -168,6 +168,16 @@ class ConvoyPageSlideTests(EngineTestCase):
         first = self.convoy.get_menu()
         self.assertEqual([(second, 42), (second, 72), (second, 90),
                           (first, -96), (first, -54), (first, -24), (first, -6), (first, 0)],
+                         self.frames(8))
+
+    def test_the_market_pages_slide_too(self):
+        self.convoy = menus.Market(self.unit, None, (76, 40), disp_value='sell')
+        first = self.convoy.get_menu()
+        self.convoy.move_right()
+        second = self.convoy.get_menu()
+        self.assertTrue(self.convoy.is_sliding())
+        self.assertEqual([(first, -42), (first, -72), (first, -90),
+                          (second, 96), (second, 54), (second, 24), (second, 6), (second, 0)],
                          self.frames(8))
 
 

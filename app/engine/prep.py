@@ -1508,6 +1508,10 @@ class PrepMarketState(State):
         first_push = self.fluid.update()
         directions = self.fluid.get_directions()
 
+        # As on the GBA, nothing can be done while a page slides in
+        if self.display_menu.is_sliding():
+            return
+
         self.menu.handle_mouse()
         if 'DOWN' in directions:
             if self.menu.move_down(first_push):

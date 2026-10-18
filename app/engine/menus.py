@@ -1939,7 +1939,8 @@ class Market(Convoy):
     def move_up(self, first_push=True):
         return self.menus[self.order[self.selection_index - 1]].move_up(first_push)
 
-    def move_left(self, first_push=True):
+    # Convoy.move_left and move_right slide the new page in
+    def _move_left(self, first_push=True):
         if self.selection_index == 1:
             if first_push:
                 self.selection_index = len(self.order)
@@ -1951,7 +1952,7 @@ class Market(Convoy):
             self.menu_index = self.selection_index - 1
             self.left_arrow.pulse()
 
-    def move_right(self, first_push=True):
+    def _move_right(self, first_push=True):
         if self.selection_index == len(self.order):
             if first_push:
                 self.selection_index = 1
