@@ -35,5 +35,13 @@ class FontColorTests(EngineTestCase):
                 self.assertEqual(registered.default_color, color)
                 self.assertIs(registered.get_base_surf(), fonts.FONT[font.nid].surfaces[color])
 
+    def test_a_color_registration_shares_its_fonts_glyphs(self):
+        self.load_counting_recolors()
+        for font in RESOURCES.fonts.values():
+            c = next(iter(font.font_index.chartable))
+            for color in font.palettes:
+                registered = fonts.FONT['%s-%s' % (font.nid, color)]
+                self.assertIs(registered._get_char_from_surf(c), fonts.FONT[font.nid]._get_char_from_surf(c, color))
+
 if __name__ == '__main__':
     unittest.main()

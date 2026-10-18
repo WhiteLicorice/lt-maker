@@ -65,10 +65,13 @@ class BmpFont():
             convert_alpha() and the sprite sheet is loaded without conversion.
             Must be True when no pygame display has been initialised (e.g. editor
             previews). Defaults to False for normal in-game use.
+
+    Everything but default_color is fixed once loaded: the font's colors
+    (see with_default_color) share this font's sheets and glyph caches, so
+    changing them for one changes them for all.
     """
     def __init__(self, font_info: Font, headless: bool = False):
         self.png_path = font_info.image_path()
-        self.memory: Dict[str, Dict[str, Tuple[engine.Surface, int]]] = {}
 
         self.font_info = font_info
         # The caller forces headless when no display exists at all (editor
@@ -103,9 +106,15 @@ class BmpFont():
                 palette_map = {orig: new for orig, new in zip(map(tuple, base_palette), map(tuple, palette))}
                 self.surfaces[color_name] = image_mods.color_convert_alpha(base_surf.copy(), palette_map)
 
+        # Keyed by the color actually drawn, never None, so a glyph cached
+        # by one of this font's colors serves all of them
+        self._char_widths: Dict[str, int] = {}
+        self._chars: Dict[Tuple[str, str], Tuple[engine.Surface, int]] = {}
+        self._stacked_chars: Dict[Tuple[str, str], Tuple[engine.Surface, engine.Surface, int]] = {}
+
     def with_default_color(self, color: str) -> 'BmpFont':
         """This font, writing in color when given none. It shares this font's
-        sheets, each palette recolored once at load"""
+        sheets, each palette recolored once at load, and its glyph caches"""
         recolored = copy.copy(self)
         recolored.default_color = color
         return recolored
@@ -149,18 +158,25 @@ class BmpFont():
         # string = string.replace('_', ' ')
         return string
 
-    @lru_cache()
     def _get_char_width(self, c: str) -> int:
+        if c not in self._char_widths:
+            self._char_widths[c] = self._make_char_width(c)
+        return self._char_widths[c]
+
+    def _make_char_width(self, c: str) -> int:
         if c in self.chartable:
             return self.chartable[c].char_width
         if self.fallback_font:
             return self.fallback_font.char_width(c)
         return 8
 
-    @lru_cache()
     def _get_char_from_surf(self, c: str, color: str = None) -> Tuple[engine.Surface, int]:
-        if not color:
-            color = self.default_color
+        key = (c, color or self.default_color)
+        if key not in self._chars:
+            self._chars[key] = self._make_char(*key)
+        return self._chars[key]
+
+    def _make_char(self, c: str, color: str) -> Tuple[engine.Surface, int]:
         if c in self.chartable:
             c_info = self.chartable[c]
             cx, cy, cwidth = c_info.x, c_info.y, c_info.char_width
@@ -172,10 +188,13 @@ class BmpFont():
         char_surf = engine.subsurface(base_surf, (cx, cy, self._width, self.height))
         return (char_surf, cwidth)
 
-    @lru_cache()
     def _get_stacked_char_from_surf(self, c: str, color: str = None) -> Tuple[engine.Surface, engine.Surface, int]:
-        if not color:
-            color = self.default_color
+        key = (c, color or self.default_color)
+        if key not in self._stacked_chars:
+            self._stacked_chars[key] = self._make_stacked_char(*key)
+        return self._stacked_chars[key]
+
+    def _make_stacked_char(self, c: str, color: str) -> Tuple[engine.Surface, engine.Surface, int]:
         if c not in self.chartable:
             cx, cy, cwidth = 0, 0, 8
         else:
