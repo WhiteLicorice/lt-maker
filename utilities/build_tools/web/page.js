@@ -1,7 +1,9 @@
 // Sets up the page for the game: shows the game's screen as large as the
-// window allows, keeps its sound going, keeps its saves, and on a touch screen
-// draws the buttons a keyboard would give. main.py runs this file, then
-// __ltSaves.restore, then __ltSetupPage once the engine is imported.
+// window allows, keeps its sound going, keeps its saves (with a button to
+// export and import them), and on a touch screen draws the buttons a keyboard
+// would give. main.py runs this file, then __ltSaves.restore, then
+// __ltSetupPage once the engine is imported, and __ltSaves.offer once the
+// game's data is loaded.
 // Presses wait in a queue that main.py drains each frame (__ltTouch.take) and
 // hands the engine as presses of the player's keys for those buttons.
 (() => {
@@ -47,6 +49,29 @@
     #lt-pad.portrait .A { right: 20px; top: 86px; }
     #lt-pad.portrait .B { right: 92px; top: 136px; }
     #lt-pad.portrait .start { left: calc(50% - 36px); top: 236px; }
+
+    /* In the window's corner, or under the D-pad, level with START */
+    #lt-saves { position: fixed; right: 12px; top: 12px; z-index: 10; width: 64px; height: 22px;
+                display: flex; align-items: center; justify-content: center; box-sizing: border-box;
+                border-radius: 11px; font: bold 11px sans-serif; letter-spacing: 1px; cursor: pointer;
+                color: rgba(255, 244, 150, 0.9); background: rgba(255, 240, 120, 0.08);
+                border: 2px solid rgba(255, 236, 110, 0.5); }
+    #lt-pad.landscape #lt-saves { right: auto; top: auto; left: calc(51px + env(safe-area-inset-left));
+                                  bottom: calc(10px + env(safe-area-inset-bottom)); }
+    #lt-pad.portrait #lt-saves { right: auto; left: 57px; top: 240px; }
+    #lt-saves-panel { position: fixed; left: 0; top: 0; right: 0; bottom: 0; z-index: 20; display: none;
+                      align-items: center; justify-content: center; background: rgba(5, 8, 24, 0.6);
+                      font-family: sans-serif; }
+    #lt-saves-panel .box { width: min(420px, calc(100% - 32px)); padding: 16px 20px; box-sizing: border-box;
+                           border-radius: 12px; background: rgba(13, 18, 48, 0.95); color: #fff6c8;
+                           border: 2px solid rgba(255, 236, 110, 0.6); }
+    #lt-saves-panel h2 { margin: 0 0 8px; font-size: 18px; color: #fff07a; }
+    #lt-saves-panel p { margin: 0 0 12px; font-size: 14px; line-height: 1.4; }
+    #lt-saves-panel .choices { display: flex; gap: 10px; }
+    #lt-saves-panel button { flex: 1; min-height: 40px; border-radius: 10px; font: bold 14px sans-serif;
+                             cursor: pointer; color: #fff07a; background: rgba(255, 240, 120, 0.12);
+                             border: 2px solid rgba(255, 236, 110, 0.5); }
+    #lt-saves-panel .status { margin: 12px 0 0; min-height: 1.4em; }
   `;
   // On-screen label, and the engine's button it presses
   const BUTTONS = [['A', 'SELECT', 'face'], ['B', 'BACK', 'face'], ['L', 'AUX', 'shoulder'],
@@ -262,9 +287,12 @@
   // address keeps its own
   const SAVES_LOOK_EVERY = 1000;  // ms
   const SAVES_DATABASE = 'lex-talionis saves ' + location.pathname;
+  // Once restored: the saves folder, and the database keeping it (null without IndexedDB)
+  let savesFolder = null, savesDatabase = null;
   window.__ltSaves = {
     ready: false,
     restore(folder) {
+      savesFolder = folder;
       const opened = new Promise((resolve, reject) => {
         const request = indexedDB.open(SAVES_DATABASE, 1);
         request.onupgradeneeded = () => request.result.createObjectStore('files');
@@ -282,6 +310,7 @@
         };
         files.onerror = () => reject(files.error);
       })).then((database) => {
+        savesDatabase = database;
         const written = new Map(savedFiles(folder));
         const look = () => {
           const now = new Map(savedFiles(folder));
@@ -311,6 +340,10 @@
         console.warn('LTSAVES no IndexedDB, so saves last only until the page closes:', error);
       }).finally(() => { window.__ltSaves.ready = true; });
     },
+    // Adds the SAVES button, for the game whose files start with gameNid and a dash
+    offer(gameNid, title) {
+      savesButton(gameNid + '-', title);
+    },
   };
   // Each file in the folder, with when it last changed and its size
   function savedFiles(folder) {
@@ -318,6 +351,215 @@
       const stat = python.FS.stat(folder + '/' + name);
       return python.FS.isFile(stat.mode) ? [name, +stat.mtime + ':' + stat.size] : null;
     }).filter(Boolean);
+  }
+
+  // The SAVES button opens a panel that exports the game's saves and the
+  // player's settings as a zip of their files in the saves folder, named as a
+  // desktop copy of the game names them in its own, and imports such a zip.
+  // The game's own files are those starting with prefix
+  function savesButton(prefix, title) {
+    const carried = (name) => name.startsWith(prefix) || name === SETTINGS_FILE;
+    const pad = document.getElementById('lt-pad');
+    const button = document.createElement('div');
+    button.id = 'lt-saves';
+    button.textContent = 'SAVES';
+    (pad || document.body).appendChild(button);
+    const panel = document.createElement('div');
+    panel.id = 'lt-saves-panel';
+    panel.innerHTML = `
+      <div class="box">
+        <h2>Saves</h2>
+        <p>This browser keeps your saves and settings, but it may clear them. Export a copy to keep
+           them safe, or to carry them to another device. A desktop copy of the game takes the same
+           files in its saves folder.</p>
+        <div class="choices">
+          <button class="export">Export</button><button class="import">Import</button><button class="close">Close</button>
+        </div>
+        <p class="status"></p>
+        <input type="file" accept=".zip,application/zip" hidden>
+      </div>`;
+    document.body.appendChild(panel);
+    const status = panel.querySelector('.status');
+    const input = panel.querySelector('input');
+    const show = (shown) => {
+      panel.style.display = shown ? 'flex' : 'none';
+      status.textContent = '';
+    };
+    button.addEventListener('click', () => show(true));
+    panel.querySelector('.close').addEventListener('click', () => show(false));
+
+    panel.querySelector('.export').addEventListener('click', () => {
+      const names = savedFiles(savesFolder).map(([name]) => name).filter(carried);
+      if (!names.some((name) => name.startsWith(prefix))) {
+        status.textContent = 'There are no saves yet.';
+        return;
+      }
+      const zip = makeZip(names.map((name) => {
+        const path = savesFolder + '/' + name;
+        const data = python.FS.readFile(path);
+        return [name, name === SETTINGS_FILE ? settings(data, false) : data, python.FS.stat(path).mtime];
+      }));
+      const fileName = (title + ' saves ' + new Date().toISOString().slice(0, 10) + '.zip').replace(/[\\/:*?"<>|]/g, '');
+      offerFile(new File([zip], fileName, {type: 'application/zip'}));
+      status.textContent = 'Exported ' + names.length + ' files.';
+    });
+
+    panel.querySelector('.import').addEventListener('click', () => input.click());
+    input.addEventListener('change', () => {
+      const file = input.files[0];
+      input.value = '';
+      if (!file) return;
+      status.textContent = 'Reading ' + file.name + '...';
+      file.arrayBuffer().then((data) => readZip(data, carried)).then((files) => {
+        if (!files.some(([name]) => name.startsWith(prefix))) throw new Error('it holds no saves for ' + title);
+        files = files.map(([name, data]) => [name, name === SETTINGS_FILE ? withThisDevice(data) : data]);
+        if (!savesDatabase) throw new Error('this browser is not keeping saves');
+        const replaced = files.some(([name]) => name === SETTINGS_FILE) ? 'Saves with the same names, and your settings, are replaced'
+                                                                         : 'Saves with the same names are replaced';
+        if (!confirm('Import ' + files.length + ' files? ' + replaced + ', and the game starts again.')) {
+          status.textContent = '';
+          return;
+        }
+        // The engine reads the records and settings only as it starts
+        return keepFiles(files).then(() => {
+          window.onbeforeunload = null;
+          location.reload();
+        });
+      }).catch((error) => {
+        console.warn('LTSAVES', error);
+        status.textContent = 'Could not import ' + file.name + ': ' + error.message + '.';
+      });
+    });
+  }
+
+  // The player's settings (app/engine/config.py), one key=value a line. Those
+  // for the device the game runs on stay with it: a zip's settings neither
+  // carry them nor replace this device's
+  const SETTINGS_FILE = 'config.ini';
+  const DEVICE_SETTINGS = ['screen_size', 'fullscreen', 'sound_buffer_size', 'mouse'];
+  // The lines of the settings for the device, or the others
+  function settings(data, forDevice) {
+    const lines = new TextDecoder().decode(data).split('\n').filter((line) => line.includes('='));
+    const kept = lines.filter((line) => DEVICE_SETTINGS.includes(line.split('=')[0]) === forDevice);
+    return new TextEncoder().encode(kept.map((line) => line + '\n').join(''));
+  }
+  // A zip's settings, with this device's own in place of any it has
+  function withThisDevice(data) {
+    const path = savesFolder + '/' + SETTINGS_FILE;
+    const device = python.FS.analyzePath(path).exists ? settings(python.FS.readFile(path), true) : new Uint8Array();
+    return new Uint8Array([...settings(data, false), ...device]);
+  }
+
+  // Into the saves folder and the database at once, so that the next look
+  // does not put back what the folder held before
+  function keepFiles(files) {
+    return new Promise((resolve, reject) => {
+      const transaction = savesDatabase.transaction('files', 'readwrite');
+      const store = transaction.objectStore('files');
+      for (const [name, data] of files) {
+        python.FS.writeFile(savesFolder + '/' + name, data);
+        store.put(data, name);
+      }
+      transaction.oncomplete = resolve;
+      transaction.onerror = () => reject(transaction.error);
+    });
+  }
+
+  // On a touch screen, the share sheet, which has Save to Files on an iPhone;
+  // a download otherwise
+  function offerFile(file) {
+    if (matchMedia('(pointer: coarse)').matches && navigator.canShare && navigator.canShare({files: [file]})) {
+      navigator.share({files: [file]}).catch((error) => { if (error.name !== 'AbortError') download(file); });
+    } else {
+      download(file);
+    }
+  }
+  function download(file) {
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(file);
+    link.download = file.name;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(link.href), 60000);
+  }
+
+  const CRC_TABLE = new Uint32Array(256).map((_, n) => {
+    for (let k = 0; k < 8; k++) n = n & 1 ? 0xedb88320 ^ (n >>> 1) : n >>> 1;
+    return n;
+  });
+  function crc32(data) {
+    let crc = 0xffffffff;
+    for (let i = 0; i < data.length; i++) crc = CRC_TABLE[(crc ^ data[i]) & 0xff] ^ (crc >>> 8);
+    return (crc ^ 0xffffffff) >>> 0;
+  }
+
+  // A zip holding the files as they are, uncompressed, from [name, data, last changed]
+  function makeZip(files) {
+    const encoder = new TextEncoder();
+    const entries = [], directory = [];
+    let offset = 0;
+    for (const [name, data, changed] of files) {
+      const nameBytes = encoder.encode(name);
+      const date = new Date(changed);
+      const time = (date.getHours() << 11) | (date.getMinutes() << 5) | (date.getSeconds() >> 1);
+      const day = ((date.getFullYear() - 1980) << 9) | ((date.getMonth() + 1) << 5) | date.getDate();
+      const crc = crc32(data);
+      // Each header: signature, version needed, names in UTF-8, stored, time, day, crc, sizes, name length
+      const header = new DataView(new ArrayBuffer(30));
+      [[0, 0x04034b50, 4], [4, 20, 2], [6, 0x0800, 2], [8, 0, 2], [10, time, 2], [12, day, 2],
+       [14, crc, 4], [18, data.length, 4], [22, data.length, 4], [26, nameBytes.length, 2]].forEach(write(header));
+      const listing = new DataView(new ArrayBuffer(46));
+      [[0, 0x02014b50, 4], [4, 20, 2], [6, 20, 2], [8, 0x0800, 2], [10, 0, 2], [12, time, 2], [14, day, 2],
+       [16, crc, 4], [20, data.length, 4], [24, data.length, 4], [28, nameBytes.length, 2], [42, offset, 4]].forEach(write(listing));
+      entries.push(header, nameBytes, data);
+      directory.push(listing, nameBytes);
+      offset += 30 + nameBytes.length + data.length;
+    }
+    const directorySize = directory.reduce((sum, part) => sum + part.byteLength, 0);
+    const end = new DataView(new ArrayBuffer(22));
+    [[0, 0x06054b50, 4], [8, files.length, 2], [10, files.length, 2], [12, directorySize, 4], [16, offset, 4]].forEach(write(end));
+    return new Blob([...entries, ...directory, end]);
+  }
+  const write = (view) => ([at, value, size]) => size === 4 ? view.setUint32(at, value, true) : view.setUint16(at, value, true);
+
+  // The files in a zip that wanted takes, by name without the folders the zip
+  // has them in, as [name, data]. Stored or deflated, as zips usually are
+  function readZip(buffer, wanted) {
+    const view = new DataView(buffer);
+    const bytes = new Uint8Array(buffer);
+    let end = buffer.byteLength - 22;
+    while (end >= 0 && view.getUint32(end, true) !== 0x06054b50) end--;
+    if (end < 0) return Promise.reject(new Error('it is not a zip file'));
+    const decoder = new TextDecoder();
+    const reads = [];
+    let at = view.getUint32(end + 16, true);
+    for (let i = view.getUint16(end + 10, true); i > 0; i--) {
+      if (view.getUint32(at, true) !== 0x02014b50) return Promise.reject(new Error('its list of files is damaged'));
+      const method = view.getUint16(at + 10, true);
+      const crc = view.getUint32(at + 16, true);
+      const size = view.getUint32(at + 20, true);
+      const nameLength = view.getUint16(at + 28, true);
+      const path = decoder.decode(bytes.subarray(at + 46, at + 46 + nameLength));
+      const local = view.getUint32(at + 42, true);
+      at += 46 + nameLength + view.getUint16(at + 30, true) + view.getUint16(at + 32, true);
+      const name = path.split(/[\\/]/).pop();
+      if (!name || path.startsWith('__MACOSX/') || !wanted(name)) continue;
+      const start = local + 30 + view.getUint16(local + 26, true) + view.getUint16(local + 28, true);
+      reads.push(unpack(method, bytes.slice(start, start + size)).then((data) => {
+        if (crc32(data) !== crc) throw new Error(name + ' in it is damaged');
+        return [name, data];
+      }));
+    }
+    return Promise.all(reads);
+  }
+  function unpack(method, packed) {
+    if (method === 0) return Promise.resolve(packed);
+    if (method === 8 && typeof DecompressionStream !== 'undefined') {
+      const stream = new Blob([packed]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+      return new Response(stream).arrayBuffer().then((data) => new Uint8Array(data));
+    }
+    return Promise.reject(new Error('this browser cannot unpack how it is compressed'));
   }
 
   // The game's screen, drawn from SDL's canvas, at the game's own size, onto

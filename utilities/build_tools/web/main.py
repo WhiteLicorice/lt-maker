@@ -263,6 +263,7 @@ async def main():
     loaded('database loaded')
     title = DB.constants.value('title')
     platform.window.__ltSetTitle(title)
+    platform.window.__ltSaves.offer(str(DB.constants.value('game_nid')), title)
     level_nid = OPTIONS.get('level')
     driver.start(title, from_editor=bool(level_nid))
     print('Mixer (frequency, format, channels):', pygame.mixer.get_init())
