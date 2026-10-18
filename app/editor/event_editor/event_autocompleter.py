@@ -320,7 +320,7 @@ def trim_arg_match(arg_text: str) -> str:
     return re.split('[^a-zA-Z0-9_ ]', arg_text)[-1]
 
 def trim_arg_text(arg_text: str) -> str:
-    return re.split('[^a-zA-Z0-9_ "\'\{]', arg_text)[-1]
+    return re.split('[^a-zA-Z0-9_ "\'\\{]', arg_text)[-1]
 
 def trim_arg_text_python(arg_text: str) -> str:
     return re.split('[^a-zA-Z0-9_ "\']', arg_text)[-1]
