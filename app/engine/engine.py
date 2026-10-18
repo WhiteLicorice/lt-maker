@@ -5,7 +5,12 @@ from enum import Enum
 import pygame
 import pygame.image
 import pygame.time
-from pygame._sdl2 import controller
+try:
+    from pygame._sdl2 import controller
+except ImportError:
+    # The browser build of pygame-ce has no game controller module, so there
+    # every pad is a raw joystick
+    controller = None
 
 from app.constants import WINWIDTH, WINHEIGHT, FPS
 from app.engine import config as cf
@@ -28,7 +33,8 @@ def init():
     pygame.init()
     pygame.font.init()
     # pygame.init does not start the game controller subsystem
-    controller.init()
+    if controller:
+        controller.init()
     logging.info("Engine Init Completed")
 
 def simple_init():
@@ -99,7 +105,7 @@ def on_end(crash=False):
 # === timing functions ===
 # Game time moves on one frame each update, however long the computer took
 # over it, so everything timed in milliseconds keeps pace with everything
-# counted in frames. driver.run decides how many updates a frame of real time gets
+# counted in frames. driver.MainLoop decides how many updates a frame of real time gets
 FRAME_MS = 1000 / FPS
 _frames = 0
 
@@ -215,6 +221,19 @@ def subsurface(surf: Surface, rect: Tuple[int, int, int, int]) -> Surface:
     if twidth == 0 or theight == 0:
         return empty_surf()
     return surf.subsurface(rect)
+
+def blit_layer_view(dest: Surface, layer: Surface, content: pygame.Rect, view: Tuple[int, int, int, int]):
+    """
+    Blits the part of a map-sized layer that the view (the camera's rect on the
+    map) shows onto dest, but only where the layer has anything drawn: content
+    is layer.get_bounding_rect(), taken when the layer was drawn. A
+    see-through layer costs as much to blit as it is large, however little is
+    in it, and in the browser a full screen of per-pixel alpha takes most of a
+    millisecond
+    """
+    shown = content.clip(pygame.Rect(view))
+    if shown.width and shown.height:
+        dest.blit(layer, (shown.x - view[0], shown.y - view[1]), shown)
 
 def image_load(fn, convert=False, convert_alpha=False):
     image = pygame.image.load(fn)
@@ -342,16 +361,16 @@ JOYDEVICEREMOVED = pygame.JOYDEVICEREMOVED
 def get_pressed():
     return pygame.key.get_pressed()
 
-def get_gamepads() -> tuple[list[controller.Controller], list[pygame.joystick.JoystickType]]:
+def get_gamepads() -> tuple[list['controller.Controller'], list[pygame.joystick.JoystickType]]:
     """
     Returns every connected pad, split into those SDL recognizes as
     game controllers and raw joysticks it does not.
     """
     controllers, joysticks = [], []
-    if not pygame.joystick.get_init() or not controller.get_init():
+    if not pygame.joystick.get_init() or (controller and not controller.get_init()):
         return controllers, joysticks
     for idx in range(pygame.joystick.get_count()):
-        if controller.is_controller(idx):
+        if controller and controller.is_controller(idx):
             controllers.append(controller.Controller(idx))
         else:
             joystick = pygame.joystick.Joystick(idx)
@@ -385,6 +404,10 @@ class Clock():
 
     def tick(self) -> int:
         return self.clock.tick(FPS)
+
+    def measure(self) -> int:
+        """Milliseconds since the last call, as tick, without waiting for the frame's time to be up"""
+        return self.clock.tick()
 
 # === System Messages
 

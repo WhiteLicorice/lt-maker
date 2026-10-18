@@ -1,14 +1,13 @@
 import os, shutil, glob, re
 from datetime import datetime
 from typing import Optional
-import threading
 
 try:
     import cPickle as pickle
 except ImportError:
     import pickle
 
-from app.utilities import str_utils
+from app.utilities import str_utils, threads
 from app.data.database.database import DB
 
 import app.engine.config as cf
@@ -17,7 +16,7 @@ from app.engine.objects.skill import SkillObject
 
 import logging
 
-SAVE_THREAD = None
+SAVE_THREAD: Optional[threads.Work] = None
 
 def GAME_NID():
     return str(DB.constants.value('game_nid'))
@@ -175,8 +174,7 @@ def suspend_game(game_state, kind, slot: int = None, name=None, display_name=Non
         force_loc = None
 
     global SAVE_THREAD
-    SAVE_THREAD = threading.Thread(target=save_io, args=(s_dict, meta_dict, old_save_slot, slot, force_loc, name))
-    SAVE_THREAD.start()
+    SAVE_THREAD = threads.start(save_io, (s_dict, meta_dict, old_save_slot, slot, force_loc, name))
 
 def load_game(game_state, save_slot: SaveSlot):
     """

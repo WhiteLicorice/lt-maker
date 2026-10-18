@@ -289,9 +289,12 @@ class Event():
         for key in delete:
             del self.portraits[key]
 
-        # draw all uiframework elements
-        ui_surf = self.overlay_ui.to_surf()
-        surf.blit(ui_surf, (0, 0))
+        # draw all uiframework elements. Only when there are any, since the
+        # full screen see-through overlay costs most of a millisecond to blit
+        # in the browser
+        if self.overlay_ui.children:
+            ui_surf = self.overlay_ui.to_surf()
+            surf.blit(ui_surf, (0, 0))
 
         sorted_portraits = sorted(self.portraits.values(), key=lambda x: x.priority)
         for portrait in sorted_portraits:
@@ -327,8 +330,9 @@ class Event():
             surf.blit(s, (0, 0))
 
         # draw all achievements
-        ui_surf = self.foreground_overlay_ui.to_surf()
-        surf.blit(ui_surf, (0, 0))
+        if self.foreground_overlay_ui.children:
+            ui_surf = self.foreground_overlay_ui.to_surf()
+            surf.blit(ui_surf, (0, 0))
 
         return surf
 

@@ -43,7 +43,10 @@ class MapView():
         engine.save_surface(surf, 'screenshots/LT_%s_map_view.png' % current_time)
 
     def draw_units(self, surf, cull_rect, subsurface_rect=None):
-        unit_surf = engine.copy_surface(self._unit_surf)
+        # Units go straight onto the map, unless they must be cut to a smaller
+        # rect. A full screen see-through layer costs most of a millisecond to
+        # blit in the browser
+        unit_surf = engine.copy_surface(self._unit_surf) if subsurface_rect else surf
         cull_rect_in_tiles = cull_rect[0] / TILEWIDTH, cull_rect[1] / TILEHEIGHT, cull_rect[2] / TILEWIDTH, cull_rect[3] / TILEHEIGHT
         cull_rect_center_in_tiles = tuple_add(cull_rect_in_tiles[:2], tmult(cull_rect_in_tiles[2:], 0.5))
 
@@ -76,9 +79,13 @@ class MapView():
         topleft = cull_rect[0], cull_rect[1]
 
         event = 'event' in game.state.state_names()
+        # As on the GBA, a unit fading away in death is added onto the map below the others
         for unit in draw_units:
-            # As on the GBA, a unit fading away in death is added onto the map below it
-            unit.sprite.draw(surf if unit.sprite.death_fade_start is not None else unit_surf, topleft)
+            if unit.sprite.death_fade_start is not None:
+                unit.sprite.draw(surf, topleft)
+        for unit in draw_units:
+            if unit.sprite.death_fade_start is None:
+                unit.sprite.draw(unit_surf, topleft)
             unit.sprite.draw_hp(unit_surf, topleft, event)
         for unit in draw_units:
             unit.sprite.draw_markers(unit_surf, topleft)
@@ -97,8 +104,6 @@ class MapView():
             left, top = (subsurface_rect[0] - cull_rect[0], subsurface_rect[1] - cull_rect[1])
             unit_surf = engine.subsurface(unit_surf, (left, top, subsurface_rect[2], subsurface_rect[3]))
             surf.blit(unit_surf, (left, top))
-        else:
-            surf.blit(unit_surf, (0, 0))
 
     def draw(self, camera_cull=None, subsurface_cull=None):
         game.tilemap.update()
@@ -133,10 +138,10 @@ class MapView():
             surf = surf.convert_alpha()
             surf.blit(map_image, shake)
         else:
+            # Opaque, since nothing shows through the map, so blitting it is cheap
             surf = engine.create_surface(cull_rect[2:])
             map_image = game.tilemap.get_full_image(cull_rect)
             surf.blit(map_image, shake)
-            surf = surf.convert_alpha()
 
         surf = game.boundary.draw_auras(surf, full_size, cull_rect)
         surf = game.boundary.draw(surf, full_size, cull_rect)
@@ -192,23 +197,29 @@ class MapView():
                 font.blit(text, surf, pos)
 
     def draw_grid(self, surf, cull_rect):
-        # Draw board grid
-        line_surf = engine.copy_surface(self._line_surf)
-
         bounds = game.board.bounds
-        
+
         regular_bounds = \
             bounds[0] == 0 and \
             bounds[1] == 0 and \
             bounds[2] == game.tilemap.width - 1 and \
             bounds[3] == game.tilemap.height - 1
 
+        opacity = cf.SETTINGS['grid_opacity']  # Higher numbers show more grid
+        # Don't bother showing bounds if they are just normal bounds
+        show_bounds = not regular_bounds and cf.SETTINGS['show_bounds']
+        if opacity <= 30 and not show_bounds:
+            # Nothing to draw, and blitting the empty line surf costs as much as a full one
+            return surf
+
+        # Draw board grid
+        line_surf = engine.copy_surface(self._line_surf)
+
         left = bounds[0] * TILEWIDTH - cull_rect[0]
         right = (bounds[2] + 1) * TILEWIDTH - cull_rect[0]
         top = bounds[1] * TILEHEIGHT - cull_rect[1]
         bottom = (bounds[3] + 1) * TILEHEIGHT - cull_rect[1]
 
-        opacity = cf.SETTINGS['grid_opacity']  # Higher numbers show more grid
         outside_opacity = min(255, opacity + 56)
         # Draw small lines (grid)
         if opacity > 30:
@@ -220,8 +231,7 @@ class MapView():
                 engine.draw_line(line_surf, (0, 0, 0, opacity), (left, y), (right, y))
 
         # Draw big lines (bounds)
-        # Don't bother showing bounds if they are just normal bounds
-        if not regular_bounds and cf.SETTINGS['show_bounds']:
+        if show_bounds:
             engine.draw_line(line_surf, (0, 0, 0, outside_opacity), (left - 2, top - 1), (right + 1, top - 1), width=3)
             engine.draw_line(line_surf, (0, 0, 0, outside_opacity), (left - 1, top - 1), (left - 1, bottom), width=3)
             engine.draw_line(line_surf, (0, 0, 0, outside_opacity), (right, top - 1), (right, bottom), width=3)

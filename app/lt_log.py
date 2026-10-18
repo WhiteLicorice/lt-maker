@@ -6,6 +6,7 @@ import threading
 import time
 from typing import Optional
 import app.utilities.platformdirs as appdirs
+from app.utilities import threads
 
 from app.constants import APP_AUTHOR, APP_NAME, VERSION
 
@@ -117,7 +118,8 @@ def get_log_dir() -> os.PathLike:
 def touch_log():
     current_time = time.time()
     log = get_log_fname()
-    if log:
+    # The browser build can't start the timer, and its logs live only as long as the page
+    if log and threads.CAN_START_THREADS:
         # touch once per hour
         os.utime(log, (current_time, current_time))
         t = threading.Timer(3600.0, touch_log)
