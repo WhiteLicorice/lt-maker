@@ -1,8 +1,72 @@
 import unittest
 from unittest.mock import patch
 
-from app.engine import engine, menus
+from app.engine import action, engine, menus
+from app.engine.sound import get_sound_thread
 from app.tests.engine_harness import EngineTestCase
+
+
+class PrepPickUnitsSoundTests(EngineTestCase):
+    '''
+    The sounds of Pick Units, as on the GBA (PrepUnit_HandlePressA, ProcPrepUnit_Idle).
+    testing_proj has no prep screen, so Pick Units is entered by hand over the Prologue,
+    with a formation region round Eirika (4, 5) and Seth (4, 4)
+    '''
+
+    def setUp(self):
+        super().setUp()
+        from app.engine.objects.region import RegionObject
+        from app.events.regions import RegionType
+        self.harness = self.start_harness()
+        self.harness.start_level('0')
+        self.harness.run_until_state('free')
+        self.game = self.harness.game
+        action.AddRegion(RegionObject('formation_test', RegionType.FORMATION, (3, 3), (3, 3))).do()
+        self.played = []
+        sfx = patch.object(type(get_sound_thread()), 'play_sfx', lambda s, sound, *a, **k: self.played.append(sound))
+        sfx.start()
+        self.addCleanup(sfx.stop)
+        self.game.state.change('prep_pick_units')
+        self.harness.run_until_state('prep_pick_units')
+        self.state = self.game.state.current_state()
+        # It fades in first
+        self.harness.run_until(lambda: hasattr(self.state, 'menu'), 60, 'Pick Units started')
+        self.harness.run_until_state('prep_pick_units')
+
+    def press(self, button):
+        self.played.clear()
+        self.harness.press(button)
+        return list(self.played)
+
+    def unit_at_hand(self):
+        return self.state.menu.get_current()
+
+    def test_sending_a_unit_back_is_the_cancel_sound_and_picking_it_the_select_sound(self):
+        unit = self.unit_at_hand()
+        self.assertTrue(unit.position)
+        self.assertEqual(['Select 4'], self.press('SELECT'))
+        self.assertIsNone(unit.position)
+        self.assertEqual(['Select 1'], self.press('SELECT'))
+        self.assertTrue(unit.position)
+
+    def test_picking_a_unit_when_every_slot_is_taken_is_the_miss_sound(self):
+        unit = self.unit_at_hand()
+        self.press('SELECT')
+        on_map = [u for u in self.game.get_units_in_party() if u.position]
+        self.game.level_vars['_prep_slots'] = len(on_map)
+        self.assertEqual(['Error'], self.press('SELECT'))
+        self.assertIsNone(unit.position)
+
+    def test_a_unit_outside_the_formation_is_the_miss_sound(self):
+        unit = self.unit_at_hand()
+        action.do(action.Teleport(unit, (0, 0)))
+        self.assertEqual(['Error'], self.press('SELECT'))
+        self.assertEqual((0, 0), unit.position)
+
+    def test_the_hand_is_silent_when_it_cannot_move(self):
+        self.state.menu.move_to(0)
+        self.assertEqual([], self.press('LEFT'))
+        self.assertEqual(['Select 5'], self.press('RIGHT'))
 
 
 class ConvoyPageSlideTests(EngineTestCase):

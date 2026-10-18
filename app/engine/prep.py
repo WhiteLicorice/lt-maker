@@ -224,19 +224,21 @@ class PrepPickUnitsState(State):
         directions = self.fluid.get_directions()
 
         self.menu.handle_mouse()
+        # As on the GBA (ProcPrepUnit_Idle), the hand only makes a sound when it moves
+        moved = False
         if 'DOWN' in directions:
-            get_sound_thread().play_sfx('Select 5')
-            self.menu.move_down(first_push)
+            moved = self.menu.move_down(first_push)
         elif 'UP' in directions:
-            get_sound_thread().play_sfx('Select 5')
-            self.menu.move_up(first_push)
+            moved = self.menu.move_up(first_push)
         elif 'LEFT' in directions:
-            get_sound_thread().play_sfx('Select 5')
-            self.menu.move_left(first_push)
+            moved = self.menu.move_left(first_push)
         elif 'RIGHT' in directions:
+            moved = self.menu.move_right(first_push)
+        if moved:
             get_sound_thread().play_sfx('Select 5')
-            self.menu.move_right(first_push)
 
+        # As on the GBA (PrepUnit_HandlePressA), picking a unit makes the select sound,
+        # sending one back the cancel sound, and a unit that can't be picked or sent back the miss
         if event == 'SELECT':
             unit = self.menu.get_current()
             pair_up_valid = DB.constants.value('pairup') and not DB.constants.value('attack_stance_only')
@@ -244,16 +246,16 @@ class PrepPickUnitsState(State):
                 get_sound_thread().play_sfx('Error')
                 return
             if unit.position and not game.check_for_region(unit.position, 'formation'):
-                get_sound_thread().play_sfx('Select 4')  # Locked/Lord character
+                get_sound_thread().play_sfx('Error')  # Locked/Lord character
             elif unit.position and 'Required' in unit.tags:
-                get_sound_thread().play_sfx('Select 4')  # Required unit, can't be removed
+                get_sound_thread().play_sfx('Error')  # Required unit, can't be removed
             elif unit.position:
-                get_sound_thread().play_sfx('Select 1')
+                get_sound_thread().play_sfx('Select 4')
                 if unit.traveler:
                     action.do(action.Separate(unit, game.get_unit(unit.traveler), None, False))
                 action.do(action.LeaveMap(unit))
             elif pair_up_valid and game.get_rescuer(unit) and game.get_rescuer(unit).position:
-                get_sound_thread().play_sfx('Select 1')
+                get_sound_thread().play_sfx('Select 4')
                 action.do(action.Separate(game.get_rescuer(unit), unit, None, False))
             else:
                 possible_position = game.get_next_formation_spot()
@@ -279,8 +281,10 @@ class PrepPickUnitsState(State):
                         get_sound_thread().play_sfx('Select 1')
                         next_unit = next((unit for unit in on_map if unit.position and not unit.traveler))
                         action.do(action.PairUp(unit, next_unit))
-                elif is_fatigued:
-                    get_sound_thread().play_sfx('Select 4')
+                    else:
+                        get_sound_thread().play_sfx('Error')  # Nowhere to put them
+                else:
+                    get_sound_thread().play_sfx('Error')  # Fatigued, or every slot is taken
 
         elif event == 'BACK':
             self.order_party()
@@ -917,18 +921,19 @@ class PrepManageSelectState(State):
         directions = self.fluid.get_directions()
 
         self.select_menu.handle_mouse()
+        # As on the GBA (sub_80996E8), moving among the commands makes the grid's sound
         if 'DOWN' in directions:
             if self.select_menu.move_down(first_push):
-                get_sound_thread().play_sfx('Select 6')
+                get_sound_thread().play_sfx('Select 5')
         elif 'UP' in directions:
             if self.select_menu.move_up(first_push):
-                get_sound_thread().play_sfx('Select 6')
+                get_sound_thread().play_sfx('Select 5')
         elif 'RIGHT' in directions:
             if self.select_menu.move_right(first_push):
-                get_sound_thread().play_sfx('Select 6')
+                get_sound_thread().play_sfx('Select 5')
         elif 'LEFT' in directions:
             if self.select_menu.move_left(first_push):
-                get_sound_thread().play_sfx('Select 6')
+                get_sound_thread().play_sfx('Select 5')
 
         if event == 'SELECT':
             get_sound_thread().play_sfx('Select 1')
