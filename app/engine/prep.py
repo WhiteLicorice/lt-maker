@@ -197,6 +197,8 @@ class PrepPickUnitsState(State):
         self.units = stuck_units + sorted(unstuck_units, key=lambda unit: bool(unit.position), reverse=True)
         self.menu = menus.Table(None, self.units, (6, 2), (110, 24))
         self.menu.set_mode('position')
+        # As on the GBA (ProcPrepUnit_Idle), the hand stops at the left and right edges
+        self.menu.wrap_rows = False
 
         self.bg = background.create_background('rune_background')
         game.memory['prep_bg'] = self.bg
@@ -719,6 +721,8 @@ class PrepManageState(State):
         units = game.get_units_in_party()
         self.units = sorted(units, key=lambda unit: bool(unit.position), reverse=True)
         self.menu = menus.Table(None, self.units, (4, 3), (6, 0))
+        # As on the GBA (PrepItemScreen_DpadKeyHandler), the hand stops at the left and right edges
+        self.menu.wrap_rows = False
         if self.name.startswith('base'):
             self.menu.set_mode('unit')
         else:

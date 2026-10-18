@@ -1129,6 +1129,8 @@ class Table(Simple):
 
         self.stationary_cursor = Cursor()
         self.fake_cursor_idx = None
+        # Whether left and right go on round to the row before or after
+        self.wrap_rows = True
 
     def get_scroll(self):
         return self.scroll
@@ -1276,6 +1278,8 @@ class Table(Simple):
             col += 1
             if self._exists(row, col):
                 pass
+            elif not self.wrap_rows:
+                break  # Stop at the right edge
             elif idx >= len(self.options) - 1:
                 break  # Don't move right because we are on the last row
             elif row < num_rows - 1:
@@ -1305,6 +1309,8 @@ class Table(Simple):
             col -= 1
             if self._exists(row, col):
                 pass
+            elif not self.wrap_rows:
+                break  # Stop at the left edge
             elif row > 0:
                 row -= 1
                 col = self._get_right(row)

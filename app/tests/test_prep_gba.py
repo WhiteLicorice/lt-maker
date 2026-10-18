@@ -63,10 +63,57 @@ class PrepPickUnitsSoundTests(EngineTestCase):
         self.assertEqual(['Error'], self.press('SELECT'))
         self.assertEqual((0, 0), unit.position)
 
+    def test_the_grid_does_not_wrap_at_its_edges(self):
+        self.assertFalse(self.state.menu.wrap_rows)
+
     def test_the_hand_is_silent_when_it_cannot_move(self):
         self.state.menu.move_to(0)
         self.assertEqual([], self.press('LEFT'))
         self.assertEqual(['Select 5'], self.press('RIGHT'))
+
+
+class UnitGridEdgeTests(unittest.TestCase):
+    '''As on the GBA (PrepItemScreen_DpadKeyHandler, ProcPrepUnit_Idle), a unit grid's hand stops at its edges'''
+
+    def grid(self, wrap_rows):
+        menu = menus.Table(None, ['Unit %d' % i for i in range(7)], (4, 3), (6, 0))
+        menu.wrap_rows = wrap_rows
+        return menu
+
+    def test_right_stops_at_the_end_of_a_row(self):
+        menu = self.grid(False)
+        menu.move_to(2)
+        self.assertFalse(menu.move_right())
+        self.assertEqual(2, menu.current_index)
+        # The last row is short: the hand stops at its last unit
+        menu.move_to(6)
+        self.assertFalse(menu.move_right())
+        self.assertEqual(6, menu.current_index)
+
+    def test_left_stops_at_the_start_of_a_row(self):
+        menu = self.grid(False)
+        menu.move_to(3)
+        self.assertFalse(menu.move_left())
+        self.assertEqual(3, menu.current_index)
+        menu.move_to(0)
+        self.assertFalse(menu.move_left())
+        self.assertEqual(0, menu.current_index)
+
+    def test_within_a_row_the_hand_still_moves(self):
+        menu = self.grid(False)
+        menu.move_to(4)
+        self.assertTrue(menu.move_right())
+        self.assertEqual(5, menu.current_index)
+        self.assertTrue(menu.move_left())
+        self.assertEqual(4, menu.current_index)
+
+    def test_other_tables_still_go_round_to_the_next_row(self):
+        menu = self.grid(True)
+        menu.move_to(2)
+        self.assertTrue(menu.move_right())
+        self.assertEqual(3, menu.current_index)
+        self.assertTrue(menu.move_left())
+        self.assertEqual(2, menu.current_index)
 
 
 class ConvoyPageSlideTests(EngineTestCase):
