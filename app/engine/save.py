@@ -22,6 +22,10 @@ SAVE_THREAD: Optional[threads.Work] = None
 # 'emscripten') makes none: it keeps its saves in the browser's storage, which
 # they would soon fill
 MAKES_PHASE_SAVES = sys.platform != 'emscripten'
+# A copy of the save at the start of every chapter, for the editor's "Test
+# Current Chapter from Preload". The browser build makes none, for the same
+# reason, and has no editor to read them
+MAKES_PRELOAD_SAVES = sys.platform != 'emscripten'
 
 def GAME_NID():
     return str(DB.constants.value('game_nid'))
@@ -148,7 +152,7 @@ def save_io(s_dict, meta_dict, old_slot, slot, force_loc=None, name=None):
             shutil.copy(restart_src_meta, r_save_meta)
 
     # For preload
-    if meta_dict['kind'] == 'start':
+    if meta_dict['kind'] == 'start' and MAKES_PRELOAD_SAVES:
         preload_saves = glob.glob('saves/' + GAME_NID() + '-preload-' + str(meta_dict['level_nid']) + '-*.p')
         nids = [p.split('-')[-1][:-2] for p in preload_saves]
         unique_nid = str(str_utils.get_next_int('0', nids))
