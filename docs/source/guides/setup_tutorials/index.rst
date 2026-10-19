@@ -14,3 +14,4 @@ These are guides on how to update specific assets/files in your game folder for 
    How-To-Play-LT-Games
    Helpful-Information-For-Players
    Carry-Over-Save-Files
+   Build-For-Web
