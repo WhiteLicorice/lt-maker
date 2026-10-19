@@ -131,7 +131,8 @@ def defer_files(stage: Path, project: Path, web: Path, constants: dict):
     another, in the order the game is likely to want them. web/deferred.json
     lists the bundles in that order, each with the path, offset and size of
     each file in it: [{"name": "0.bin", "files": [[path, offset, size], ...]}, ...].
-    The title screen's music stays, as the game plays it at once
+    The title screen's music stays, as the game plays it at once, and so do
+    empty files, which cost the download nothing and have no range to fetch
     '''
     title_music = constants.get('music_main')
     keep = {'%s%s.ogg' % (title_music, suffix) for suffix in ('', '-intro', '-battle')} if title_music else set()
@@ -141,7 +142,7 @@ def defer_files(stage: Path, project: Path, web: Path, constants: dict):
     deferred.mkdir(parents=True)
     sources = [source for folder, extension in DEFERRED
                for source in sorted((stage / project.name / 'resources' / folder).rglob('*' + extension))
-               if not (folder == 'music' and source.name in keep)]
+               if not (folder == 'music' and source.name in keep) and source.stat().st_size]
     bundles = []
     for source in sources:
         if not bundles or bundles[-1]['size'] >= BUNDLE_SIZE:
