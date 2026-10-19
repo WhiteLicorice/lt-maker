@@ -274,24 +274,19 @@
     },
     // Holds the game until the file is in place, at target. It asks for only
     // the file's own bytes of its bundle; a server that sends the whole
-    // bundle anyway takes longer
+    // bundle anyway takes longer. Returns why it could not, or '' once it is
     fetchNow(path, target) {
       if (!bundled) learn(JSON.parse(holdFor('deferred.json').text));
       const [name, offset, size] = bundled.get(path) || [];
-      if (name === undefined) {
-        console.warn('LTDEFERRED', path, 'is in no bundle');
-        return;
-      }
+      if (name === undefined) return 'it is in no bundle';
       const response = holdFor('deferred/' + name, 'bytes=' + offset + '-' + (offset + size - 1));
-      if (response.status !== 206 && response.status !== 200) {
-        console.warn('LTDEFERRED', response.status, 'for', path);
-        return;
-      }
+      if (response.status !== 206 && response.status !== 200) return 'the server answered ' + response.status + ' for ' + name;
       const start = response.status === 206 ? 0 : offset;
       const data = new Uint8Array(size);
       for (let i = 0; i < size; i++) data[i] = response.text.charCodeAt(start + i) & 0xff;
       python.FS.writeFile(target, data);
       console.log('LTDEFERRED waited for', path);
+      return '';
     },
   };
   // Fetches url's text, or a range of its bytes, holding the page until it arrives

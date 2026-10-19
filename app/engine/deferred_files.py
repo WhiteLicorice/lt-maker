@@ -15,5 +15,8 @@ def ensure(path: str) -> str:
     if sys.platform == 'emscripten' and not os.path.exists(path):
         # pygbag's platform module, standing in for the standard library's, reaches the page
         import platform
-        platform.window.__ltDeferred.fetchNow(os.path.relpath(path).replace(os.sep, '/'), os.path.abspath(path))
+        # Why the page could not fetch it, or '' once it is in place
+        problem = str(platform.window.__ltDeferred.fetchNow(os.path.relpath(path).replace(os.sep, '/'), os.path.abspath(path)))
+        if problem:
+            raise FileNotFoundError("Could not fetch %s: %s" % (path, problem))
     return path

@@ -21,12 +21,21 @@ class DeferredFilesTests(unittest.TestCase):
         self.addCleanup(patcher.stop)
         # Spelled out, as a name starting __ written in a class would be mangled
         self.fetch_now = getattr(window, '__ltDeferred').fetchNow
+        # Fetched
+        self.fetch_now.return_value = ''
 
     def test_a_missing_file_is_fetched_in_the_browser(self):
         path = os.path.join('default.ltproj', 'resources', 'music', 'not yet here.ogg')
         with patch.object(sys, 'platform', 'emscripten'):
             self.assertEqual(deferred_files.ensure(path), path)
         self.fetch_now.assert_called_once_with('default.ltproj/resources/music/not yet here.ogg', os.path.abspath(path))
+
+    def test_a_file_the_page_could_not_fetch_raises(self):
+        self.fetch_now.return_value = 'it is in no bundle'
+        path = os.path.join('default.ltproj', 'resources', 'music', 'not yet here.ogg')
+        with patch.object(sys, 'platform', 'emscripten'):
+            with self.assertRaisesRegex(FileNotFoundError, 'it is in no bundle'):
+                deferred_files.ensure(path)
 
     def test_a_file_in_place_is_not_fetched(self):
         with tempfile.NamedTemporaryFile(delete=False) as present:
