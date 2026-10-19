@@ -30,6 +30,25 @@ run_tests:
         - python -m app.engine.codegen.source_generator
         - python -m unittest discover -s app/tests -p 'test*.py'
 
+build_web:
+    stage: test
+    image: "python:3.12.10"
+    only:
+        refs:
+            - merge_requests
+            - master
+    before_script:
+        - python --version
+        - pip install -r utilities/build_tools/web/requirements_web.txt
+    script:
+        - echo "Building default.ltproj for the browser"
+        - python utilities/build_tools/build_web.py default.ltproj
+    artifacts:
+        name: "LT Web Build"
+        paths:
+            - build/web_stage/default/build/web/
+        expire_in: 1 week
+
 build_engine:
     stage: generate_engine
     image: "python:3.12.10"
