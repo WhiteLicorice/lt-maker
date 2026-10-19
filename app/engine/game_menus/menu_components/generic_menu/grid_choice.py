@@ -5,7 +5,6 @@ from typing import Any, Dict, List, Optional, Tuple, Type
 
 from app.constants import WINHEIGHT, WINWIDTH
 from app.data.database.database import DB
-from app.editor.lib.math.math_utils import float_eq
 from app.engine import engine
 from app.engine.base_surf import create_base_surf
 from app.engine.game_menus.animated_options import (BasicKlassOption,
@@ -31,7 +30,7 @@ from app.engine.sound import get_sound_thread
 from app.utilities.enums import Alignments, HAlignment, Orientation, VAlignment
 from app.utilities.str_utils import is_int
 from app.utilities.typing import NID
-from app.utilities.utils import clamp, sign, tuple_add, tuple_sub, calculate_distance
+from app.utilities.utils import clamp, float_eq, sign, tuple_add, tuple_sub, calculate_distance
 
 CHOICE_TYPES: Dict[str, Type[IMenuOption]] = {
     'type_skill': BasicSkillOption,

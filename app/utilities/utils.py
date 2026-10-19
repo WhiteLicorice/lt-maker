@@ -34,6 +34,9 @@ def sign(n: float) -> int:
     else:
         return -1
 
+def float_eq(a: float, b: float, epsilon: float) -> bool:
+    return abs(a - b) < epsilon
+
 def distance(pos1: Tuple[float, float], pos2: Tuple[float, float]) -> float:
     """
     Compute the Euclidean distance between two points.

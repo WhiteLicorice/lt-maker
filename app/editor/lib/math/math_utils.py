@@ -36,6 +36,3 @@ def distance_from_line(p1, p2, q, strict=True):
         y_i = p1[1] + mult * y
 
     return utils.distance(q, (x_i, y_i))
-
-def float_eq(a: float, b: float, epsilon: float):
-    return abs(a - b) < epsilon

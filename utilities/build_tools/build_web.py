@@ -80,8 +80,6 @@ DEFERRED = (('sfx', '.ogg'), ('music', '.ogg'), ('combat_effects', '.png'), ('co
 BUNDLE_SIZE = 4 * 2**20
 # A new project's game_nid (app/data/database/constants.py)
 DEFAULT_GAME_NID = 'LT'
-# The one editor module the engine does import
-EDITOR_MODULES = ('editor/__init__.py', 'editor/lib/math/math_utils.py')
 
 def generate_sources():
     sys.path.insert(0, str(ROOT))
@@ -103,10 +101,6 @@ def stage_files(stage: Path, project: Path):
     ignore = shutil.ignore_patterns('__pycache__', '*.pyc')
     app_ignore = shutil.ignore_patterns('__pycache__', '*.pyc', *APP_EXCLUDES)
     shutil.copytree(ROOT / 'app', stage / 'app', ignore=lambda d, names: app_ignore(d, names) if Path(d) == ROOT / 'app' else ignore(d, names))
-    for module in EDITOR_MODULES:
-        target = stage / 'app' / module
-        target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy(ROOT / 'app' / module, target)
     shutil.copytree(ROOT / 'sprites', stage / 'sprites', ignore=ignore)
     shutil.copytree(ROOT / 'resources', stage / 'resources', ignore=ignore)
     shutil.copytree(project, stage / project.name, ignore=ignore)
