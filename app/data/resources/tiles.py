@@ -4,8 +4,7 @@ import os
 from pathlib import Path
 import re
 import shutil
-from typing import Dict, List, Optional, Set
-from typing_extensions import override
+from typing import Dict, List, Optional, override, Set
 
 from app.constants import AUTOTILE_FRAMES, TILEHEIGHT, TILEWIDTH, TILEX, TILEY
 from app.data.resources.base_catalog import ManifestCatalog

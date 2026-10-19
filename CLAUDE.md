@@ -15,9 +15,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Run all tests serially: `python -m unittest discover -s app/tests -p 'test*.py'` (wrapper: `./utilities/build_tools/run_tests.sh`)
 - Run one test module: `python -m unittest app.tests.test_engine`
 - Build docs: `./docs/make.bat html` (output in `_build/html`)
-- Install dev deps: `pip install -r requirements_dev.txt` (engine-only: `requirements_engine.txt`, editor: `requirements_editor.txt`). Python + PyQt5 + pygame-ce.
+- Install dev deps: `pip install -r requirements_dev.txt` (engine-only: `requirements_engine.txt`, editor: `requirements_editor.txt`). Python 3.12 + PyQt5 + pygame-ce 2.5, the same Python and pygame-ce the browser build runs.
+- Build the browser version: `python utilities/build_tools/build_web.py [project.ltproj]` in a venv with `utilities/build_tools/web/requirements_web.txt` (pygbag). Output in `build/web_stage/<project>/build/web/`; `utilities/build_tools/web/serve.py` serves it to a phone on the local network.
 
-`LT_PROFILE=1` env var enables per-frame timing prints in `driver.py`; `LT_PROFILE_THRESHOLD=<ms>` only prints slow frames.
+`LT_PROFILE=1` env var enables per-frame timing prints in `driver.py`; `LT_PROFILE_THRESHOLD=<ms>` only prints slow frames. `LT_FRAME_STATS=1` prints a summary (`LTPERF`) every 120 frames instead.
+
+The browser build (`sys.platform == 'emscripten'`) cannot start threads (`app/utilities/threads.py` runs work in place there), opens deferred music, sounds and battle sheets through `app/engine/deferred_files.ensure`, and runs the main loop one frame per call (`driver.MainLoop.run_frame`, paced by `run_async`).
 
 ## Codegen
 

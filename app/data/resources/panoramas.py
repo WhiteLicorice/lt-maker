@@ -1,6 +1,5 @@
 from pathlib import Path
-from typing import List, Optional
-from typing_extensions import override
+from typing import List, Optional, override
 
 from app.data.resources.base_catalog import ManifestCatalog
 from app.data.resources.resource_prefab import WithResources

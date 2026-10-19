@@ -1,6 +1,4 @@
-from typing import (Optional, Tuple, Type,
-                    TypeVar)
-from typing_extensions import Protocol
+from typing import Optional, Protocol, Tuple, Type, TypeVar
 
 from app.data.database.components import Component
 from app.utilities.data import Data

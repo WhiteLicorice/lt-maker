@@ -9,7 +9,7 @@ from app.engine.sprites import SPRITES
 from app.engine.sound import get_sound_thread
 from app.engine.input_manager import get_input_manager
 from app.engine.game_state import game
-from app.engine import engine, image_mods, item_system, item_funcs, skill_system
+from app.engine import deferred_files, engine, image_mods, item_system, item_funcs, skill_system
 
 from app.data.resources.combat_anims import CombatAnimation, WeaponAnimation, EffectAnimation
 from app.data.resources.combat_palettes import Palette
@@ -170,7 +170,7 @@ class BattleAnimation():
 
     def load_full_image(self):
         # Only do load stuff if image does not exist already
-        image_full_path = self.anim_prefab.full_path
+        image_full_path = deferred_files.ensure(self.anim_prefab.full_path)
         self.anim_prefab.image = engine.image_load(image_full_path, convert=True)
         colors = self.current_palette.colors.values()
         if file_utils.Pltfm.mac():

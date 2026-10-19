@@ -27,7 +27,7 @@ from app.engine.selection_helper import SelectionHelper
 from app.engine.abilities import ABILITIES, PRIMARY_ABILITIES, OTHER_ABILITIES, TradeAbility, SupplyAbility
 from app.engine.input_manager import get_input_manager
 from app.engine.fluid_scroll import FluidScroll
-import threading
+from app.utilities import threads
 
 import logging
 
@@ -49,12 +49,16 @@ class LoadingState(State):
 
     # For A E S T H E T I C S
     duration = 1000  # How long to wait after we load in everything to actually move to the turn_change state
+    # How many frames of black screen are drawn before loading begins. In the
+    # browser, loading holds the game, and the screen with it, where it starts.
+    # The page shows each frame the game draws on its next one
+    frames_before_loading = 2
 
     def start(self):
         logging.debug("Loading state...")
         self.completed_time = None
-        # magic number, adjust at will
-        self.loading_threads: List[threading.Thread] = []
+        self.frames_waited = 0
+        self.loading_threads: Optional[List[threads.Work]] = None
 
         # stop current music before loading new assets to prevent
         # audio stutter caused by pygame.mixer.Sound() acquiring the
@@ -68,9 +72,11 @@ class LoadingState(State):
         get_sound_thread().flush()
         get_sound_thread().set_music_volume(cf.SETTINGS['music_volume'])
         get_sound_thread().set_sfx_volume(cf.SETTINGS['sound_volume'])
-
-        # load music used in the level
         self.level_nid = game.level_nid
+
+    def start_loading(self):
+        self.loading_threads = []
+        # load music used in the level
         if game.level:
             logging.debug("Loading music for level %s" % self.level_nid)
             level_songs = set(game.level.music.values())
@@ -79,11 +85,16 @@ class LoadingState(State):
                 level_songs.add(music_command.parameters.get('Music'))
             for music_command in inspector.find_all_calls_of_command(event_commands.ChangeMusic(), self.level_nid).values():
                 level_songs.add(music_command.parameters.get('Music'))
-            loading_music_thread = threading.Thread(target=get_sound_thread().load_songs, args=[level_songs])
-            loading_music_thread.start()
-            self.loading_threads.append(loading_music_thread)
+            self.loading_threads.append(threads.start(get_sound_thread().load_songs, (level_songs,)))
 
     def update(self):
+        if self.loading_threads is None:
+            if self.frames_waited == self.frames_before_loading:
+                self.start_loading()
+            else:
+                # This frame draws the black screen
+                self.frames_waited += 1
+            return
         if not self.completed_time and not any([thread.is_alive() for thread in self.loading_threads]):
             self.completed_time = engine.get_time()
         if self.completed_time:
@@ -271,6 +282,8 @@ class PhaseChangeState(MapState):
             game.action_log.set_first_free_action()
 
     def save_state(self):
+        if not save.MAKES_PHASE_SAVES:
+            return
         GAME_NID = str(DB.constants.value('game_nid'))
         if game.phase.get_current() == 'player':
             logging.info("Saving as we enter player phase!")

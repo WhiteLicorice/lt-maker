@@ -1,3 +1,5 @@
+import sys
+
 from app.constants import WINWIDTH, WINHEIGHT
 
 from app.engine import config as cf
@@ -48,6 +50,10 @@ config = [('animation', ['Always', 'Your Turn', 'Combat Only', 'Never'], 0),
           ('confirm_end', bool, 14),
           ('display_hints', bool, 3),
           ('rumble', bool, 15)]
+if sys.platform == 'emscripten':
+    # The browser build's page scales the game to the window itself
+    # (utilities/build_tools/web/page.js), and its display stays the game's own size
+    config = [c for c in config if c[0] != 'screen_size']
 
 config_icons = [engine.subsurface(SPRITES.get('settings_icons'), (0, c[2] * 16, 16, 16)) for c in config]
 

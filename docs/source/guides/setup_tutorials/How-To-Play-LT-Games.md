@@ -1,6 +1,6 @@
 # How to Play LT Games
 
-_last updated 2026-04-01_
+_last updated 2026-10-18_
 
 This guide gives step-by-step instructions on how to start playing LT games on different operating systems.
 
@@ -31,16 +31,15 @@ NOTE: Most creators will ship the blank .exe engine with their game files attach
 
 1. Install the following programs (preferred versions if possible):
 ```
-python==3.11
+python==3.12
 python3pip
-pygame-ce==2.3.2
+pygame-ce==2.5.7
 pyinstaller==6.2.0
-typing-extensions==4.8.0
 PyQt5==5.15.10
 mypy==1.8.0
 mypy-extensions==1.0.0
 ```
-* LT is potentially unstable or will not boot on newer versions of python. While there have been little to no reports of major issues on Linux specifically, do keep that in mind.
+* LT is tested only on Python 3.12, and is potentially unstable or will not boot on other versions. Many current Linux distributions already come with Python 3.12 (type "python3 --version" to see yours); others can install it beside their own with pyenv (https://github.com/pyenv/pyenv). With your system's own Python, install the programs above in a virtual environment inside the lt-maker folder ("python3 -m venv venv", then "source venv/bin/activate" in each new terminal), as most distributions refuse pip installs into the system's Python.
 * Some Linux distributions (mainly Ubuntu and Ubuntu-based distributions) may have trouble installing PyQt5. In that case, try: "sudo apt-get install python3-pyqt5".
 
 2. Clone the following repository to your prefered storage location;
@@ -92,23 +91,22 @@ conda init "$(basename "${SHELL}")"
 8. Perform the following steps before first boot;
 ```
 cd lt-maker
-conda create -n fe-i-lt python=3.11.7
+conda create -n fe-i-lt python=3.12.10
 conda activate fe-i-ltproj
 ```
 
 9. Setup Windows Python;
 ```
-curl -O https://www.python.org/ftp/python/3.11.7/python-3.11.7-amd64.exe
-wine python-3.11.7-amd64.exe
+curl -O https://www.python.org/ftp/python/3.12.10/python-3.12.10-amd64.exe
+wine python-3.12.10-amd64.exe
 ```
 
 10. Install the following requirements IN Wine Python;
 ```
 wine pip install -r
 python3pip
-pygame-ce==2.3.2
+pygame-ce==2.5.7
 pyinstaller==6.2.0
-typing-extensions==4.8.0
 PyQt5==5.15.10
 mypy==1.8.0
 mypy-extensions==1.0.0

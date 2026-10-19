@@ -1,8 +1,7 @@
 from dataclasses import asdict, dataclass, field
 import os
 from pathlib import Path
-from typing import Dict, List, Optional, Set
-from typing_extensions import override
+from typing import Dict, List, Optional, override, Set
 
 from app.data.resources.base_catalog import ManifestCatalog
 from app.data.resources.resource_prefab import WithResources

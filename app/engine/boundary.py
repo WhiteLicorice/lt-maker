@@ -59,6 +59,9 @@ class BoundaryInterface():
         self.old_fog_of_war_surf = None
         self.fog_fade_start = 0
         self.aura_surf = None
+        # Where anything is drawn in surf and aura_surf
+        self.surf_content = None
+        self.aura_surf_content = None
         self.should_reset_surf: bool = False
         self.should_reset_aura_surf: bool = False
         self.frozen: bool = False  # Whether I should update my display surf (generally False, for immediate updates)
@@ -249,8 +252,8 @@ class BoundaryInterface():
                 for x, y in tiles_to_color:
                     image = self.get_color_square(aura_color)
                     self.aura_surf.blit(image, (x * TILEWIDTH, y * TILEHEIGHT))
-        im = engine.subsurface(self.aura_surf, cull_rect)
-        surf.blit(im, (0, 0))
+            self.aura_surf_content = self.aura_surf.get_bounding_rect()
+        engine.blit_layer_view(surf, self.aura_surf, self.aura_surf_content, cull_rect)
         return surf
 
     def draw(self, surf, full_size, cull_rect):
@@ -315,9 +318,9 @@ class BoundaryInterface():
 
                             image = self.create_image(new_grid, x, y, grid_name)
                             self.surf.blit(image, (x * TILEWIDTH, y * TILEHEIGHT))
+            self.surf_content = self.surf.get_bounding_rect()
 
-        im = engine.subsurface(self.surf, cull_rect)
-        surf.blit(im, (0, 0))
+        engine.blit_layer_view(surf, self.surf, self.surf_content, cull_rect)
         return surf
 
     def create_image(self, grid, x, y, grid_name):

@@ -14,7 +14,7 @@ stages:
 
 run_tests:
     stage: test
-    image: "python:3.11.8"
+    image: "python:3.12.10"
     only:
         refs:
             - merge_requests
@@ -30,9 +30,28 @@ run_tests:
         - python -m app.engine.codegen.source_generator
         - python -m unittest discover -s app/tests -p 'test*.py'
 
+build_web:
+    stage: test
+    image: "python:3.12.10"
+    only:
+        refs:
+            - merge_requests
+            - master
+    before_script:
+        - python --version
+        - pip install -r utilities/build_tools/web/requirements_web.txt
+    script:
+        - echo "Building default.ltproj for the browser"
+        - python utilities/build_tools/build_web.py default.ltproj
+    artifacts:
+        name: "LT Web Build"
+        paths:
+            - build/web_stage/default/build/web/
+        expire_in: 1 week
+
 build_engine:
     stage: generate_engine
-    image: "python:3.11.8"
+    image: "python:3.12.10"
     extends:
     - .shared_windows_runners
     except: # If this double builds consider changing to only: pushes
@@ -41,19 +60,19 @@ build_engine:
     only:
         - release
     before_script:
-        - choco install -y python --version=3.11.8 --allow-downgrade
-        - "C:\\Python311\\python.exe -m pip install -r requirements_engine.txt"
-        - "C:\\Python311\\python.exe -m pip install pywin32"
+        - choco install -y python --version=3.12.10 --allow-downgrade
+        - "C:\\Python312\\python.exe -m pip install -r requirements_engine.txt"
+        - "C:\\Python312\\python.exe -m pip install pywin32"
         # Necessary to use setuptools < 70 until we upgrade to Pyinstaller v6.7.0
-        - "C:\\Python311\\python.exe -m pip install setuptools<70 --upgrade"
+        - "C:\\Python312\\python.exe -m pip install setuptools<70 --upgrade"
         - echo "Prereqs successfully installed"
     script:
         - echo "Generating component files"
-        - "C:\\Python311\\python.exe -m app.engine.codegen.source_generator"
+        - "C:\\Python312\\python.exe -m app.engine.codegen.source_generator"
         - start powershell
         - echo "Building generic engine..."
         - cp ./utilities/build_tools/generic_engine.spec .
-        - "C:\\Python311\\Scripts\\pyinstaller.exe -y generic_engine.spec"
+        - "C:\\Python312\\Scripts\\pyinstaller.exe -y generic_engine.spec"
         - rm generic_engine.spec -fo
         - mkdir lt_engine
         - mv dist/lt_engine ./lt_engine/lt_engine
@@ -71,7 +90,7 @@ build_engine:
 
 build_editor:
     stage: generate_editor
-    image: "python:3.11.8"
+    image: "python:3.12.10"
     extends:
     - .shared_windows_runners
     except: # If this double builds consider changing to only: pushes
@@ -80,19 +99,19 @@ build_editor:
     only:
         - release
     before_script:
-        - choco install -y python --version=3.11.8 --allow-downgrade
-        - "C:\\Python311\\python.exe -m pip install -r requirements_editor.txt"
-        - "C:\\Python311\\python.exe -m pip install pywin32"
+        - choco install -y python --version=3.12.10 --allow-downgrade
+        - "C:\\Python312\\python.exe -m pip install -r requirements_editor.txt"
+        - "C:\\Python312\\python.exe -m pip install pywin32"
         # Necessary to use setuptools < 70 until we upgrade to Pyinstaller v6.7.0
-        - "C:\\Python311\\python.exe -m pip install setuptools<70 --upgrade"
+        - "C:\\Python312\\python.exe -m pip install setuptools<70 --upgrade"
         - echo "Prereqs successfully installed"
     script:
         - echo "Generating component files"
-        - "C:\\Python311\\python.exe -m app.engine.codegen.source_generator"
+        - "C:\\Python312\\python.exe -m app.engine.codegen.source_generator"
         - start powershell
         - echo "Now building main editor..."
         - cp ./utilities/build_tools/editor.spec .
-        - "C:\\Python311\\Scripts\\pyinstaller.exe -y editor.spec"
+        - "C:\\Python312\\Scripts\\pyinstaller.exe -y editor.spec"
         - rm editor.spec -fo
         - mkdir lt_editor
         - mv dist/lt_editor ./lt_editor/lt_editor
@@ -113,7 +132,7 @@ build_editor:
 
 build_map_maker:
     stage: generate_map_maker
-    image: "python:3.11.8"
+    image: "python:3.12.10"
     extends:
     - .shared_windows_runners
     except: # If this double builds consider changing to only: pushes
@@ -122,17 +141,17 @@ build_map_maker:
     only:
         - release
     before_script:
-        - choco install -y python --version=3.11.8 --allow-downgrade
-        - "C:\\Python311\\python.exe -m pip install -r requirements_editor.txt"
-        - "C:\\Python311\\python.exe -m pip install pywin32"
+        - choco install -y python --version=3.12.10 --allow-downgrade
+        - "C:\\Python312\\python.exe -m pip install -r requirements_editor.txt"
+        - "C:\\Python312\\python.exe -m pip install pywin32"
         # Necessary to use setuptools < 70 until we upgrade to Pyinstaller v6.7.0
-        - "C:\\Python311\\python.exe -m pip install setuptools<70 --upgrade"
+        - "C:\\Python312\\python.exe -m pip install setuptools<70 --upgrade"
         - echo "Prereqs successfully installed"
     script:
         - start powershell
         - echo "Building map maker..."
         - cp ./utilities/build_tools/map_maker.spec .
-        - "C:\\Python311\\Scripts\\pyinstaller.exe -y map_maker.spec"
+        - "C:\\Python312\\Scripts\\pyinstaller.exe -y map_maker.spec"
         - rm map_maker.spec -fo
         - mkdir lt_map_maker
         - mv dist/lt_map_maker ./lt_map_maker/lt_map_maker

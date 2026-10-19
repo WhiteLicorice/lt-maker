@@ -1,14 +1,13 @@
-import os, shutil, glob, re
+import os, shutil, glob, re, sys
 from datetime import datetime
 from typing import Optional
-import threading
 
 try:
     import cPickle as pickle
 except ImportError:
     import pickle
 
-from app.utilities import str_utils
+from app.utilities import str_utils, threads
 from app.data.database.database import DB
 
 import app.engine.config as cf
@@ -17,7 +16,16 @@ from app.engine.objects.skill import SkillObject
 
 import logging
 
-SAVE_THREAD = None
+SAVE_THREAD: Optional[threads.Work] = None
+# A save at the start of every phase, for the title screen's list of all saves
+# (with the debug or all_saves setting). The browser build (sys.platform
+# 'emscripten') makes none: it keeps its saves in the browser's storage, which
+# they would soon fill
+MAKES_PHASE_SAVES = sys.platform != 'emscripten'
+# A copy of the save at the start of every chapter, for the editor's "Test
+# Current Chapter from Preload". The browser build makes none, for the same
+# reason, and has no editor to read them
+MAKES_PRELOAD_SAVES = sys.platform != 'emscripten'
 
 def GAME_NID():
     return str(DB.constants.value('game_nid'))
@@ -144,7 +152,7 @@ def save_io(s_dict, meta_dict, old_slot, slot, force_loc=None, name=None):
             shutil.copy(restart_src_meta, r_save_meta)
 
     # For preload
-    if meta_dict['kind'] == 'start':
+    if meta_dict['kind'] == 'start' and MAKES_PRELOAD_SAVES:
         preload_saves = glob.glob('saves/' + GAME_NID() + '-preload-' + str(meta_dict['level_nid']) + '-*.p')
         nids = [p.split('-')[-1][:-2] for p in preload_saves]
         unique_nid = str(str_utils.get_next_int('0', nids))
@@ -175,8 +183,7 @@ def suspend_game(game_state, kind, slot: int = None, name=None, display_name=Non
         force_loc = None
 
     global SAVE_THREAD
-    SAVE_THREAD = threading.Thread(target=save_io, args=(s_dict, meta_dict, old_save_slot, slot, force_loc, name))
-    SAVE_THREAD.start()
+    SAVE_THREAD = threads.start(save_io, (s_dict, meta_dict, old_save_slot, slot, force_loc, name))
 
 def load_game(game_state, save_slot: SaveSlot):
     """

@@ -823,7 +823,7 @@ class UnitSprite():
             frame = int((current_time - self.death_fade_start) * 60 / 1000 + 0.5)
             faded = self.death_fade_image(image, frame)
             if faded:
-                # Onto the map itself, not the units' see-through layer (see MapView.draw_units)
+                # It adds onto what is below, so onto the map itself, below the other units (see MapView.draw_units)
                 surf.blit(faded, topleft, None, engine.BLEND_RGB_ADD)
         else:
             surf.blit(image, topleft)
