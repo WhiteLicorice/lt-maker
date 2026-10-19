@@ -45,6 +45,12 @@ class Handler(SimpleHTTPRequestHandler):
             return
         size = path.stat().st_size
         start, end = int(wanted[1]), min(int(wanted[2]), size - 1)
+        if start > end:
+            self.send_response(416)
+            self.send_header('Content-Range', 'bytes */%d' % size)
+            self.send_header('Content-Length', '0')
+            self.end_headers()
+            return
         with path.open('rb') as file:
             file.seek(start)
             data = file.read(end - start + 1)
