@@ -35,7 +35,6 @@ python==3.12
 python3pip
 pygame-ce==2.5.7
 pyinstaller==6.2.0
-typing-extensions==4.8.0
 PyQt5==5.15.10
 mypy==1.8.0
 mypy-extensions==1.0.0
@@ -108,7 +107,6 @@ wine pip install -r
 python3pip
 pygame-ce==2.5.7
 pyinstaller==6.2.0
-typing-extensions==4.8.0
 PyQt5==5.15.10
 mypy==1.8.0
 mypy-extensions==1.0.0

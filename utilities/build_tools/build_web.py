@@ -25,8 +25,6 @@ import sys
 import time
 from pathlib import Path
 
-import typing_extensions
-
 # The Python pygbag 0.9.3 runs in the browser. The build runs under the same,
 # so that the code it generates, and anything that differs between versions,
 # is as the browser will have it
@@ -105,8 +103,6 @@ def stage_files(stage: Path, project: Path):
     shutil.copytree(ROOT / 'resources', stage / 'resources', ignore=ignore)
     shutil.copytree(project, stage / project.name, ignore=ignore)
     shutil.copy(ROOT / 'favicon.ico', stage / 'favicon.ico')
-    # Not in the browser's Python
-    shutil.copy(typing_extensions.__file__, stage / 'typing_extensions.py')
     shutil.copy(WEB_DIR / 'main.py', stage / 'main.py')
     shutil.copy(WEB_DIR / 'bench.py', stage / 'bench.py')
     shutil.copy(WEB_DIR / 'page.js', stage / 'page.js')

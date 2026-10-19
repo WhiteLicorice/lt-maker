@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Set, Tuple
-from typing_extensions import override
+from typing import TYPE_CHECKING, List, Optional, override, Set, Tuple
 
 from app.data.category import CategorizedCatalog
 from app.data.resources.base_catalog import ManifestCatalog

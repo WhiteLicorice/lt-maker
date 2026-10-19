@@ -90,12 +90,6 @@ pyinstaller
 python3 -m pip install pyinstaller==6.2.0
 ```
 
-typing-extensions
-
-```
-python3 -m pip install typing-extensions==4.8.0
-```
-
 PyQt5
 ```
 python3 -m pip install PyQt5==5.15.10

@@ -1,8 +1,7 @@
 import functools
 from enum import Enum
-from typing import (Callable, Dict, Generic, List, Optional, Tuple, Type,
-                    TypeVar)
-from typing_extensions import Protocol
+from typing import (Callable, Dict, Generic, List, Optional, Protocol, Tuple,
+                    Type, TypeVar)
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFontMetrics, QIcon

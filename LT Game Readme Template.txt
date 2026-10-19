@@ -137,7 +137,6 @@ https://github.com/pyenv/pyenv/wiki#suggested-build-environment
 3) Because of pyenv, the following programs must be installed in a terminal window that is inside the "lt-maker" folder:
     pygame-ce==2.5.7
     pyinstaller==6.2.0
-    typing-extensions==4.8.0
     PyQt5==5.15.10**
     mypy==1.8.0
     mypy-extensions==1.0.0
@@ -199,7 +198,6 @@ Download that repository and store it in your preferred storage location.
     python3pip
     pygame-ce==2.5.7
     pyinstaller==6.2.0
-    typing-extensions==4.8.0
     PyQt5==5.15.10
     mypy==1.8.0
     mypy-extensions==1.0.0

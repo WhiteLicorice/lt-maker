@@ -1,6 +1,5 @@
 from pathlib import Path
-from typing import List, Optional, Set
-from typing_extensions import override
+from typing import List, Optional, override, Set
 
 from app.constants import FRAMERATE
 from app.data.resources.resource_prefab import WithResources

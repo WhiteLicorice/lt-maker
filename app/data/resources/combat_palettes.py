@@ -3,8 +3,7 @@ import os
 from pathlib import Path
 import re
 import shutil
-from typing import Dict, List, Optional, Set
-from typing_extensions import override
+from typing import Dict, List, Optional, override, Set
 from app.data.resources.resource_prefab import WithResources
 from app.utilities.data import Prefab
 

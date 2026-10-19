@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Tuple
-from typing_extensions import override
+from typing import Any, Dict, List, override, Tuple
 
 from PyQt5.QtWidgets import (QCheckBox, QDoubleSpinBox, QHBoxLayout, QLabel,
                              QLineEdit, QSpinBox, QWidget)

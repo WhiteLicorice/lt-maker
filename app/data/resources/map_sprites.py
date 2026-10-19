@@ -1,8 +1,7 @@
 import os
 from pathlib import Path
 import shutil
-from typing import List, Optional, Set
-from typing_extensions import override
+from typing import List, Optional, override, Set
 
 from app.data.category import CategorizedCatalog
 from app.data.resources.base_catalog import ManifestCatalog

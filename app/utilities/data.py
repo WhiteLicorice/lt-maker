@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import ClassVar, Dict, Generic, List, Optional, Tuple, Type, TypeVar
-from typing_extensions import Protocol
+from typing import ClassVar, Dict, Generic, List, Optional, Protocol, Tuple, Type, TypeVar
 
 from app.utilities.typing import NID
 
