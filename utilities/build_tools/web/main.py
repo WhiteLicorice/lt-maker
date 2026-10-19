@@ -6,6 +6,8 @@ under CPython compiled to WebAssembly (sys.platform == 'emscripten').
 The page's address takes options:
     ?level=<nid>            starts that level as the editor's Test Chapter does,
                             instead of the title screen
+    ?perf                   prints a summary of frame times (LTPERF) every 120
+                            frames, as LT_FRAME_STATS does on the desktop
     ?bench                  times a few kinds of work (bench.py) before starting,
                             to compare one browser or device with another
     ?cprofile=<start>,<n>   splits frames start to start + n between pygame's
@@ -106,8 +108,9 @@ OPTIONS = page_options()
 if 'report' in OPTIONS:
     start_reporting()
 loaded('main.py running')
-# Read by the driver at import
-os.environ['LT_FRAME_STATS'] = '1'
+if 'perf' in OPTIONS:
+    # Read by the driver at import
+    os.environ['LT_FRAME_STATS'] = '1'
 
 # The engine is imported in main(), once the saves are back: it reads the
 # player's settings from them as it is imported
@@ -181,14 +184,20 @@ FRAME_LOG_JS = """(() => {
   }, 2000);
 })();"""
 
-async def restore_saves():
+def read_game_nid(project: str) -> str:
+    """The project's game_nid, read before the engine is imported, which needs the saves back first"""
+    constants = dict(json.loads(Path(project, 'game_data', 'constants.json').read_text()))
+    return str(constants['game_nid'])
+
+async def restore_saves(game_nid: str):
     """
-    Puts the saves page.js kept in the browser back in the saves folder, the
-    one the engine reads and writes, and from then on keeps what it writes
+    Puts the saves page.js kept in the browser for this game back in the saves
+    folder, the one the engine reads and writes, and from then on keeps what
+    it writes
     """
     import platform
     os.makedirs('saves', exist_ok=True)
-    platform.window.__ltSaves.restore(os.getcwd() + '/saves')
+    platform.window.__ltSaves.restore(os.getcwd() + '/saves', game_nid)
     while not json.loads(str(platform.window.eval('JSON.stringify(__ltSaves.ready)'))):
         await asyncio.sleep(0)
     loaded('saves restored')
@@ -227,7 +236,8 @@ async def pump_touch_controls():
 async def main():
     import platform
     platform.window.eval(Path('page.js').read_text())
-    await restore_saves()
+    project = find_project()
+    await restore_saves(read_game_nid(project))
     from app.constants import VERSION
     from app.data.metadata import Metadata
     from app.data.resources.resources import RESOURCES
@@ -253,7 +263,6 @@ async def main():
         import bench
         pygame.init()
         bench.run()
-    project = find_project()
     metadata = dataclass_from_dict(Metadata, json.loads(Path(project, 'metadata.json').read_text()))
     if metadata.has_fatal_errors:
         raise ValueError("Fatal errors detected in game. Aborting launch.")
@@ -263,7 +272,7 @@ async def main():
     loaded('database loaded')
     title = DB.constants.value('title')
     platform.window.__ltSetTitle(title)
-    platform.window.__ltSaves.offer(str(DB.constants.value('game_nid')), title)
+    platform.window.__ltSaves.offer(title)
     level_nid = OPTIONS.get('level')
     driver.start(title, from_editor=bool(level_nid))
     print('Mixer (frequency, format, channels):', pygame.mixer.get_init())

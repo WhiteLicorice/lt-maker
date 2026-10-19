@@ -78,6 +78,8 @@ DEFERRED = (('sfx', '.ogg'), ('music', '.ogg'), ('combat_effects', '.png'), ('co
 # enough files for any host (itch.io takes 1,000 at most), and small enough
 # that the soonest wanted arrive soon
 BUNDLE_SIZE = 4 * 2**20
+# A new project's game_nid (app/data/database/constants.py)
+DEFAULT_GAME_NID = 'LT'
 # The one editor module the engine does import
 EDITOR_MODULES = ('editor/__init__.py', 'editor/lib/math/math_utils.py')
 
@@ -117,7 +119,21 @@ def stage_files(stage: Path, project: Path):
     # main.py prints it, to tell which build a device ran
     (stage / 'built.txt').write_text(time.strftime('%Y-%m-%d %H:%M:%S'), encoding='utf-8')
 
-def defer_files(stage: Path, project: Path, web: Path):
+def read_constants(project: Path) -> dict:
+    return dict(json.loads((project / 'game_data' / 'constants.json').read_text(encoding='utf-8')))
+
+def warn_of_shared_game_nid(constants: dict):
+    '''
+    The page keeps a game's saves in the browser by its game_nid (page.js). A
+    site that serves many games from one address, as itch.io does, would have
+    two of them with the same game_nid share their saves
+    '''
+    if constants['game_nid'] == DEFAULT_GAME_NID:
+        print("Warning: this project's game_nid is still the default, %s. Another game "
+              "with the same one, on the same site, would share its saves in the browser. "
+              "Give it a game_nid of its own in the editor's constants" % DEFAULT_GAME_NID)
+
+def defer_files(stage: Path, project: Path, web: Path, constants: dict):
     '''
     Moves the files DEFERRED names out of the stage, and so out of the game's
     download, into bundles in web/deferred/ (0.bin, 1.bin, ...), for the page
@@ -127,7 +143,6 @@ def defer_files(stage: Path, project: Path, web: Path):
     each file in it: [{"name": "0.bin", "files": [[path, offset, size], ...]}, ...].
     The title screen's music stays, as the game plays it at once
     '''
-    constants = dict(json.loads((project / 'game_data' / 'constants.json').read_text(encoding='utf-8')))
     title_music = constants.get('music_main')
     keep = {'%s%s.ogg' % (title_music, suffix) for suffix in ('', '-intro', '-battle')} if title_music else set()
     deferred = web / 'deferred'
@@ -161,6 +176,8 @@ def main(args: list[str]):
     project = (ROOT / (names[0] if names else 'default.ltproj')).resolve()
     if not project.is_dir():
         raise SystemExit('No project at %s' % project)
+    constants = read_constants(project)
+    warn_of_shared_game_nid(constants)
 
     generate_sources()
     stage = ROOT / 'build' / 'web_stage' / project.stem
@@ -171,7 +188,7 @@ def main(args: list[str]):
     web.mkdir(parents=True, exist_ok=True)
     for image in PAGE_IMAGES:
         shutil.copy(WEB_DIR / image, web / image)
-    defer_files(stage, project, web)
+    defer_files(stage, project, web, constants)
 
     command = [sys.executable, '-m', 'pygbag', '--title', project.stem, '--ume_block', '1']
     if not serve:

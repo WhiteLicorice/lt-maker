@@ -96,7 +96,8 @@ def main(args: list[str]):
         if cpu_throttle != 1:
             cdp = page.context.new_cdp_session(page)
             cdp.send('Emulation.setCPUThrottlingRate', {'rate': cpu_throttle})
-        page.goto(url)
+        # ?perf has the engine print its LTPERF lines (main.py)
+        page.goto(url + ('&' if '?' in url else '?') + 'perf')
 
         def wait(seconds: float):
             end = time.time() + seconds

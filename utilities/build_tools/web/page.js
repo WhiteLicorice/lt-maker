@@ -310,19 +310,21 @@
   // The game's filesystem is only memory, and empties when the page closes.
   // The saves folder (save files, settings, records) is kept in the browser's
   // IndexedDB instead: restore puts it back before the engine starts, and from
-  // then on each file written or removed there is written to IndexedDB at the
-  // next look, every second and when the page is hidden. A page at another
-  // address keeps its own
-  const SAVES_LOOK_EVERY = 1000;  // ms
-  const SAVES_DATABASE = 'lex-talionis saves ' + location.pathname;
-  // Once restored: the saves folder, and the database keeping it (null without IndexedDB)
-  let savesFolder = null, savesDatabase = null;
+  // then on each file written or removed there is written to IndexedDB as soon
+  // as the engine's frame hands the page back. Each game keeps its own, by its
+  // game_nid, so that a new upload of the game, at another address, keeps the
+  // saves of the last. Two games with the same game_nid on one site share them
+  const SAVES_DATABASE = 'lex-talionis saves ';
+  // Once restored: the saves folder, the game's nid, and the database keeping
+  // the folder (null without IndexedDB)
+  let savesFolder = null, savesGameNid = null, savesDatabase = null;
   window.__ltSaves = {
     ready: false,
-    restore(folder) {
+    restore(folder, gameNid) {
       savesFolder = folder;
+      savesGameNid = gameNid;
       const opened = new Promise((resolve, reject) => {
-        const request = indexedDB.open(SAVES_DATABASE, 1);
+        const request = indexedDB.open(SAVES_DATABASE + gameNid, 1);
         request.onupgradeneeded = () => request.result.createObjectStore('files');
         request.onsuccess = () => resolve(request.result);
         request.onerror = () => reject(request.error);
@@ -357,9 +359,25 @@
             for (const name of changed.concat(removed)) written.set(name, null);
           };
         };
-        setInterval(look, SAVES_LOOK_EVERY);
-        document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') look(); });
-        window.addEventListener('pagehide', look);
+        // Each file closed, removed or renamed in the folder calls for a look.
+        // The engine's frame holds the page, so the look comes after it, once
+        // for however many files the frame wrote
+        let looking = false;
+        const inFolder = (path) => typeof path === 'string' && path.startsWith(folder + '/');
+        const after = (name, pathsOf) => {
+          const original = python.FS[name];
+          python.FS[name] = function (...args) {
+            const result = original.apply(this, args);
+            if (!looking && pathsOf(...args).some(inFolder)) {
+              looking = true;
+              setTimeout(() => { looking = false; look(); }, 0);
+            }
+            return result;
+          };
+        };
+        after('close', (stream) => [stream.path]);
+        after('unlink', (path) => [path]);
+        after('rename', (oldPath, newPath) => [oldPath, newPath]);
         // Asks the browser not to clear them when it runs short of space
         if (navigator.storage && navigator.storage.persist) {
           navigator.storage.persist().then((granted) => console.log('LTSAVES kept for good:', granted));
@@ -368,9 +386,9 @@
         console.warn('LTSAVES no IndexedDB, so saves last only until the page closes:', error);
       }).finally(() => { window.__ltSaves.ready = true; });
     },
-    // Adds the SAVES button, for the game whose files start with gameNid and a dash
-    offer(gameNid, title) {
-      savesButton(gameNid + '-', title);
+    // Adds the SAVES button, for the game's files: those starting with its nid and a dash
+    offer(title) {
+      savesButton(savesGameNid + '-', title);
     },
   };
   // Each file in the folder, with when it last changed and its size
@@ -617,41 +635,66 @@
       gl_FragColor = texture2D(game, (floor(texel) + blend) / gameSize);
     }`;
 
-  // Returns the canvas it draws on, or null where the browser has no WebGL
-  function startScreen(source) {
+  // Returns the canvas it draws on, or null where the browser has no WebGL or
+  // can't build the shaders. The browser may take the canvas's WebGL away
+  // while the page runs, as iOS does to a page in the background short of
+  // memory; screen.drawing() is false until it gives it back, and changed is
+  // called each time that turns, for SDL's own canvas to be shown meanwhile
+  function startScreen(source, changed) {
     const screen = document.createElement('canvas');
     screen.id = 'lt-screen';
     const gl = screen.getContext('webgl', {alpha: false, antialias: false});
     if (!gl) return null;
-    const compile = (type, text) => {
-      const shader = gl.createShader(type);
-      gl.shaderSource(shader, text);
-      gl.compileShader(shader);
-      return shader;
+    // The shaders' sizes, once WebGL is set up, or null if it could not be
+    const setUp = () => {
+      const compile = (type, text) => {
+        const shader = gl.createShader(type);
+        gl.shaderSource(shader, text);
+        gl.compileShader(shader);
+        return shader;
+      };
+      const program = gl.createProgram();
+      gl.attachShader(program, compile(gl.VERTEX_SHADER, VERTEX));
+      gl.attachShader(program, compile(gl.FRAGMENT_SHADER, FRAGMENT));
+      gl.linkProgram(program);
+      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        console.warn('LTSCREEN could not build the shaders:', gl.getProgramInfoLog(program));
+        return null;
+      }
+      gl.useProgram(program);
+      gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+      const corner = gl.getAttribLocation(program, 'corner');
+      gl.enableVertexAttribArray(corner);
+      gl.vertexAttribPointer(corner, 2, gl.FLOAT, false, 0, 0);
+      gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      return {gameSize: gl.getUniformLocation(program, 'gameSize'),
+              screenSize: gl.getUniformLocation(program, 'screenSize')};
     };
-    const program = gl.createProgram();
-    gl.attachShader(program, compile(gl.VERTEX_SHADER, VERTEX));
-    gl.attachShader(program, compile(gl.FRAGMENT_SHADER, FRAGMENT));
-    gl.linkProgram(program);
-    gl.useProgram(program);
-    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
-    const corner = gl.getAttribLocation(program, 'corner');
-    gl.enableVertexAttribArray(corner);
-    gl.vertexAttribPointer(corner, 2, gl.FLOAT, false, 0, 0);
-    gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    const gameSize = gl.getUniformLocation(program, 'gameSize');
-    const screenSize = gl.getUniformLocation(program, 'screenSize');
+    let sizes = setUp();
+    if (!sizes) return null;
+    screen.drawing = () => sizes !== null;
+    screen.addEventListener('webglcontextlost', (event) => {
+      // Without this the browser never gives it back
+      event.preventDefault();
+      sizes = null;
+      console.warn('LTSCREEN lost WebGL; showing the game unfiltered until it is back');
+      changed();
+    });
+    screen.addEventListener('webglcontextrestored', () => {
+      sizes = setUp();
+      changed();
+    });
     const draw = () => {
-      if (source.width > 1) {
+      if (sizes && source.width > 1) {
         gl.viewport(0, 0, screen.width, screen.height);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
-        gl.uniform2f(gameSize, source.width, source.height);
-        gl.uniform2f(screenSize, screen.width, screen.height);
+        gl.uniform2f(sizes.gameSize, source.width, source.height);
+        gl.uniform2f(sizes.screenSize, screen.width, screen.height);
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
       }
       requestAnimationFrame(draw);
@@ -683,8 +726,8 @@
       return logo;
     });
     const pad = showPad ? buildPad() : null;
-    // SDL's canvas stays where the screen is, unseen, to take the mouse
-    const screen = startScreen(canvas);
+    // SDL's canvas stays where the screen is, unseen while the screen draws, to take the mouse
+    const screen = startScreen(canvas, () => layout());
 
     // How far in from each edge of the window the phone's notch, status bar
     // and home bar reach (the page draws under them, viewport-fit=cover)
@@ -718,17 +761,19 @@
       }
       const left = inset.left + Math.round((room.width - w) / 2);
       const top = inset.top + (pad && portrait ? 0 : Math.round((room.height - h) / 2));
+      const drawing = screen !== null && screen.drawing();
       const wanted = {
         position: 'absolute', margin: '0px', right: 'auto', bottom: 'auto',
         width: w + 'px', height: h + 'px', left: left + 'px', top: top + 'px',
-        opacity: screen ? '0' : '1',
+        opacity: drawing ? '0' : '1',
       };
       // Only on a change, as a change calls this again (below)
       for (const [property, value] of Object.entries(wanted)) {
         if (canvas.style[property] !== value) canvas.style[property] = value;
       }
       if (screen) {
-        Object.assign(screen.style, {width: wanted.width, height: wanted.height, left: wanted.left, top: wanted.top});
+        Object.assign(screen.style, {width: wanted.width, height: wanted.height, left: wanted.left, top: wanted.top,
+                                     visibility: drawing ? 'visible' : 'hidden'});
         // Setting its size clears it, so only on a change
         if (screen.width !== Math.round(w * dpr)) screen.width = Math.round(w * dpr);
         if (screen.height !== Math.round(h * dpr)) screen.height = Math.round(h * dpr);
