@@ -511,12 +511,20 @@ class GameQueryEngine():
             return new_position
         return None
 
-    def check_advantage(self, unit, target, item1, item2) -> WeaponAdvantage:
-        """Returns which way the weapon triangle leans for the unit (accounting for reavers).
+    def _overall_advantage(self, unit, target, item1, item2) -> WeaponAdvantage:
+        from app.engine import combat_calcs
+        unit   = self._resolve_to_unit(unit)
+        target = self._resolve_to_unit(target)
+        item1  = self.get_item(unit, item1)
+        item2  = self.get_item(target, item2)
+        return combat_calcs.compute_overall_advantage(unit, target, item1, item2)
+
+    def check_advantage(self, unit, target, item1, item2) -> bool:
+        """Checks whether the weapon triangle favors the unit (accounting for reavers).
         An item that only shows an advantage or disadvantage arrow does not count.
 
         Example usage:
-        * `check_advantage(unit, target, item, target.get_weapon()) == 'advantage'`
+        * `check_advantage(unit, target, item, target.get_weapon())`
 
         Args:
             unit: unit in question
@@ -525,12 +533,43 @@ class GameQueryEngine():
             item2: the target's item
 
         Returns:
-            WeaponAdvantage: 'advantage', 'disadvantage' or 'neutral'.
-            It has no truth value of its own, so compare it against one of those.
+            True if you have advantage, False otherwise.
         """
-        from app.engine import combat_calcs
-        unit   = self._resolve_to_unit(unit)
-        target = self._resolve_to_unit(target)
-        item1  = self.get_item(unit, item1)
-        item2  = self.get_item(target, item2)
-        return combat_calcs.compute_overall_advantage(unit, target, item1, item2)
+        return self._overall_advantage(unit, target, item1, item2) == 'advantage'
+
+    def check_no_triangle(self, unit, target, item1, item2) -> bool:
+        """Checks whether the weapon triangle favors neither side (accounting for reavers).
+        Also true when either item takes no part in the triangle, such as no weapon at all.
+        An item that only shows an advantage or disadvantage arrow does not count.
+
+        Example usage:
+        * `check_no_triangle(unit, target, item, target.get_weapon())`
+
+        Args:
+            unit: unit in question
+            target: unit it is fighting
+            item1: the unit's item
+            item2: the target's item
+
+        Returns:
+            False if you have advantage or disadvantage, True if neither.
+        """
+        return self._overall_advantage(unit, target, item1, item2) == 'neutral'
+
+    def check_disadvantage(self, unit, target, item1, item2) -> bool:
+        """Checks whether the weapon triangle favors the target (accounting for reavers).
+        An item that only shows an advantage or disadvantage arrow does not count.
+
+        Example usage:
+        * `check_disadvantage(unit, target, item, target.get_weapon())`
+
+        Args:
+            unit: unit in question
+            target: unit it is fighting
+            item1: the unit's item
+            item2: the target's item
+
+        Returns:
+            True if you have disadvantage, False otherwise.
+        """
+        return self._overall_advantage(unit, target, item1, item2) == 'disadvantage'
