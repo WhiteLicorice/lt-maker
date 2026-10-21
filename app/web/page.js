@@ -238,8 +238,8 @@
   }
 
   // The files the build left out of the game's download, in bundles that
-  // deferred.json lists, the soonest wanted first (build_web.py's
-  // defer_files). The bundles are fetched a few at a time, and their files
+  // deferred.json lists, the soonest wanted first (web_export.py's
+  // _write_bundles). The bundles are fetched a few at a time, and their files
   // put in the game's filesystem beside the rest, under root. The engine
   // fetches any it opens before they arrive itself, with fetchNow
   // (app/engine/deferred_files.py)

@@ -52,7 +52,7 @@ config = [('animation', ['Always', 'Your Turn', 'Combat Only', 'Never'], 0),
           ('rumble', bool, 15)]
 if sys.platform == 'emscripten':
     # The browser build's page scales the game to the window itself
-    # (utilities/build_tools/web/page.js), and its display stays the game's own size
+    # (app/web/page.js), and its display stays the game's own size
     config = [c for c in config if c[0] != 'screen_size']
 
 config_icons = [engine.subsurface(SPRITES.get('settings_icons'), (0, c[2] * 16, 16, 16)) for c in config]
