@@ -61,7 +61,11 @@ TEMPLATE_VALUES = {
     'xtermjs': '1',
     'width': '1280',
     'height': '720',
-    'ume_block': '1',
+    # pygbag would hold the game until a click or a touch, as a browser lets a
+    # page play sound only once it has been touched. In itch.io's frame on an
+    # iPhone, no touch reaches the page until the game lays it out, so the game
+    # starts at once, and page.js starts its sound on the first touch
+    'ume_block': '0',
     'can_close': '0',
     'archive': ARCHIVE,
     'autorun': '0',
@@ -106,25 +110,13 @@ HEAD_ADDITIONS = '''
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
 '''
-# Added to the end of the page, to run before the game does. pygbag starts the
-# game on the first click after loading, as a browser lets a page play sound
-# only once it has been touched. iOS sends no click for a tap on most of a
-# page, so a tap would not start it; any touch does here
+# Added to the end of the page
 BODY_ADDITIONS = '''
 <style>
   body { background: radial-gradient(ellipse at center, #1d2856 0%, #151d40 55%, #0d1230 100%) !important; }
   #infobox { background: rgba(13, 18, 48, 0.9) !important; color: #fff07a !important;
              border: 2px solid rgba(255, 236, 110, 0.6); border-radius: 12px; font-family: sans-serif; }
 </style>
-<script>
-  for (const name of ['touchend', 'pointerup']) {
-    window.addEventListener(name, () => {
-      if (window.MM && !MM.UME) {
-        MM.UME = 1;
-      }
-    }, {passive: true, capture: true});
-  }
-</script>
 '''
 
 # What the page fetches while the game runs rather than in the game's download,
@@ -248,18 +240,22 @@ def build(project: Path, web_dir: Path, progress: Optional[Progress] = None):
 
 def _write_bundles(deferred: list[Path], project: Path, web_dir: Path, advance: Callable[[], None]):
     '''
-    Puts the deferred files in bundles in web_dir/deferred/ (0.bin, 1.bin, ...),
+    Puts the deferred files in bundles in web_dir/deferred/ (0.zip, 1.zip, ...),
     for the page to fetch while the game runs. A bundle is its files' bytes one
     after another, in the order the game is likely to want them.
     web_dir/deferred.json lists the bundles in that order, each with the path,
     offset and size of each file in it, the path as main.py's folder holds it:
-    [{"name": "0.bin", "files": [[path, offset, size], ...]}, ...]
+    [{"name": "0.zip", "files": [[path, offset, size], ...]}, ...]
+    A bundle is no zip, but is named as one so that a host serves it as it is.
+    itch.io serves a .bin by what it guesses from the first bytes (application/ogg),
+    and its CDN then compresses it, answering a request for some of the bundle's
+    bytes with those of the compressed bundle, which no browser can open
     '''
     (web_dir / 'deferred').mkdir()
     bundles = []
     for source in deferred:
         if not bundles or bundles[-1]['size'] >= BUNDLE_SIZE:
-            bundles.append({'name': '%d.bin' % len(bundles), 'files': [], 'size': 0})
+            bundles.append({'name': '%d.zip' % len(bundles), 'files': [], 'size': 0})
         bundle = bundles[-1]
         data = source.read_bytes()
         with (web_dir / 'deferred' / bundle['name']).open('ab') as out:

@@ -93,7 +93,7 @@ class WebExportTests(unittest.TestCase):
             names = set(package.namelist())
         self.assertIn('index.html', names)
         self.assertIn('game.apk', names)
-        self.assertIn('deferred/0.bin', names)
+        self.assertIn('deferred/0.zip', names)
 
 class WebExportRefusalTests(unittest.TestCase):
     def test_a_title_cannot_break_out_of_the_page(self):

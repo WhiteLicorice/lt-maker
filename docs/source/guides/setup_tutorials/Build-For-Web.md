@@ -1,6 +1,6 @@
 # Build For Web
 
-_last updated 2026-10-20_
+_last updated 2026-10-23_
 
 LT can build a project into a web page that plays in any modern browser, including on phones. The editor does it in one step, with nothing else to install.
 
@@ -24,7 +24,7 @@ itch.io allows 1,000 files, 500 MB unzipped and 200 MB per file. The export pack
 ## What to expect
 
 - The first load takes 10–20 seconds while the browser downloads Python.
-- Music and sound effects play only after the player first clicks or taps.
+- The game starts on its own, but music and sound effects play only after the player first clicks or taps.
 - There is a short pause on a black screen while a level's music loads.
 - Saves stay in the player's browser. The SAVES button exports them to a zip and imports them again, for moving to another browser or device.
 - On a touch screen, the page draws a d-pad and A, B, L, R and START buttons around the game.
@@ -46,7 +46,7 @@ The path to the project is relative to the lt-maker folder. The page is built in
 python utilities/build_tools/web/serve.py build/web/MyGame 127.0.0.1
 ```
 
-Open http://127.0.0.1:8000/ in a browser and click to start. Stop the server with Ctrl+C.
+Open http://127.0.0.1:8000/ in a browser. Stop the server with Ctrl+C.
 
 Add `?level=<level nid>` to the address to start straight in that level, as the editor's Test Chapter does.
 
