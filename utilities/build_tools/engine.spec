@@ -1,6 +1,9 @@
 # -*- mode: python -*-
 from pathlib import Path
+import shutil
 import sys, os
+
+from PyInstaller.log import logger
 
 
 block_cipher = None
@@ -14,55 +17,50 @@ def path(orig_path: str):
         return orig_path
     return root / orig_path
 
-# this is a really stupid way to do IPC
-# we pass in a "tag" from the editor, and use this "tag"
-# to print out log messages formatted like `tag: 100`
-# which we use on the editor side to parse the logs
-# to read the progress messages.
-progress_sentinel_message = sys.argv[2]
-def log_progress(pct: int):
-    print(progress_sentinel_message + str(pct), flush=True)
-
 # Also need to pass custom icon in, since options are disabled when we use a spec file (...why?)
-icon_path = sys.argv[3]
+icon_path = sys.argv[2]
 
-log_progress(20)
 a = Analysis([path('run_engine.py')],
              pathex=['.'],
              binaries=[],
              datas=[(path('saves/save_storage.txt'), 'saves'),
-                    (path('resources/platforms'), 'resources/platforms'),
-                    (path('sprites'), 'sprites'),
-                    (project, os.path.basename(project)),
-                    (path(icon_path), '.'),
-                    (path('app'), 'app')],
+                    (path(icon_path), '.')],
              hiddenimports=[],
              hookspath=[],
              runtime_hooks=[],
-             excludes=[],
+             # Only the editor uses Qt, but PyInstaller still follows the
+             # function-local and TYPE_CHECKING Qt imports in app/data
+             excludes=['PyQt5'],
              win_no_prefer_redirects=False,
              win_private_assemblies=False,
              cipher=block_cipher)
-log_progress(20)
 pyz = PYZ(a.pure, a.zipped_data,
              cipher=block_cipher)
-log_progress(40)
 exe = EXE(pyz,
           a.scripts,
           exclude_binaries=True,
           name=name,
           debug=False,
           strip=False,
-          upx=True,
+          upx=False,
           console=False,
           icon=path(icon_path),
           contents_directory='.' )
-log_progress(60)
 coll = COLLECT(exe,
                a.binaries,
                a.zipfiles,
                a.datas,
                strip=False,
-               upx=True,
+               upx=False,
                name=name)
-log_progress(80)
+
+# Files the engine reads from disk are copied in here instead of listed
+# in datas, since PyInstaller opens every datas file to check whether it
+# is a binary, which takes about a minute for a project plus app/
+logger.info("Copying game files")
+ignore = shutil.ignore_patterns('__pycache__')
+for src, dst in [(path('resources/platforms'), 'resources/platforms'),
+                 (path('sprites'), 'sprites'),
+                 (project, os.path.basename(project)),
+                 (path('app'), 'app')]:
+    shutil.copytree(Path(SPECPATH) / src, Path(coll.name) / dst, ignore=ignore, dirs_exist_ok=True)

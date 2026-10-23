@@ -1,15 +1,13 @@
 from __future__ import annotations
 
 import os
-import shlex
 import shutil
-import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import List
+from typing import Callable, List
 
-from PyQt5.QtCore import QDir, Qt
+from PyQt5.QtCore import QDir, QEventLoop, QProcess, Qt
 from PyQt5.QtWidgets import (QApplication, QFileDialog, QMessageBox,
                              QProgressDialog)
 
@@ -19,20 +17,55 @@ from app.engine import config as cf
 from app.utilities import file_utils
 from app.utilities.file_manager import FileManager
 
-def execute(cmd: str):
-    args = shlex.split(cmd)
-    popen = subprocess.Popen(args, stdout=subprocess.PIPE, universal_newlines=True)
-    for stdout_line in iter(popen.stdout.readline, ""):
-        yield stdout_line
-    popen.stdout.close()
-    return_code = popen.wait()
-    if return_code:
-        raise subprocess.CalledProcessError(return_code, cmd)
+# Steps PyInstaller (and engine.spec) log while building the engine, with
+# the progress each one marks, spaced by how far into a build it comes
+ENGINE_BUILD_MILESTONES = [
+    ("Analyzing base_library.zip", 3),
+    ("Running Analysis", 21),
+    ("Processing module hooks", 42),
+    ("Looking for dynamic libraries", 43),
+    ("Building PYZ", 68),
+    ("Building EXE", 71),
+    ("Building COLLECT", 75),
+    ("Copying game files", 77),
+]
+ENGINE_BUILT_PROGRESS = 90
 
-PROGRESS_SENTINEL = "__PROGRESS_SENTINEL_STR__"
-# The editor's own interpreter, not whichever pyinstaller is first on PATH,
-# which can belong to an older Python and bundle that Python's stdlib
-PYINSTALLER = f'"{sys.executable}" -m PyInstaller'
+class PyInstallerRun():
+    """PyInstaller running in the background under the editor's own
+    interpreter, not whichever pyinstaller is first on PATH, which can
+    belong to an older Python and bundle that Python's stdlib"""
+    def __init__(self, args: List[str], on_line: Callable[[str], None]):
+        self.lines: List[str] = []
+        self.on_line = on_line
+        self.process = QProcess()
+        self.process.setProcessChannelMode(QProcess.MergedChannels)
+        self.process.readyReadStandardOutput.connect(self._read_lines)
+        self.process.start(sys.executable, ['-m', 'PyInstaller'] + args)
+
+    def _read_lines(self):
+        while self.process.canReadLine():
+            line = bytes(self.process.readLine()).decode(errors='replace').rstrip()
+            self.lines.append(line)
+            self.on_line(line)
+
+    def running(self) -> bool:
+        return self.process.state() != QProcess.NotRunning
+
+    def succeeded(self) -> bool:
+        return self.process.error() == QProcess.UnknownError and self.process.exitCode() == 0
+
+def wait_for(runs: List[PyInstallerRun]):
+    """Keeps the editor's event loop going until every run has stopped"""
+    loop = QEventLoop()
+    def check_done(*args):
+        if not any(run.running() for run in runs):
+            loop.quit()
+    for run in runs:
+        run.process.finished.connect(check_done)
+        run.process.errorOccurred.connect(check_done)
+    if any(run.running() for run in runs):
+        loop.exec_()
 
 def icon_path(current_proj: Path, curr_plat: file_utils.Pltfm) -> Path:
     """Returns the icon path for a project. Pltfm is presently unused,
@@ -84,43 +117,47 @@ class LTProjectBuilder():
                                             "All Files (*)")
         return output_dir
 
-    def _build_game(self, current_proj: Path, dist_cmd: str, work_cmd: str, path_to_icon: Path):
-        kwargs: List[str] = []
-        kwargs.append(dist_cmd)
-        kwargs.append(work_cmd)
-        spec_cmd = "-y ./utilities/build_tools/engine.spec"
-        kwargs.append(spec_cmd)
-        kwargstr = ' '.join(kwargs)
+    def _start_game_build(self, current_proj: Path, output_dir: Path, path_to_icon: Path) -> PyInstallerRun:
         # quirk of engine.spec
         project_path_without_extension = str(current_proj).replace(".ltproj", '')
+        args = ['--distpath', str(output_dir / 'dist'), '--workpath', str(output_dir / 'build'),
+                '-y', './utilities/build_tools/engine.spec',
+                '--', project_path_without_extension, str(path_to_icon)]
+        return PyInstallerRun(args, self._on_game_build_line)
 
-        engine_build_cmd = f'{PYINSTALLER} {kwargstr} -- "{project_path_without_extension}" "{PROGRESS_SENTINEL}" "{path_to_icon}"'
-        for line in execute(engine_build_cmd):
-            if PROGRESS_SENTINEL in line:
-                progress = int(line.replace(PROGRESS_SENTINEL, ""))
+    def _on_game_build_line(self, line: str):
+        for milestone, progress in ENGINE_BUILD_MILESTONES:
+            if milestone in line and progress > self.progress_dialog.value():
                 self.progress_dialog.setValue(progress)
+        _, info, message = line.partition(' INFO: ')
+        if info:
+            self.progress_dialog.setLabelText(message[:80])
 
-    def _build_executable_wrapper(self, current_proj: Path, dist_cmd: str, work_cmd: str, path_to_icon: Path):
+    def _start_executable_wrapper_build(self, current_proj: Path, output_dir: Path, path_to_icon: Path) -> PyInstallerRun:
         project_name = current_proj.name.replace('.ltproj', '')
         dir_path = Path(os.path.dirname(os.path.realpath(__file__)))
-        tmp_run_exe_fname = '%s.py' % project_name
+        work_dir = output_dir / 'build'
+        os.makedirs(work_dir, exist_ok=True)
+        tmp_run_exe_fname = work_dir / ('%s.py' % project_name)
         with open(dir_path / 'run_exe_base.txt') as base:
             text = base.read()
             text = text.replace('__PROJECT_NAME__', project_name)
             with open(tmp_run_exe_fname, 'w') as out:
                 out.write(text)
 
-        exe_kwargs: List[str] = []
-        exe_kwargs.append(dist_cmd)
-        exe_kwargs.append(work_cmd)
-        icon_cmd = '--icon="%s"' % path_to_icon
-        exe_kwargs.append(icon_cmd)
+        args = ['--onefile', '--noconsole', '--noupx',
+                '--distpath', str(output_dir / 'dist'), '--workpath', str(work_dir / 'launcher'),
+                '--specpath', str(work_dir), '--icon', os.path.abspath(path_to_icon),
+                str(tmp_run_exe_fname)]
+        return PyInstallerRun(args, lambda line: None)
 
-        exe_kwargstr = ' '.join(exe_kwargs)
-        executable_build_cmd = f'{PYINSTALLER} --onefile --noconsole {exe_kwargstr} "{tmp_run_exe_fname}"'
-        subprocess.check_call(executable_build_cmd, shell=True)
-        os.remove(tmp_run_exe_fname)
-        os.remove(project_name + '.spec')
+    def _report_failure(self, run: PyInstallerRun):
+        error = QMessageBox()
+        error.setIcon(QMessageBox.Critical)
+        error.setWindowTitle("Build failed")
+        error.setText("Building the project failed:\n\n" + '\n'.join(run.lines[-10:]))
+        error.setDetailedText('\n'.join(run.lines))
+        error.exec_()
 
     def _preload_config(self, current_proj: Path, output_dir: Path):
         project_name = current_proj.name.replace('.ltproj', '')
@@ -150,12 +187,18 @@ class LTProjectBuilder():
         QApplication.processEvents()
 
         curr_plat = file_utils.Pltfm.current_platform()
-        dist_cmd = '--distpath "%s/dist"' % output_dir
-        work_cmd = '--workpath "%s/build"' % output_dir
         icon = icon_path(Path(current_proj), curr_plat)
-        self._build_game(curr_proj_path, dist_cmd, work_cmd, icon)
-        self.progress_dialog.setValue(80)
-        self._build_executable_wrapper(curr_proj_path, dist_cmd, work_cmd, icon)
+        # The launcher is small and independent, so it builds alongside the game
+        runs = [self._start_game_build(curr_proj_path, Path(output_dir), icon),
+                self._start_executable_wrapper_build(curr_proj_path, Path(output_dir), icon)]
+        wait_for(runs)
+        for run in runs:
+            if not run.succeeded():
+                self.progress_dialog.close()
+                self._report_failure(run)
+                self.proj_file_manager.save()
+                return
+        self.progress_dialog.setValue(ENGINE_BUILT_PROGRESS)
         self._preload_config(curr_proj_path, Path(output_dir))
         shutil.rmtree(output_dir + "/build")
         self.progress_dialog.setValue(100)
