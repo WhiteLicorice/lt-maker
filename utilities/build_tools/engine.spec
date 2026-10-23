@@ -61,6 +61,6 @@ logger.info("Copying game files")
 ignore = shutil.ignore_patterns('__pycache__')
 for src, dst in [(path('resources/platforms'), 'resources/platforms'),
                  (path('sprites'), 'sprites'),
-                 (project, os.path.basename(project)),
+                 (path(project), os.path.basename(project)),
                  (path('app'), 'app')]:
     shutil.copytree(Path(SPECPATH) / src, Path(coll.name) / dst, ignore=ignore, dirs_exist_ok=True)
