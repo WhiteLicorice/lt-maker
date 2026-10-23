@@ -3,6 +3,7 @@ pyinstaller==6.2.0
 PyQt5==5.15.10
 mypy==1.8.0
 mypy-extensions==1.0.0
+pillow==13.0.0
 
 # for compiling docs
 attrs>=21.4.0
