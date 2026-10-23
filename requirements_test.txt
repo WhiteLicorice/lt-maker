@@ -1,0 +1,2 @@
+-r requirements_editor.txt
+pillow==13.0.0  # test_gba_script_import writes indexed PNG fixtures
