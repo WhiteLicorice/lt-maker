@@ -4,6 +4,7 @@ import os
 import shlex
 import shutil
 import subprocess
+import sys
 import time
 from pathlib import Path
 from typing import List
@@ -29,6 +30,9 @@ def execute(cmd: str):
         raise subprocess.CalledProcessError(return_code, cmd)
 
 PROGRESS_SENTINEL = "__PROGRESS_SENTINEL_STR__"
+# The editor's own interpreter, not whichever pyinstaller is first on PATH,
+# which can belong to an older Python and bundle that Python's stdlib
+PYINSTALLER = f'"{sys.executable}" -m PyInstaller'
 
 def icon_path(current_proj: Path, curr_plat: file_utils.Pltfm) -> Path:
     """Returns the icon path for a project. Pltfm is presently unused,
@@ -90,7 +94,7 @@ class LTProjectBuilder():
         # quirk of engine.spec
         project_path_without_extension = str(current_proj).replace(".ltproj", '')
 
-        engine_build_cmd = f'pyinstaller {kwargstr} -- "{project_path_without_extension}" "{PROGRESS_SENTINEL}" "{path_to_icon}"'
+        engine_build_cmd = f'{PYINSTALLER} {kwargstr} -- "{project_path_without_extension}" "{PROGRESS_SENTINEL}" "{path_to_icon}"'
         for line in execute(engine_build_cmd):
             if PROGRESS_SENTINEL in line:
                 progress = int(line.replace(PROGRESS_SENTINEL, ""))
@@ -113,7 +117,7 @@ class LTProjectBuilder():
         exe_kwargs.append(icon_cmd)
 
         exe_kwargstr = ' '.join(exe_kwargs)
-        executable_build_cmd = f'pyinstaller --onefile --noconsole {exe_kwargstr} "{tmp_run_exe_fname}"'
+        executable_build_cmd = f'{PYINSTALLER} --onefile --noconsole {exe_kwargstr} "{tmp_run_exe_fname}"'
         subprocess.check_call(executable_build_cmd, shell=True)
         os.remove(tmp_run_exe_fname)
         os.remove(project_name + '.spec')
