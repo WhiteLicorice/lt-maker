@@ -4,8 +4,8 @@ LTPERF frame-time lines.
 
     python utilities/build_tools/web/measure.py <url> <out_dir> [title|level] [--browser msedge|chrome|firefox|webkit] [--cpu-throttle N]
 
-Serve the build first (build_web.py --serve, or any static server on
-build/web_stage/<project>/build/web). Needs playwright (pip install playwright==1.64.0).
+Serve the build first (web/serve.py, or any static server on
+build/web/<project>). Needs playwright (pip install playwright==1.64.0).
 "title" sits on the title screen; "level" expects a url with ?level=<nid>,
 watches its opening events, skips the rest, then idles on the map and moves
 the cursor about; a number of seconds just leaves the engine running that long.

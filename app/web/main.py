@@ -1,7 +1,7 @@
 '''
-Entry point of the browser build. utilities/build_tools/build_web.py copies it
-to main.py beside the engine and the one project it packs, and pygbag runs it
-under CPython compiled to WebAssembly (sys.platform == 'emscripten').
+Entry point of the browser build. app/utilities/web_export.py packs it beside
+the engine and the one project it builds, and pygbag's page runs it under
+CPython compiled to WebAssembly (sys.platform == 'emscripten').
 
 The page's address takes options:
     ?level=<nid>            starts that level as the editor's Test Chapter does,

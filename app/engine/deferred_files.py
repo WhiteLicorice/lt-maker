@@ -1,6 +1,6 @@
 """
 Files that may arrive after the game has started. The browser build
-(utilities/build_tools/build_web.py) leaves most of the game's music, sound
+(app/utilities/web_export.py) leaves most of the game's music, sound
 effects and combat animation sheets out of the download the page starts with,
 and the page fetches them in the background while the game runs. The engine
 passes such a file's path through ensure before opening it, which fetches the
