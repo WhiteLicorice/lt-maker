@@ -2,7 +2,7 @@
 A quick measure of how fast this interpreter runs the kinds of work a frame does,
 so one machine or browser can be compared with another. The browser build runs
 it for ?bench in the page's address; natively,
-python utilities/build_tools/web/bench.py
+python app/web/bench.py
 '''
 import collections
 import sys

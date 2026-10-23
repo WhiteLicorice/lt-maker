@@ -39,14 +39,13 @@ build_web:
             - master
     before_script:
         - python --version
-        - pip install -r utilities/build_tools/web/requirements_web.txt
     script:
         - echo "Building default.ltproj for the browser"
         - python utilities/build_tools/build_web.py default.ltproj
     artifacts:
         name: "LT Web Build"
         paths:
-            - build/web_stage/default/build/web/
+            - build/web/default/
         expire_in: 1 week
 
 build_engine:
