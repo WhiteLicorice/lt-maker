@@ -48,6 +48,25 @@ class WebExporter():
             % web_export.DEFAULT_GAME_NID)
         return answer == QMessageBox.Yes
 
+    def _confirm_browser_concerns(self, project: Path) -> bool:
+        '''
+        The project's own code may do what the browser can't, or can't keep.
+        Only its author can tell whether it keeps clear of that in the browser
+        '''
+        concerns = web_export.browser_concerns(project)
+        if not concerns:
+            return True
+        shown = 12
+        listed = '\n'.join(concerns[:shown])
+        if len(concerns) > shown:
+            listed += '\n...and %d more' % (len(concerns) - shown)
+        answer = QMessageBox.question(
+            None, "Export for Web",
+            "This project's custom components may do what the browser can't, or can't keep:\n\n%s\n\n"
+            "Code that keeps clear of it in the browser (sys.platform == 'emscripten') is fine. "
+            "Export anyway?" % listed)
+        return answer == QMessageBox.Yes
+
     def _select_zip_path(self, project: Path) -> str:
         starting_path = project.parent / (project.stem + '_web.zip')
         zip_path, _ = QFileDialog.getSaveFileName(None, "Export for Web", str(starting_path), "Zip files (*.zip)")
@@ -63,6 +82,8 @@ class WebExporter():
             QMessageBox.warning(None, "Cannot export project", str(error))
             return
         if not self._confirm_game_nid():
+            return
+        if not self._confirm_browser_concerns(project):
             return
         zip_path = self._select_zip_path(project)
         if not zip_path:

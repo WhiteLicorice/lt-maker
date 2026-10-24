@@ -22,6 +22,7 @@ build through here
 '''
 from __future__ import annotations
 
+import ast
 import html
 import json
 import shutil
@@ -150,6 +151,21 @@ BUNDLE_SIZE = 4 * 2**20
 # A new project's game_nid (app/data/database/constants.py)
 DEFAULT_GAME_NID = 'LT'
 
+# What a project's own code (resources/custom_components) may do that the
+# browser can't, or can't keep, and why: the modules it imports, the
+# functions it calls, by the names they have once its imports are followed,
+# and the methods it calls on anything. browser_concerns finds each
+THREADS = "the browser can't start threads or processes"
+FILES = ("in the browser, files written outside saves/ are lost when the page closes, and the "
+         "project's music, sounds and battle sheets are in place only while the engine loads them")
+WAITS = "in the browser it holds the whole page, its screen and sound, while it waits"
+CONCERN_MODULES = {'threading': THREADS, '_thread': THREADS, 'multiprocessing': THREADS,
+                   'concurrent.futures': THREADS, 'subprocess': THREADS}
+CONCERN_CALLS = {'open': FILES, 'os.remove': FILES, 'os.unlink': FILES, 'os.rename': FILES, 'os.replace': FILES,
+                 'os.mkdir': FILES, 'os.makedirs': FILES, 'os.rmdir': FILES, 'time.sleep': WAITS}
+CONCERN_CALL_MODULES = {'shutil': FILES}
+CONCERN_METHODS = {'write_text': FILES, 'write_bytes': FILES, 'unlink': FILES, 'touch': FILES}
+
 # Called with the share of the build done so far, from 0 to 1
 Progress = Callable[[float], None]
 
@@ -225,6 +241,69 @@ def check(project: Path):
     metadata = dataclass_from_dict(Metadata, json.loads((project / 'metadata.json').read_text(encoding='utf-8')))
     if metadata.has_fatal_errors:
         raise ValueError("%s has fatal errors, so the engine would refuse to start it" % project.name)
+
+def browser_concerns(project: Path) -> list[str]:
+    '''
+    What the project's own code may do that the browser can't, or can't keep,
+    each as "<file>:<line>: <what it does>; <why>". Its code may well keep
+    clear of it in the browser (sys.platform == 'emscripten'), so these are
+    for its author to look at, not reasons to refuse it
+    '''
+    concerns = []
+    for source in sorted((project / 'resources' / 'custom_components').rglob('*.py')):
+        name = source.relative_to(project).as_posix()
+        try:
+            tree = ast.parse(source.read_text(encoding='utf-8'), name)
+        except SyntaxError as error:
+            concerns.append((name, error.lineno or 0, "can't be read: %s" % error.msg))
+            continue
+        concerns.extend((name, line, what) for line, what in _code_concerns(tree))
+    return ['%s:%d: %s' % concern for concern in sorted(concerns)]
+
+def _code_concerns(tree: ast.AST) -> list[tuple[int, str]]:
+    '''The line and the concern of each of CONCERN_MODULES, CONCERN_CALLS and CONCERN_METHODS in tree'''
+    concerns = []
+    # Each name an import binds to something other than itself (import shutil
+    # as sh, from os import remove), to the module or function it stands for
+    imported = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            modules = [alias.name for alias in node.names]
+            for alias in node.names:
+                if alias.asname:
+                    imported[alias.asname] = alias.name
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            modules = [node.module] + [node.module + '.' + alias.name for alias in node.names]
+            for alias in node.names:
+                imported[alias.asname or alias.name] = node.module + '.' + alias.name
+        else:
+            continue
+        for module in modules:
+            if module in CONCERN_MODULES:
+                concerns.append((node.lineno, 'imports %s; %s' % (module, CONCERN_MODULES[module])))
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        called = _dotted_name(node.func)
+        if called:
+            first, _, rest = called.partition('.')
+            called = imported.get(first, first) + ('.' + rest if rest else '')
+            why = CONCERN_CALLS.get(called) or CONCERN_CALL_MODULES.get(called.rpartition('.')[0])
+            if why:
+                concerns.append((node.lineno, 'calls %s; %s' % (called, why)))
+                continue
+        if isinstance(node.func, ast.Attribute) and node.func.attr in CONCERN_METHODS:
+            concerns.append((node.lineno, 'calls .%s(); %s' % (node.func.attr, CONCERN_METHODS[node.func.attr])))
+    return concerns
+
+def _dotted_name(node: ast.AST) -> Optional[str]:
+    '''The name a call is made by, as written (os.path.join), when it is only names and dots'''
+    if isinstance(node, ast.Name):
+        return node.id
+    if isinstance(node, ast.Attribute):
+        owner = _dotted_name(node.value)
+        return owner and owner + '.' + node.attr
+    return None
 
 def build(project: Path, web_dir: Path, progress: Optional[Progress] = None):
     '''

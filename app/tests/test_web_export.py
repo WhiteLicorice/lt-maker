@@ -125,5 +125,42 @@ class WebExportRefusalTests(unittest.TestCase):
                 web_export.build(PROJECT, web_dir)
             self.assertEqual((web_dir / 'keep.txt').read_text(encoding='utf-8'), 'mine')
 
+class BrowserConcernsTests(unittest.TestCase):
+    '''
+    What a project's own code may do that the browser can't, or can't keep,
+    found for its author to look at before exporting it
+    '''
+
+    def concerns(self, code: str) -> list[str]:
+        with tempfile.TemporaryDirectory() as temp:
+            folder = Path(temp) / 'game.ltproj' / 'resources' / 'custom_components'
+            folder.mkdir(parents=True)
+            (folder / 'custom_skill_components.py').write_text(code, encoding='utf-8')
+            return web_export.browser_concerns(folder.parents[1])
+
+    def test_threads_and_processes_are_found(self):
+        concerns = self.concerns('import threading\nfrom concurrent.futures import ThreadPoolExecutor\nimport subprocess as sp\n')
+        self.assertEqual([concern.split(';')[0] for concern in concerns], [
+            'resources/custom_components/custom_skill_components.py:1: imports threading',
+            'resources/custom_components/custom_skill_components.py:2: imports concurrent.futures',
+            'resources/custom_components/custom_skill_components.py:3: imports subprocess'])
+
+    def test_files_and_waits_are_found_by_what_the_imports_name(self):
+        concerns = self.concerns('import shutil as sh\nfrom os import remove\nfrom time import sleep\n'
+                                 'from pathlib import Path\n'
+                                 'open("notes.txt", "w")\nsh.rmtree("old")\nremove("x")\nsleep(1)\nPath("y").write_text("z")\n')
+        self.assertEqual([concern.split(': ', 1)[1].split(';')[0] for concern in concerns], [
+            'calls open', 'calls shutil.rmtree', 'calls os.remove', 'calls time.sleep', 'calls .write_text()'])
+
+    def test_words_in_comments_and_strings_are_not_concerns(self):
+        self.assertEqual(self.concerns('# import threading\ndesc = "opens a file with open() and sleeps"\n'
+                                       'import asyncio\nasyncio.sleep(1)\n'), [])
+
+    def test_code_that_cannot_be_read_is_a_concern(self):
+        self.assertIn("can't be read", self.concerns('def broken(:\n')[0])
+
+    def test_the_sample_project_has_none(self):
+        self.assertEqual(web_export.browser_concerns(PROJECT), [])
+
 if __name__ == '__main__':
     unittest.main()

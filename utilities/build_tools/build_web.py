@@ -29,12 +29,18 @@ def warn_of_shared_game_nid(constants: dict):
               "with the same one, on the same site, would share its saves in the browser. "
               "Give it a game_nid of its own in the editor's constants" % web_export.DEFAULT_GAME_NID)
 
+def warn_of_browser_concerns(project: Path):
+    '''What the project's own code may do that the browser can't, or can't keep'''
+    for concern in web_export.browser_concerns(project):
+        print('Warning: %s' % concern)
+
 def main(args: list[str]):
     names = [arg for arg in args if not arg.startswith('--')]
     project = (ROOT / (names[0] if names else 'default.ltproj')).resolve()
     if not project.is_dir():
         raise SystemExit('No project at %s' % project)
     warn_of_shared_game_nid(web_export.read_constants(project))
+    warn_of_browser_concerns(project)
     # The editor generates these as it starts; a build from here may come first
     source_generator.generate_all()
     web_dir = ROOT / 'build' / 'web' / project.stem

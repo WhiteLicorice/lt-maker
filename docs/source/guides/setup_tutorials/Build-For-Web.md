@@ -28,7 +28,7 @@ itch.io allows 1,000 files, 500 MB unzipped and 200 MB per file. The export pack
 - There is a short pause on a black screen while a level's music loads.
 - Saves stay in the player's browser. The SAVES button exports them to a zip and imports them again, for moving to another browser or device.
 - On a touch screen, the page draws a d-pad and A, B, L, R and START buttons around the game.
-- The browser can't run threads. Custom components that start threads, or read and write files outside `saves/`, may not work.
+- The browser can't run threads. Custom components that start threads, pause with `time.sleep`, or read and write files outside `saves/`, may not work. The export lists each place in your custom components that may do so, by file and line, and asks before going on.
 
 ## From the source code
 
