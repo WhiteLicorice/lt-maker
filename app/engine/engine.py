@@ -66,6 +66,19 @@ def build_display(size):
 def get_screen_size():
     return pygame.display.get_surface().get_size()
 
+def has_display() -> bool:
+    return pygame.display.get_surface() is not None
+
+def convert_for_display(surf: pygame.Surface) -> pygame.Surface:
+    """
+    A copy of surf in the display's pixel format, keeping its per-pixel alpha
+    or its colorkey. An image loaded from a png has its own format, and blitting
+    it converts every pixel as it goes, many times slower than a converted one
+    """
+    if surf.get_flags() & pygame.SRCALPHA:
+        return surf.convert_alpha()
+    return surf.convert()
+
 def push_display(surf, size, new_surf):
     win_w, win_h = size
     base_w, base_h = surf.get_size()
