@@ -90,14 +90,18 @@ def push_display(surf, size, new_surf):
     new_w = int(base_w * scale)
     new_h = int(base_h * scale)
 
-    scaled_surf = pygame.transform.scale(surf, (new_w, new_h))
-
     # Center view
     x = (win_w - new_w) // 2
     y = (win_h - new_h) // 2
 
-    # Render scaled surface
-    new_surf.blit(scaled_surf, (x, y))
+    if (new_w, new_h) == (base_w, base_h):
+        new_surf.blit(surf, (x, y))
+    elif not surf.get_flags() & pygame.SRCALPHA and surf.get_masks() == new_surf.get_masks():
+        # Scaled straight onto the screen. That takes an opaque surface in the
+        # screen's own format; a see-through one is blended on instead, below
+        pygame.transform.scale(surf, (new_w, new_h), new_surf.subsurface((x, y, new_w, new_h)))
+    else:
+        new_surf.blit(pygame.transform.scale(surf, (new_w, new_h)), (x, y))
 
 def update_display():
     pygame.display.update()
