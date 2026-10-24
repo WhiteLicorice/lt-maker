@@ -114,6 +114,10 @@ class PathSystem():
         # A unit that has traded has spent its turn, so xcom movement is no longer on offer
         if unit.has_traded:
             return MoveSelection(walkable=walkable, warp=warp)
+        # A search with no more movement than the walk's finds only tiles the walk found
+        walk_movement = unit.get_movement() if force else unit.movement_left
+        if unit.get_movement() + unit.get_xcom_movement() <= walk_movement:
+            return MoveSelection(walkable=walkable, warp=warp)
         xcom = self.get_valid_xcom_moves(unit) - walkable - warp
         return MoveSelection(walkable=walkable, warp=warp, xcom=xcom)
 
