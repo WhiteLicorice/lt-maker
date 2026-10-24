@@ -13,3 +13,12 @@ def settle():
     gc.unfreeze()
     gc.collect()
     gc.freeze()
+
+def release():
+    """
+    Hands back to the garbage collector everything settle set aside. The
+    editor runs the engine in its own process, and settle sets aside the
+    editor's objects along with the engine's: once the engine returns, the
+    engine's are garbage, and the editor's go on living and dying
+    """
+    gc.unfreeze()
