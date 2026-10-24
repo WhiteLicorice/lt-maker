@@ -27,6 +27,7 @@ from app.engine.selection_helper import SelectionHelper
 from app.engine.abilities import ABILITIES, PRIMARY_ABILITIES, OTHER_ABILITIES, TradeAbility, SupplyAbility
 from app.engine.input_manager import get_input_manager
 from app.engine.fluid_scroll import FluidScroll
+from app.engine.utils import garbage
 from app.utilities import threads
 
 import logging
@@ -97,6 +98,7 @@ class LoadingState(State):
             return
         if not self.completed_time and not any([thread.is_alive() for thread in self.loading_threads]):
             self.completed_time = engine.get_time()
+            garbage.settle()
         if self.completed_time:
             if engine.get_time() - self.completed_time > self.duration:
                 logging.debug("All loading threads complete for level %s" % self.level_nid)

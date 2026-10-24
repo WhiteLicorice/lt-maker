@@ -11,6 +11,7 @@ from app.utilities import file_utils, utils
 
 from app.constants import WINWIDTH, WINHEIGHT, VERSION, FPS
 from app.engine import engine
+from app.engine.utils import garbage
 
 import app.engine.config as cf
 
@@ -63,7 +64,10 @@ def start(title, from_editor=False):
     # is called in engine.build_display
     from app.engine import fonts
     fonts.load_fonts()
-    
+
+    # The project's data is loaded by now, and lasts the whole session
+    garbage.settle()
+
     engine.update_time()
     engine.set_title(title + ' - v' + VERSION)
     print("Version: %s" % VERSION)
