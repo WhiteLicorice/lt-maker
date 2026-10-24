@@ -20,7 +20,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `LT_PROFILE=1` env var enables per-frame timing prints in `driver.py`; `LT_PROFILE_THRESHOLD=<ms>` only prints slow frames. `LT_FRAME_STATS=1` prints a summary (`LTPERF`) every 120 frames instead.
 
-The browser build (`sys.platform == 'emscripten'`) cannot start threads (`app/utilities/threads.py` runs work in place there), opens deferred music, sounds and battle sheets through `app/engine/deferred_files.ensure`, and runs the main loop one frame per call (`driver.MainLoop.run_frame`, paced by `run_async`).
+The browser build (`sys.platform == 'emscripten'`) cannot start threads (`app/utilities/threads.py` runs work in place there), opens deferred music, sounds and battle sheets through `app/engine/deferred_files.load`, which has the file in place only while it loads it, and runs the main loop one frame per call (`driver.MainLoop.run_frame`, paced by `run_async`).
 
 ## Codegen
 

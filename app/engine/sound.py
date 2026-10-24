@@ -15,9 +15,9 @@ import logging
 class SongObject(HasNid):
     def __init__(self, prefab: SongPrefab):
         self.nid = prefab.nid
-        self.song = pygame.mixer.Sound(deferred_files.ensure(prefab.full_path))
-        self.battle = pygame.mixer.Sound(deferred_files.ensure(prefab.battle_full_path)) if prefab.battle_full_path else None
-        self.intro = pygame.mixer.Sound(deferred_files.ensure(prefab.intro_full_path)) if prefab.intro_full_path else None
+        self.song = deferred_files.load(prefab.full_path, pygame.mixer.Sound)
+        self.battle = deferred_files.load(prefab.battle_full_path, pygame.mixer.Sound) if prefab.battle_full_path else None
+        self.intro = deferred_files.load(prefab.intro_full_path, pygame.mixer.Sound) if prefab.intro_full_path else None
 
         self.channel = None
 
@@ -55,7 +55,7 @@ class SoundDict(dict):
         if val not in self:
             sfx = RESOURCES.sfx.get(val)
             if sfx:
-                self[val] = pygame.mixer.Sound(deferred_files.ensure(sfx.full_path))
+                self[val] = deferred_files.load(sfx.full_path, pygame.mixer.Sound)
             else:
                 return None
         return self[val]

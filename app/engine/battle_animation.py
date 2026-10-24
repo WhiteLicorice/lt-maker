@@ -170,8 +170,7 @@ class BattleAnimation():
 
     def load_full_image(self):
         # Only do load stuff if image does not exist already
-        image_full_path = deferred_files.ensure(self.anim_prefab.full_path)
-        self.anim_prefab.image = engine.image_load(image_full_path, convert=True)
+        self.anim_prefab.image = deferred_files.load(self.anim_prefab.full_path, lambda path: engine.image_load(path, convert=True))
         colors = self.current_palette.colors.values()
         if file_utils.Pltfm.mac():
             engine.set_colorkey(self.anim_prefab.image, (0, 0, 0), rleaccel=True)
