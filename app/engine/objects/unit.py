@@ -106,7 +106,9 @@ class UnitObject(Prefab):
     equipped_accessory: ItemObject = None
 
     _skills: List[UnitSkill] = field(default_factory=list)
-    _visible_skills_cache: List[SkillObject] = field(default_factory=list)
+    # What skills returns, or None until it is next asked for. Changing the skills
+    # sets it back to None rather than emptying it, as a caller may still hold the list
+    _visible_skills_cache: Optional[List[SkillObject]] = None
 
     has_rescued: bool = False  #: Has the unit *rescued* someone this phase?
     has_taken: bool = False  #: Has the unit *taken* someone this phase?
@@ -269,7 +271,7 @@ class UnitObject(Prefab):
             for s in all_skills:
                 skill_system.before_add(self, s.get())
                 self._skills.append(s)
-            self._visible_skills_cache.clear()
+            self._visible_skills_cache = None
 
         klass = DB.classes.get(self.klass)
         if klass.tier == 0:
@@ -319,7 +321,7 @@ class UnitObject(Prefab):
         # equip items and skill after initialization
         for s in self._skills:
             skill_system.after_add(self, s.get())
-        self._visible_skills_cache.clear()
+        self._visible_skills_cache = None
 
         # -- Equipped Items
         self.autoequip()
@@ -442,7 +444,7 @@ class UnitObject(Prefab):
                 popped_skill = displaceable_skills[0]
         if not test:
             self._skills.append(UnitSkill(skill, source, source_type))
-            self._visible_skills_cache.clear()
+            self._visible_skills_cache = None
         return popped_skill
 
     def remove_skill(self, skill, source, source_type=SourceType.DEFAULT, test=False):
@@ -461,7 +463,7 @@ class UnitObject(Prefab):
                 to_remove = s
         if not test and to_remove:
             self._skills.remove(to_remove)
-            self._visible_skills_cache.clear()
+            self._visible_skills_cache = None
         return removed_skill_info
 
     @property
@@ -479,7 +481,7 @@ class UnitObject(Prefab):
         Returns:
             A List of SkillObjects
         """
-        if self._visible_skills_cache:
+        if self._visible_skills_cache is not None:
             return self._visible_skills_cache
 
         skills = []
@@ -1035,7 +1037,7 @@ class UnitObject(Prefab):
 
         for s in self._skills:
             skill_system.after_add_from_restore(self, s.get())
-        self._visible_skills_cache.clear()
+        self._visible_skills_cache = None
 
         return self
 
