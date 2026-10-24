@@ -79,6 +79,19 @@ def convert_for_display(surf: pygame.Surface) -> pygame.Surface:
         return surf.convert_alpha()
     return surf.convert()
 
+def _can_scale_onto(surf: pygame.Surface, dest: pygame.Surface) -> bool:
+    """
+    Whether surf can be scaled straight onto dest. Scaling writes its pixels
+    over dest's, so surf must be opaque, with no alpha (SRCALPHA, which
+    set_alpha sets too) or colorkey to blend by, and in dest's own format, bit
+    depth included: a 24-bit surface has the same masks as a 32-bit one, and
+    scale refuses it
+    """
+    return (not surf.get_flags() & pygame.SRCALPHA
+            and surf.get_colorkey() is None
+            and surf.get_bitsize() == dest.get_bitsize()
+            and surf.get_masks() == dest.get_masks())
+
 def push_display(surf, size, new_surf):
     win_w, win_h = size
     base_w, base_h = surf.get_size()
@@ -96,9 +109,7 @@ def push_display(surf, size, new_surf):
 
     if (new_w, new_h) == (base_w, base_h):
         new_surf.blit(surf, (x, y))
-    elif not surf.get_flags() & pygame.SRCALPHA and surf.get_masks() == new_surf.get_masks():
-        # Scaled straight onto the screen. That takes an opaque surface in the
-        # screen's own format; a see-through one is blended on instead, below
+    elif _can_scale_onto(surf, new_surf):
         pygame.transform.scale(surf, (new_w, new_h), new_surf.subsurface((x, y, new_w, new_h)))
     else:
         new_surf.blit(pygame.transform.scale(surf, (new_w, new_h)), (x, y))
