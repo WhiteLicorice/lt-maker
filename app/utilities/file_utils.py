@@ -1,6 +1,5 @@
 from __future__ import annotations
 from enum import Enum
-import platform
 import os, subprocess, sys
 
 class Pltfm(Enum):
@@ -38,12 +37,13 @@ class Pltfm(Enum):
 
     @staticmethod
     def current_platform() -> Pltfm:
-        p = platform.system()
-        if p == "Windows":
+        # sys.platform costs nothing to read, where the first call to
+        # platform.system() on Windows asks WMI and takes 50 ms or more
+        if sys.platform == 'win32':
             return Pltfm.WINDOWS
-        elif p == 'Darwin':
+        elif sys.platform == 'darwin':
             return Pltfm.MAC
-        elif p == 'Linux':
+        elif sys.platform.startswith('linux'):
             return Pltfm.LINUX
         else:
             return Pltfm.UNKNOWN
