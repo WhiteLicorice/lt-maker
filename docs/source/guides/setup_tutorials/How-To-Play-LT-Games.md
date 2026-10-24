@@ -26,6 +26,9 @@ https://www.winehq.org/
 It is recommended to install Wine manually, as the package distributed by many package managers are outdated. Version 11.0 is known to run LT games in a stable manner. Older versions are untested.
 3. Open "GAMENAME.exe" with Wine.
 
+## ITCH.IO
+LT-games running in a web browser should run natively on all systems. No additional setup is required, though do note the first boot may take 10-20 seconds, due to the browser installing Python.
+
 ## Linux - Build from Source
 NOTE: Most creators will ship the blank .exe engine with their game files attached. If this is the case, you can build the game from source. However, if the creator has included engine hacking in their project, this method WILL NOT WORK. If you are unsure, please contact the developer(s) of the LT game you want to play. If the developer(s) have a native version for linux available for download, you can skip step 3.
 

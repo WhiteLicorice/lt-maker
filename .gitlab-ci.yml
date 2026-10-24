@@ -1,42 +1,52 @@
-.shared_windows_runners:
-  tags:
-  # - shared-windows
-  # - windows
-  # - windows-1809
-  - saas-windows-medium-amd64
+variables:
+    # Faster artifact zipping and upload; the editor build is large
+    FF_USE_FASTZIP: "true"
+    ARTIFACT_COMPRESSION_LEVEL: fast
+
+# Pipelines run for merge requests and for pushes to master and release. Other
+# branches only get one once they open a merge request, so a push never runs
+# twice, and the tags the release job creates don't start pipelines of their own
+workflow:
+    rules:
+        - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+        - if: $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "release"
 
 stages:
     - test
-    - generate_engine
-    - generate_editor
-    - generate_map_maker
+    - build
     - release
 
+# Runs in every pipeline
 run_tests:
     stage: test
     image: "python:3.12.10"
-    only:
-        refs:
-            - merge_requests
-            - master
+    interruptible: true
+    variables:
+        PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+    cache:
+        key:
+            files:
+                - requirements_test.txt
+                - requirements_editor.txt
+        paths:
+            - .cache/pip
     before_script:
         - apt-get update
-        - apt-get install -y libgl1
+        - apt-get install -y --no-install-recommends libgl1
         - python --version
-        - pip install -r requirements_editor.txt
-        - pip install pillow  # test_gba_script_import writes indexed PNG fixtures
+        - pip install -r requirements_test.txt
     script:
         - echo "Running tests"
         - python -m app.engine.codegen.source_generator
-        - python -m unittest discover -s app/tests -p 'test*.py'
+        - python utilities/build_tools/run_tests_parallel.py
 
 build_web:
     stage: test
     image: "python:3.12.10"
-    only:
-        refs:
-            - merge_requests
-            - master
+    interruptible: true
+    rules:
+        - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+        - if: $CI_COMMIT_BRANCH == "master"
     before_script:
         - python --version
     script:
@@ -44,41 +54,49 @@ build_web:
         - python utilities/build_tools/build_web.py default.ltproj
     artifacts:
         name: "LT Web Build"
+        # Links the build from the merge request page
+        expose_as: "Web build"
         paths:
             - build/web/default/
         expire_in: 1 week
 
-build_engine:
-    stage: generate_engine
-    image: "python:3.12.10"
-    extends:
-    - .shared_windows_runners
-    except: # If this double builds consider changing to only: pushes
-        refs:
-            - merge_requests
-    only:
-        - release
+# The three Windows builds are independent, so they all start as soon as the
+# pipeline does; only the release job waits on them and on the tests
+.windows_build:
+    stage: build
+    tags:
+    - saas-windows-medium-amd64
+    needs: []
+    rules:
+        - if: $CI_COMMIT_BRANCH == "release"
+    variables:
+        PYTHON: 'C:\nuget\python\tools\python.exe'
     before_script:
-        - choco install -y python --version=3.12.10 --allow-downgrade
-        - "C:\\Python312\\python.exe -m pip install -r requirements_engine.txt"
-        - "C:\\Python312\\python.exe -m pip install pywin32"
+        # Progress bars make Invoke-WebRequest many times slower
+        - $ProgressPreference = 'SilentlyContinue'
+        # The python nuget package is a ready-made Python that only needs unzipping,
+        # much faster than chocolatey running the full installer. Keep the path short:
+        # PyQt5's deepest files go past Windows' 260 character limit otherwise
+        - Invoke-WebRequest -Uri https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -OutFile nuget.exe
+        - .\nuget.exe install python -Version 3.12.10 -ExcludeVersion -OutputDirectory C:\nuget
         # Necessary to use setuptools < 70 until we upgrade to Pyinstaller v6.7.0
-        - "C:\\Python312\\python.exe -m pip install setuptools<70 --upgrade"
+        - '& $env:PYTHON -m pip install -r $env:REQUIREMENTS pywin32 "setuptools<70"'
         - echo "Prereqs successfully installed"
+
+build_engine:
+    extends: .windows_build
+    variables:
+        REQUIREMENTS: requirements_engine.txt
     script:
         - echo "Generating component files"
-        - "C:\\Python312\\python.exe -m app.engine.codegen.source_generator"
-        - start powershell
+        - '& $env:PYTHON -m app.engine.codegen.source_generator'
         - echo "Building generic engine..."
         - cp ./utilities/build_tools/generic_engine.spec .
-        - "C:\\Python312\\Scripts\\pyinstaller.exe -y generic_engine.spec"
+        - '& $env:PYTHON -m PyInstaller -y generic_engine.spec'
         - rm generic_engine.spec -fo
         - mkdir lt_engine
         - mv dist/lt_engine ./lt_engine/lt_engine
         - cp utilities/install/double_click_to_play.bat ./lt_engine
-        - echo "Copying generated files"
-        - cp app/engine/item_system.py ./lt_engine/lt_engine/app/engine
-        - cp app/engine/skill_system.py ./lt_engine/lt_engine/app/engine
         - echo $CI_COMMIT_SHORT_SHA > ./lt_engine/lt_engine/version.txt
         - echo "Done!"
     artifacts:
@@ -88,39 +106,21 @@ build_engine:
         expire_in: 3 mos
 
 build_editor:
-    stage: generate_editor
-    image: "python:3.12.10"
-    extends:
-    - .shared_windows_runners
-    except: # If this double builds consider changing to only: pushes
-        refs:
-            - merge_requests
-    only:
-        - release
-    before_script:
-        - choco install -y python --version=3.12.10 --allow-downgrade
-        - "C:\\Python312\\python.exe -m pip install -r requirements_editor.txt"
-        - "C:\\Python312\\python.exe -m pip install pywin32"
-        # Necessary to use setuptools < 70 until we upgrade to Pyinstaller v6.7.0
-        - "C:\\Python312\\python.exe -m pip install setuptools<70 --upgrade"
-        - echo "Prereqs successfully installed"
+    extends: .windows_build
+    variables:
+        REQUIREMENTS: requirements_editor.txt
     script:
         - echo "Generating component files"
-        - "C:\\Python312\\python.exe -m app.engine.codegen.source_generator"
-        - start powershell
+        - '& $env:PYTHON -m app.engine.codegen.source_generator'
         - echo "Now building main editor..."
         - cp ./utilities/build_tools/editor.spec .
-        - "C:\\Python312\\Scripts\\pyinstaller.exe -y editor.spec"
+        - '& $env:PYTHON -m PyInstaller -y editor.spec'
         - rm editor.spec -fo
         - mkdir lt_editor
         - mv dist/lt_editor ./lt_editor/lt_editor
         - cp utilities/install/double_click_to_run.bat ./lt_editor
-        - mv build/editor ./lt_editor/lt_editor
         - echo "Copying default lt project..."
         - cp default.ltproj ./lt_editor/lt_editor -r
-        - echo "Copying generated files"
-        - cp app/engine/item_system.py ./lt_editor/lt_editor/app/engine
-        - cp app/engine/skill_system.py ./lt_editor/lt_editor/app/engine
         - echo $CI_COMMIT_SHORT_SHA > ./lt_editor/lt_editor/version.txt
         - echo "Done!"
     artifacts:
@@ -130,32 +130,17 @@ build_editor:
         expire_in: 3 mos
 
 build_map_maker:
-    stage: generate_map_maker
-    image: "python:3.12.10"
-    extends:
-    - .shared_windows_runners
-    except: # If this double builds consider changing to only: pushes
-        refs:
-            - merge_requests
-    only:
-        - release
-    before_script:
-        - choco install -y python --version=3.12.10 --allow-downgrade
-        - "C:\\Python312\\python.exe -m pip install -r requirements_editor.txt"
-        - "C:\\Python312\\python.exe -m pip install pywin32"
-        # Necessary to use setuptools < 70 until we upgrade to Pyinstaller v6.7.0
-        - "C:\\Python312\\python.exe -m pip install setuptools<70 --upgrade"
-        - echo "Prereqs successfully installed"
+    extends: .windows_build
+    variables:
+        REQUIREMENTS: requirements_editor.txt
     script:
-        - start powershell
         - echo "Building map maker..."
         - cp ./utilities/build_tools/map_maker.spec .
-        - "C:\\Python312\\Scripts\\pyinstaller.exe -y map_maker.spec"
+        - '& $env:PYTHON -m PyInstaller -y map_maker.spec'
         - rm map_maker.spec -fo
         - mkdir lt_map_maker
         - mv dist/lt_map_maker ./lt_map_maker/lt_map_maker
         - cp utilities/install/double_click_to_run.bat ./lt_map_maker
-        - echo "Copying generated files"
         - echo $CI_COMMIT_SHORT_SHA > ./lt_map_maker/lt_map_maker/version.txt
         - echo "Done!"
     artifacts:
@@ -166,17 +151,20 @@ build_map_maker:
 
 release:
     stage: release
-    image: registry.gitlab.com/gitlab-org/release-cli:latest
+    # The release keyword runs glab from this image; release-cli is deprecated
+    image: registry.gitlab.com/gitlab-org/cli:latest
+    # The release only links to the build artifacts, so it doesn't download them
     needs:
+    - job: run_tests
+      artifacts: false
     - job: build_editor
-      artifacts: true
+      artifacts: false
     - job: build_engine
+      artifacts: false
     - job: build_map_maker
-    except:
-        refs:
-            - merge_requests
-    only:
-        - release
+      artifacts: false
+    rules:
+        - if: $CI_COMMIT_BRANCH == "release"
     script:
         - echo 'running release'
         - echo 'remember to make sure your url is correct!'
