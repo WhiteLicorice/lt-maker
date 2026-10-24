@@ -29,8 +29,24 @@ class Validator():
     include_generic_completions = False
 
     def __init__(self, db: Optional[Database] = None, resources: Optional[Resources] = None):
-        self._db = db or Database()
-        self._resources = resources or Resources()
+        self._given_db = db
+        self._given_resources = resources
+
+    # Without a database or resources given, a validator checks against empty
+    # ones, built the first time it needs them. Building Resources reads the
+    # disk, and converting a command's text, the engine's use of validators,
+    # needs neither
+    @property
+    def _db(self) -> Database:
+        if self._given_db is None:
+            self._given_db = Database()
+        return self._given_db
+
+    @property
+    def _resources(self) -> Resources:
+        if self._given_resources is None:
+            self._given_resources = Resources()
+        return self._given_resources
 
     def validate(self, text, level):
         return text

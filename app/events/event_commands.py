@@ -1,6 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass
 
+import functools
 import logging
 from enum import Enum
 from typing import Callable, List, Dict, Optional, Self, Set, Tuple, Type
@@ -3905,6 +3906,9 @@ FORBIDDEN_PYTHON_COMMANDS: List[EventCommand] = [Comment, If, Elif, Else,
                                                  End, For, Endf, LoopUnits,
                                                  ModifyGameVar, ModifyLevelVar]
 FORBIDDEN_PYTHON_COMMAND_NIDS: List[str] = [cmd.nid for cmd in FORBIDDEN_PYTHON_COMMANDS] + [cmd.nickname for cmd in FORBIDDEN_PYTHON_COMMANDS]
+# The commands are all known once this module is imported, so each version's
+# table is built once and shared. Read it, never change it
+@functools.cache
 def get_all_event_commands(version: EventVersion) -> Dict[NID, Type[EventCommand]]:
     if version == EventVersion.EVENT:
         commands = {nid: command_t for nid, command_t in ALL_EVENT_COMMANDS.items() if nid not in ['say']}
