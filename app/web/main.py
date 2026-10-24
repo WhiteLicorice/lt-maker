@@ -46,14 +46,24 @@ def page_options() -> dict[str, str]:
     return {key: values[0] for key, values in query.items()}
 
 def loaded(step: str):
-    """Notes how long after the page was opened a step of loading finished"""
+    """
+    Notes how long after the page was opened a step of loading finished, and
+    tells the page's loading screen (loading.js)
+    """
     import platform
     print('LTLOAD %-20s %6.0f ms' % (step, float(platform.window.performance.now())), flush=True)
+    platform.window.__ltLoading.step(step)
+
+async def shown(step: str):
+    """loaded, then a frame for the page to show it, as the engine's loading holds the page"""
+    loaded(step)
+    await asyncio.sleep(0)
 
 # Sends what it is given to the server's /report once a second, along with the
-# browser's console and the page's errors, starting with what device this is
+# browser's console and the page's errors, starting with the steps the loading
+# screen noted before main.py ran (loading.js), and what device this is
 REPORT_JS = """(() => {
-  const pending = [];
+  const pending = __ltLoading.noted.slice();
   window.__ltReport = (line) => { pending.push(line); };
   const send = () => {
     if (!pending.length) return;
@@ -79,6 +89,11 @@ REPORT_JS = """(() => {
   pending.push('device ' + navigator.userAgent + '; screen ' + screen.width + 'x' + screen.height +
                ' at ' + devicePixelRatio + 'x; window ' + innerWidth + 'x' + innerHeight +
                '; ' + navigator.hardwareConcurrency + ' cores');
+  // When each file the page fetched so far, pygbag's Python among them, began and finished arriving
+  for (const entry of performance.getEntriesByType('resource')) {
+    pending.push('LTFETCH ' + entry.startTime.toFixed(0).padStart(6) + ' to ' + entry.responseEnd.toFixed(0).padStart(6) +
+                 ' ms ' + entry.name);
+  }
 })();"""
 
 class ReportingStream():
@@ -200,7 +215,7 @@ async def restore_saves(game_nid: str):
     platform.window.__ltSaves.restore(os.getcwd() + '/saves', game_nid)
     while not json.loads(str(platform.window.eval('JSON.stringify(__ltSaves.ready)'))):
         await asyncio.sleep(0)
-    loaded('saves restored')
+    await shown('saves restored')
 
 def setup_page():
     """
@@ -247,7 +262,7 @@ async def main():
     from app.engine import config as cf
     from app.engine import driver
     from app.engine import game_state
-    loaded('engine imported')
+    await shown('engine imported')
     setup_page()
     print('*** Lex Talionis Engine Version %s on Python %s (%s) ***' % (VERSION, sys.version.split()[0], sys.platform))
     print('Built', Path('built.txt').read_text())
@@ -267,21 +282,21 @@ async def main():
     if metadata.has_fatal_errors:
         raise ValueError("Fatal errors detected in game. Aborting launch.")
     RESOURCES.load(project, CURRENT_SERIALIZATION_VERSION)
-    loaded('resources loaded')
+    await shown('resources loaded')
     DB.load(project, CURRENT_SERIALIZATION_VERSION)
-    loaded('database loaded')
+    await shown('database loaded')
     title = DB.constants.value('title')
     platform.window.__ltSetTitle(title)
     platform.window.__ltSaves.offer(title)
     level_nid = OPTIONS.get('level')
     driver.start(title, from_editor=bool(level_nid))
     print('Mixer (frequency, format, channels):', pygame.mixer.get_init())
-    loaded('engine started')
+    await shown('engine started')
     if level_nid:
         game = game_state.start_level(level_nid)
     else:
         game = game_state.start_game()
-    loaded('game started')
+    await shown('game started')
     asyncio.create_task(pump_touch_controls())
     if 'cprofile' in OPTIONS:
         start, frames = (int(n) for n in OPTIONS['cprofile'].split(','))
@@ -289,7 +304,15 @@ async def main():
     else:
         await driver.run_async(game)
 
-try:
-    asyncio.run(main())
-except Exception:
-    traceback.print_exc()
+async def run():
+    """main, showing any error that stops it on the page's loading screen (loading.js)"""
+    import platform
+    try:
+        await main()
+    except Exception as error:
+        traceback.print_exc()
+        platform.window.__ltLoading.failed(''.join(traceback.format_exception_only(error)).strip())
+
+# pygbag's asyncio.run starts the task and returns at once, so an error in it
+# is only seen inside it
+asyncio.run(run())

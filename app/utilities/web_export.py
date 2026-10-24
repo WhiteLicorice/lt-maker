@@ -4,7 +4,8 @@ serves as it is. The page runs the engine under pygbag's Python for the
 browser, which it fetches from pygbag's CDN; all the rest is written here,
 with no pygbag needed:
 
-    index.html              pygbag's page (app/web/pygbag_default.tmpl), filled in
+    index.html              pygbag's page (app/web/pygbag_default.tmpl), filled in,
+                            with app/web/loading.js in its head
     game.apk                a zip of the engine and the project, which the page
                             unpacks before it runs main.py (app/web/main.py)
     deferred/, deferred.json
@@ -79,7 +80,10 @@ TEMPLATE_VALUES = {
 # pygbag's page unpacks a zip of the game (.apk) on itch.io and a .tar.gz
 # anywhere else. itch.io marks gzip content as Content-Encoding: gzip, so the
 # browser would unpack a .tar.gz before Python could, while a zip arrives as
-# it is on any host. The page unpacks the zip everywhere instead
+# it is on any host. The page unpacks the zip everywhere instead, and rather
+# than fetch it once Python runs, takes it from loading.js, which fetched it
+# as the page opened. It unpacks a file at a time, giving the page a moment
+# now and then to show how far it is
 ARCHIVE_UNPACKING = '''    if platform.window.location.host.find('.itch.zone')>0:
         import zipfile
         async with platform.fopen("{{cookiecutter.archive}}.apk", "rb") as archive:
@@ -92,10 +96,26 @@ ARCHIVE_UNPACKING = '''    if platform.window.location.host.find('.itch.zone')>0
             tar.extractall(path=appdir.as_posix(), filter='tar')
             tar.close()
 '''
-ZIP_UNPACKING = '''    import zipfile
-    async with platform.fopen("{{cookiecutter.archive}}.apk", "rb") as archive:
-        with zipfile.ZipFile(archive) as zip_ref:
-            zip_ref.extractall(appdir.as_posix())
+ZIP_UNPACKING = '''    import os
+    import time
+    import zipfile
+    while not platform.window.__ltLoading.archiveReady():
+        await asyncio.sleep(.1)
+    archive_path = "/tmp/{{cookiecutter.archive}}.apk"
+    error = str(platform.window.__ltLoading.putArchive(archive_path))
+    if error:
+        raise RuntimeError(error)
+    with zipfile.ZipFile(archive_path) as zip_ref:
+        members = zip_ref.infolist()
+        shown = time.monotonic()
+        for done, member in enumerate(members):
+            zip_ref.extract(member, appdir.as_posix())
+            if time.monotonic() - shown > .1:
+                platform.window.__ltLoading.progress(done / len(members))
+                await asyncio.sleep(0)
+                shown = time.monotonic()
+    os.remove(archive_path)
+    platform.window.__ltLoading.unpacked()
 '''
 # In place of pygbag's two viewports in the page's head, so that the page has
 # its last from the start: a viewport set later moves what iOS draws but not
@@ -136,12 +156,15 @@ Progress = Callable[[float], None]
 def read_constants(project: Path) -> dict:
     return dict(json.loads((project / 'game_data' / 'constants.json').read_text(encoding='utf-8')))
 
-def page_html(title: str) -> str:
-    '''pygbag's page, filled in for the game called title'''
+def page_html(title: str, archive_size: int) -> str:
+    '''pygbag's page, filled in for the game called title, whose archive is archive_size bytes'''
     page = (WEB_DIR / 'pygbag_default.tmpl').read_text(encoding='utf-8')
     page = _replace_once(page, ARCHIVE_UNPACKING, ZIP_UNPACKING)
     page = _replace_once(page, PYGBAG_VIEWPORTS, '')
-    page = _replace_once(page, '</head>', HEAD_ADDITIONS + '</head>')
+    loading = '<script>\nwindow.__ltLoadingConfig = %s;\n%s</script>\n' % (
+        json.dumps({'archive': ARCHIVE + '.apk', 'size': archive_size}),
+        (WEB_DIR / 'loading.js').read_text(encoding='utf-8'))
+    page = _replace_once(page, '</head>', HEAD_ADDITIONS + loading + '</head>')
     page = _replace_once(page, '</body>', BODY_ADDITIONS + '</body>')
     # The title also stands in a Python string in the page's script, where a
     # backslash would start an escape
@@ -234,7 +257,8 @@ def build(project: Path, web_dir: Path, progress: Optional[Progress] = None):
         # main.py prints it, to tell which build a device ran
         archive.writestr('assets/built.txt', time.strftime('%Y-%m-%d %H:%M:%S'))
     _write_bundles(deferred, project, web_dir, advance)
-    (web_dir / 'index.html').write_text(page_html(constants['title']), encoding='utf-8')
+    archive_size = (web_dir / (ARCHIVE + '.apk')).stat().st_size
+    (web_dir / 'index.html').write_text(page_html(constants['title'], archive_size), encoding='utf-8')
     for image in PAGE_IMAGES:
         shutil.copy(WEB_DIR / image, web_dir / image)
 

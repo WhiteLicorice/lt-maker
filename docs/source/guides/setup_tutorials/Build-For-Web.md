@@ -23,7 +23,7 @@ itch.io allows 1,000 files, 500 MB unzipped and 200 MB per file. The export pack
 
 ## What to expect
 
-- The first load takes 10–20 seconds while the browser downloads Python.
+- The game takes 5–20 seconds to start, behind a loading screen that shows how far along it is. On a phone, most of that is the browser starting Python.
 - The game starts on its own, but music and sound effects play only after the player first clicks or taps.
 - There is a short pause on a black screen while a level's music loads.
 - Saves stay in the player's browser. The SAVES button exports them to a zip and imports them again, for moving to another browser or device.

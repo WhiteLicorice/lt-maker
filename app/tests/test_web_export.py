@@ -74,12 +74,19 @@ class WebExportTests(unittest.TestCase):
 
     def test_the_page_unpacks_the_zip_on_any_host(self):
         page = (self.web_dir / 'index.html').read_text(encoding='utf-8')
-        self.assertIn('platform.fopen("game.apk"', page)
+        self.assertIn('archive_path = "/tmp/game.apk"', page)
+        self.assertIn('zipfile.ZipFile(archive_path)', page)
         self.assertNotIn('tar.gz', page)
         self.assertNotIn('itch.zone', page)
         self.assertIn('<title>%s</title>' % web_export.read_constants(PROJECT)['title'], page)
         # pygbag leaves this one unfilled too, in a part of the page nothing reads
         self.assertEqual(page.count('{{cookiecutter.'), 1)
+
+    def test_the_page_fetches_the_archive_at_its_size(self):
+        page = (self.web_dir / 'index.html').read_text(encoding='utf-8')
+        config = {'archive': 'game.apk', 'size': (self.web_dir / 'game.apk').stat().st_size}
+        self.assertIn('window.__ltLoadingConfig = %s;' % json.dumps(config), page)
+        self.assertIn('window.__ltLoading = {', page)
 
     def test_the_page_images_are_served_beside_it(self):
         for image in web_export.PAGE_IMAGES:
@@ -97,7 +104,7 @@ class WebExportTests(unittest.TestCase):
 
 class WebExportRefusalTests(unittest.TestCase):
     def test_a_title_cannot_break_out_of_the_page(self):
-        page = web_export.page_html('<script>"\\N"</script>')
+        page = web_export.page_html('<script>"\\N"</script>', 1)
         self.assertNotIn('<script>"', page)
         self.assertNotIn('\\N', page)
 
