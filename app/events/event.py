@@ -545,7 +545,7 @@ class Event():
                     return None
                 return position
             elif placement == 'push':
-                new_pos = self.game.target_system.get_nearest_open_tile(current_occupant, position)
+                new_pos = self.game.target_system.get_nearest_open_tile(current_occupant, position, can_stay=False)
                 if new_pos:
                     action.do(action.ForcedMovement(current_occupant, new_pos))
                     return position

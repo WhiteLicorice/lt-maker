@@ -63,6 +63,8 @@ class CheckAdvantageTests(EngineTestCase):
         self.rapier = self.eirika.get_weapon()
         self.axe = self.enemy.get_weapon()
         self.check_advantage = self.game.query_engine.check_advantage
+        self.check_no_triangle = self.game.query_engine.check_no_triangle
+        self.check_disadvantage = self.game.query_engine.check_disadvantage
 
     def drawn_arrow(self) -> str:
         surf = MagicMock()
@@ -72,18 +74,21 @@ class CheckAdvantageTests(EngineTestCase):
         return surf.blit.call_args.args[0]
 
     def test_advantage_and_disadvantage(self):
-        self.assertIs(self.check_advantage(self.eirika, self.enemy, self.rapier, self.axe), WeaponAdvantage.ADVANTAGE)
-        self.assertIs(self.check_advantage(self.enemy, self.eirika, self.axe, self.rapier), WeaponAdvantage.DISADVANTAGE)
+        self.assertIs(self.check_advantage(self.eirika, self.enemy, self.rapier, self.axe), True)
+        self.assertIs(self.check_no_triangle(self.eirika, self.enemy, self.rapier, self.axe), False)
+        self.assertIs(self.check_disadvantage(self.eirika, self.enemy, self.rapier, self.axe), False)
+
+        self.assertIs(self.check_advantage(self.enemy, self.eirika, self.axe, self.rapier), False)
+        self.assertIs(self.check_no_triangle(self.enemy, self.eirika, self.axe, self.rapier), False)
+        self.assertIs(self.check_disadvantage(self.enemy, self.eirika, self.axe, self.rapier), True)
 
     def test_units_and_items_by_nid(self):
-        self.assertIs(self.check_advantage('Eirika', '101', 'Rapier', 'Iron_Axe'), WeaponAdvantage.ADVANTAGE)
+        self.assertIs(self.check_advantage('Eirika', '101', 'Rapier', 'Iron_Axe'), True)
 
     def test_neutral_when_the_target_has_no_weapon(self):
-        self.assertIs(self.check_advantage(self.eirika, self.enemy, self.rapier, None), WeaponAdvantage.NEUTRAL)
-
-    def test_result_compares_against_a_string(self):
-        self.assertTrue(self.check_advantage(self.eirika, self.enemy, self.rapier, self.axe) == 'advantage')
-        self.assertTrue(self.check_advantage(self.enemy, self.eirika, self.axe, self.rapier) == 'disadvantage')
+        self.assertIs(self.check_advantage(self.eirika, self.enemy, self.rapier, None), False)
+        self.assertIs(self.check_no_triangle(self.eirika, self.enemy, self.rapier, None), True)
+        self.assertIs(self.check_disadvantage(self.eirika, self.enemy, self.rapier, None), False)
 
     def test_result_has_no_truth_value(self):
         for member in WeaponAdvantage:
@@ -92,7 +97,7 @@ class CheckAdvantageTests(EngineTestCase):
 
     def test_arrow_component_does_not_change_the_query(self):
         with patch.object(item_system, 'show_weapon_disadvantage', return_value=True):
-            self.assertIs(self.check_advantage(self.eirika, self.enemy, self.rapier, self.axe), WeaponAdvantage.ADVANTAGE)
+            self.assertIs(self.check_advantage(self.eirika, self.enemy, self.rapier, self.axe), True)
 
     def test_drawn_arrow_follows_the_weapon_triangle(self):
         self.assertEqual(self.drawn_arrow(), 'up')
