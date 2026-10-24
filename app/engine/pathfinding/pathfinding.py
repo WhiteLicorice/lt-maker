@@ -1,5 +1,6 @@
 import heapq
-from typing import Callable, List, Optional, Set, Tuple
+import math
+from typing import Callable, Dict, List, Optional, Set, Tuple
 
 from app.engine import bresenham_line_algorithm
 
@@ -8,68 +9,44 @@ from app.utilities.grid import BoundedGrid
 from app.utilities.typing import Pos
 
 class Djikstra:
-    __slots__ = ['open', 'closed', 'grid', 'start_pos', 'start_node']
+    """
+    Finds every position reachable from start_pos for at most a given cost.
+    It keeps the costs it finds to itself, leaving the grid's nodes as they
+    were, so a search needs no reset of the grid first
+    """
+    __slots__ = ['grid', 'start_pos']
 
     def __init__(self, start_pos: Pos, grid: BoundedGrid[Node]):
-        self.open: List[Node] = []
-        heapq.heapify(self.open)
-        self.closed: Set[Node] = set()
         self.grid: BoundedGrid[Node] = grid
-        self._reset_grid()
         self.start_pos: Pos = start_pos
-        self.start_node: Node = self.grid.get(start_pos)
 
-    def _reset_grid(self):
-        for node in self.grid.cells():
-            node.reset()
-
-    def _get_adj_nodes(self, node: Node) -> List[Node]:
-        return self._get_manhattan_adj_nodes(node)
-
-    def _get_manhattan_adj_nodes(self, node: Node) -> List[Node]:
-        nodes: List[Node] = []
-        for adj in [(node.x, node.y + 1), (node.x + 1, node.y), 
-                    (node.x - 1, node.y), (node.x, node.y - 1)]:
-            if self.grid.check_bounds(adj):
-                nodes.append(self.grid.get(adj))
-        return nodes
-
-    def _update_node(self, adj: Node, node: Node):
-        # g is true distance between this node and starting position
-        adj.g = node.g + adj.cost
-        adj.parent = node
-
-    def process(self, can_move_through: Callable[[Pos], bool], 
+    def process(self, can_move_through: Callable[[Pos], bool],
                 movement_left: float) -> Set[Pos]:
-        # add starting node to open heap queue
-        heapq.heappush(self.open, (self.start_node.g, self.start_node))
-        while self.open:
-            # pop node from heap queue
-            g, node = heapq.heappop(self.open)
-            # If we've traveled too far -- always g ordered, so leaving at the
-            # first sign of trouble will always work
+        left, top, right, bottom = self.grid.bounds
+        # The cheapest cost found so far to reach each position
+        costs: Dict[Pos, float] = {self.start_pos: 0}
+        closed: Set[Pos] = set()
+        # A position whose cost goes down is pushed again. Its older, costlier
+        # entry comes off the heap after the position is closed, and is skipped
+        open_heap: List[Tuple[float, Pos]] = [(0, self.start_pos)]
+        while open_heap:
+            g, pos = heapq.heappop(open_heap)
+            # Entries come off in order of cost, so the first one too far ends it
             if g > movement_left:
-                return {(node.x, node.y) for node in self.closed}
-            # add node to closed set so we don't process it twice
-            self.closed.add(node)
-            # get adjacent nodes for node
-            adj_nodes = self._get_adj_nodes(node)
-            for adj in adj_nodes:
-                if adj.reachable and adj not in self.closed:
-                    if can_move_through((adj.x, adj.y)):
-                        if (adj.g, adj) in self.open:
-                            # if adj node in open list, check if current path
-                            # is better than the one previously found for this adj node
-                            if adj.g > node.g + adj.cost:
-                                self._update_node(adj, node)
-                                heapq.heappush(self.open, (adj.g, adj))
-                        else:
-                            self._update_node(adj, node)
-                            heapq.heappush(self.open, (adj.g, adj))
-                    else:  # Unit is in the way
-                        pass
-        # Sometimes gets here if unit is fully enclosed
-        return {(node.x, node.y) for node in self.closed}
+                break
+            if pos in closed:
+                continue
+            closed.add(pos)
+            x, y = pos
+            for adj in ((x, y + 1), (x + 1, y), (x - 1, y), (x, y - 1)):
+                if left <= adj[0] <= right and top <= adj[1] <= bottom and adj not in closed:
+                    node = self.grid.get(adj)
+                    if node.reachable and can_move_through(adj):
+                        adj_g = g + node.cost
+                        if adj_g < costs.get(adj, math.inf):
+                            costs[adj] = adj_g
+                            heapq.heappush(open_heap, (adj_g, adj))
+        return closed
 
 class AStar:
     def __init__(self, start_pos: Pos, goal_pos: Optional[Pos], grid: BoundedGrid[Node]):
