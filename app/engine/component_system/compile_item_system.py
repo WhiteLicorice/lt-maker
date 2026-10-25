@@ -134,23 +134,21 @@ def generate_item_hook_str(hook_name: str, hook_info: HookInfo):
     if hook_info.has_default_value:
         default_handling = "return result if values else Defaults.{hook_name}({args})".format(hook_name=hook_name, args=', '.join(args))
     if hook_info.inherits_parent:
-        inheritance_handling = """
-            if item.parent_item:
-                orig_item = item
-                item = item.parent_item
-                for component in item.components:
-                    if component.defines('{hook_name}'):
-                        values.append(component.{hook_name}({args}))
-                item = orig_item
+        # Inside the loop over the item's own components, as it always has been: the
+        # parent's are asked once for each of the item's own that defines the hook
+        inheritance_handling = """        if item.parent_item:
+            orig_item = item
+            item = item.parent_item
+            for component in item.components.with_hook('{hook_name}'):
+                values.append(component.{hook_name}({args}))
+            item = orig_item
 """.format(hook_name=hook_name, args=', '.join(args))
 
     func_text = """
 def {hook_name}({func_signature}):
-    all_components = get_all_components(unit, item)
     values = []
-    for component in all_components:
-        if component.defines('{hook_name}'):
-            values.append(component.{hook_name}({args}))
+    for component in get_hook_components(unit, item, '{hook_name}'):
+        values.append(component.{hook_name}({args}))
 {inheritance_handling}
     result = utils.{policy_resolution}(values)
     {default_handling}

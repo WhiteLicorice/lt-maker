@@ -3,8 +3,9 @@ from typing import Optional, Tuple
 
 import app.engine.skill_component_access as SCA
 from app.data.category import Categories, CategorizedCatalog
+from app.data.database.components import ComponentData
 from app.data.database.skill_components import SkillComponent
-from app.utilities.data import Data, Prefab
+from app.utilities.data import Prefab
 from app.utilities.typing import NID
 from app.utilities import str_utils
 
@@ -13,7 +14,7 @@ class SkillPrefab(Prefab):
     nid: str
     name: str
     desc: str
-    components: Data[SkillComponent]
+    components: ComponentData
     icon_nid: Optional[NID]
     icon_index: Tuple[int, int]
 
@@ -25,7 +26,7 @@ class SkillPrefab(Prefab):
         self.icon_nid = icon_nid
         self.icon_index = icon_index
 
-        self.components = components or Data[SkillComponent]()
+        self.components = components or ComponentData()
         for component_key, component_value in self.components.items():
             self.__dict__[component_key] = component_value
 
@@ -61,7 +62,7 @@ class SkillPrefab(Prefab):
 
     @classmethod
     def restore(cls, dat):
-        skill_components = Data()
+        skill_components = ComponentData()
         components = [SCA.restore_component(val) for val in dat['components']]
         components = [c for c in components if c]
         for component in components:

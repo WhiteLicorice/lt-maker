@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, Mock
 
 import time
 
+from app.data.database.components import ComponentData
 from app.data.serialization.versions import CURRENT_SERIALIZATION_VERSION
 from app.engine.item_components.target_components import EvalSpecialRange, MaximumRange, MinimumRange, TargetsEnemies
 from app.engine.objects.item import ItemObject
@@ -44,7 +45,7 @@ class TargetSystemUnitTests(unittest.TestCase):
             targeting_component.valid_targets = Mock(return_value=set())
         min_range_component = MinimumRange(value=min_range)
         max_range_component = MaximumRange(value=max_range)
-        sword.components = [targeting_component, min_range_component, max_range_component]
+        sword.components = ComponentData([targeting_component, min_range_component, max_range_component])
         return sword
 
     def create_target_system(self):

@@ -1,6 +1,8 @@
 import unittest
 from unittest.mock import MagicMock
 
+from app.data.database.components import ComponentData
+
 
 class CantoMovementTests(unittest.TestCase):
     """canto_movement resolves as a MAXIMUM across every component that defines
@@ -15,7 +17,7 @@ class CantoMovementTests(unittest.TestCase):
 
     def _unit_with(self, components, has_attacked, movement_left, movement=7):
         skill = MagicMock()
-        skill.components = components
+        skill.components = ComponentData(components)
         for component in components:
             component.ignore_conditional = True
         unit = MagicMock()

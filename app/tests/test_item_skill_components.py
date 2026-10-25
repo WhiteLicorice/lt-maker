@@ -2,6 +2,7 @@ import unittest
 from typing import Any, Callable, List
 from unittest.mock import MagicMock, patch
 
+from app.data.database.components import ComponentData
 from app.data.database.item_components import ItemComponent
 from app.data.database.skill_components import SkillComponent
 from app.engine.codegen import source_generator
@@ -18,7 +19,6 @@ from app.engine.skill_components.combat_components import DamageMultiplier
 from app.engine.skill_components.combat2_components import Vantage
 from app.engine.skill_components.dynamic_components import DynamicDamage
 from app.engine.skill_components.aesthetic_components import BattleAnimMusic, UnitFlickeringTint
-from app.utilities.data import Data
 
 
 class ItemSkillComponentTests(unittest.TestCase):
@@ -50,7 +50,7 @@ class ItemSkillComponentTests(unittest.TestCase):
 
     def _test_skill_hook_with_components(self, components: List[SkillComponent], call_hook: Callable[[UnitObject], Any], expected_result: Any) -> None:
         mock_skill = MagicMock()
-        mock_skill.components = components
+        mock_skill.components = ComponentData(components)
         mock_unit = MagicMock()
         mock_unit.skills = [mock_skill]
         mock_unit.ai = 'Pursue'
@@ -79,7 +79,7 @@ class ItemSkillComponentTests(unittest.TestCase):
         comp = CombatCondition()
         comp._condition = False
         skill = MagicMock()
-        skill.components = [comp]
+        skill.components = ComponentData([comp])
         comp.skill = skill
         unit = MagicMock()
         unit.equipped_weapon = None
@@ -274,7 +274,7 @@ class ItemSkillComponentTests(unittest.TestCase):
         mock_post_combat.condition = MagicMock(return_value=False)
         mock_test_on.condition = MagicMock(return_value=False)
         mock_test_off.condition = MagicMock(return_value=False)
-        mock_on_end_chapter_skill.components = [mock_on_end_chapter]
+        mock_on_end_chapter_skill.components = ComponentData([mock_on_end_chapter])
         self._test_skill_hook_with_components([mock_on_end_chapter], lambda unit: skill_system.on_end_chapter(unit, mock_on_end_chapter_skill), None)
         self._test_skill_hook_with_components([mock_on_upkeep], lambda unit: skill_system.on_upkeep(mock_arg, mock_arg, unit), None)
         self._test_skill_hook_with_components([mock_on_endstep], lambda unit: skill_system.on_endstep(mock_arg, mock_arg, unit), None)
@@ -298,7 +298,7 @@ class ItemSkillComponentTests(unittest.TestCase):
 
     def _test_item_hook_with_components(self, components: List[ItemComponent], call_hook: Callable[[UnitObject, ItemObject], Any], expected_result: Any) -> None:
         mock_item = MagicMock()
-        mock_item.components = components
+        mock_item.components = ComponentData(components)
         mock_unit = MagicMock()
         self.assertEqual(expected_result, call_hook(mock_unit, mock_item))
 
@@ -361,8 +361,8 @@ class ItemSkillComponentTests(unittest.TestCase):
         mock_component_2.on_upkeep = MagicMock(return_value=None)
         mock_component_2.start_combat = MagicMock(return_value=None)
         mock_component_2.battle_music = MagicMock(return_value=None)
-        mock_item.components = [mock_component_1]
-        mock_parent.components = [mock_component_2]
+        mock_item.components = ComponentData([mock_component_1])
+        mock_parent.components = ComponentData([mock_component_2])
         mock_item.parent_item = mock_parent
         self.assertEqual(None, item_system.on_end_chapter(mock_arg, mock_item))
         self.assertEqual(None, item_system.on_upkeep(mock_arg, mock_arg, mock_arg, mock_item))
@@ -383,7 +383,7 @@ class ItemSkillComponentTests(unittest.TestCase):
         mock_unit = MagicMock()
         test_patch.item_override = MagicMock(return_value = [Damage(4), Hit(90), CustomTriangleMultiplier(2)])
         mock_item = MagicMock()
-        mock_item.components = [Damage(10), Crit(25), CustomTriangleMultiplier(2)]
+        mock_item.components = ComponentData([Damage(10), Crit(25), CustomTriangleMultiplier(2)])
         self.assertEqual(4, item_system.damage(mock_unit, mock_item))
         self.assertEqual(90, item_system.hit(mock_unit, mock_item))
         self.assertEqual(25, item_system.crit(mock_unit, mock_item))
@@ -420,15 +420,15 @@ class ItemSkillComponentTests(unittest.TestCase):
         self.assertIs(result.item, mock_item)
 
     def test_item_tags(self) -> None:
-        mock_item = ItemObject("test", "Test", "Test", None, (0, 0), Data([ItemTag(['weapon'])]))
+        mock_item = ItemObject("test", "Test", "Test", None, (0, 0), ComponentData([ItemTag(['weapon'])]))
         self.assertTrue('weapon' in mock_item.tags)
-        no_tag_item = ItemObject("test", "Test", "Test", None, (0, 0), Data())
+        no_tag_item = ItemObject("test", "Test", "Test", None, (0, 0), ComponentData())
         self.assertFalse('weapon' in no_tag_item.tags)
 
     def test_skill_tags(self) -> None:
-        mock_skill = SkillObject("test", "Test", "Test", None, (0, 0), Data([SkillTag(['skill'])]))
+        mock_skill = SkillObject("test", "Test", "Test", None, (0, 0), ComponentData([SkillTag(['skill'])]))
         self.assertTrue('skill' in mock_skill.tags)
-        no_tag_skill = SkillObject("test", "Test", "Test", None, (0, 0), Data())
+        no_tag_skill = SkillObject("test", "Test", "Test", None, (0, 0), ComponentData())
         self.assertFalse('skill' in no_tag_skill.tags)
 
     def test_shove_on_end_combat_shoves_splash_targets(self) -> None:

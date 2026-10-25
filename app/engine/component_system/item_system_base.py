@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import random
-from typing import TYPE_CHECKING, List, Optional, Set, Tuple, Any, Callable
+from typing import TYPE_CHECKING, List, Optional, Sequence, Set, Tuple, Any, Callable
 import app.engine.combat.playback as pb
 
 from app.engine.component_system import utils
 from app.engine.utils.ltcache import ltcached
 
 if TYPE_CHECKING:
+    from app.data.database.item_components import ItemComponent
     from app.engine.objects.item import ItemObject
     from app.engine.objects.unit import UnitObject
     from app.engine.info_menu.multi_desc_utils import RawPages
@@ -96,6 +97,20 @@ def get_all_components(unit: UnitObject, item: ItemObject) -> list:
         return override_components
     all_components = [c for c in item.components] + override_components
     return all_components
+
+def get_hook_components(unit: UnitObject, item: ItemObject, hook_name: str) -> Sequence[ItemComponent]:
+    """
+    The components that define hook_name, in the order of get_all_components:
+    the item's own, then those its unit's skills override it with
+    """
+    if not item:
+        return ()  # Without an item there is nothing to override either
+    from app.engine import skill_system
+    override_components = skill_system.item_override(unit, item)
+    own = item.components.with_hook(hook_name)
+    if override_components:
+        return own + tuple(c for c in override_components if c.defines(hook_name))
+    return own
 
 @ltcached
 def get_multi_desc(item, unit) -> list[RawPages]:

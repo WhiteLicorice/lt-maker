@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Optional
 from app.data.database.skill_components import SkillComponent
-from app.utilities.data import Data
+from app.data.database.components import ComponentData
 
 from app.data.database.database import DB
 import app.engine.skill_component_access as SCA
@@ -22,7 +22,7 @@ class SkillObject():
         self.icon_nid = icon_nid
         self.icon_index = icon_index
 
-        self.components = components or Data()
+        self.components: ComponentData = components or ComponentData()
         for component_key, component_value in self.components.items():
             self.__dict__[component_key] = component_value
             # Assign parent to component
@@ -46,7 +46,7 @@ class SkillObject():
     @classmethod
     def from_prefab(cls, prefab, component_data=None):
         # Components NEED To be copies! Since they store individualized information
-        components = Data()
+        components = ComponentData()
         component_data = component_data or []
 
         if component_data:

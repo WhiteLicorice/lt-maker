@@ -1,11 +1,10 @@
 import xml.etree.ElementTree as ET
 
 from app.utilities import str_utils, utils
-from app.utilities.data import Data
 from app.data.database.database import DB
 from app.data.database import skills
 
-from app.data.database.components import ComponentType
+from app.data.database.components import ComponentData, ComponentType
 
 import app.engine.skill_component_access as SCA
 
@@ -32,7 +31,7 @@ def load_skill(skill):
     icon_index = (int(icon_index[0]), int(icon_index[1]))
 
     components = skill.find('components').text.split(',') if skill.find('components').text else []
-    final_components = Data()
+    final_components = ComponentData()
     for component in components:
         if component in ('aura_child', 'affects_movement'):
             # Not needed

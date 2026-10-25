@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import copy
 from enum import Enum
-from typing import Any, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from app.utilities import str_utils
 from app.utilities.data import Data
@@ -155,3 +155,55 @@ class Component():
             return self.nid, copy.deepcopy(self.value)
         else:
             return self.nid, self.value
+
+class ComponentData(Data[Component]):
+    """
+    The components of an item or a skill. Asked which of its components define a
+    hook, it remembers the answer, so the item and skill systems need not ask
+    each component on every call. Any change to the components forgets it all,
+    since the answer depends on which components there are and their order
+    """
+    def __init__(self, vals: Optional[List[Component]] = None):
+        super().__init__(vals)
+        self._with_hooks: Dict[Tuple[str, ...], Tuple[Component, ...]] = {}
+
+    def with_hook(self, *hook_names: str) -> Tuple[Component, ...]:
+        """The components, in order, that define any of hook_names"""
+        found = self._with_hooks.get(hook_names)
+        if found is None:
+            found = tuple(component for component in self._list
+                          if any(component.defines(hook_name) for hook_name in hook_names))
+            self._with_hooks[hook_names] = found
+        return found
+
+    def append(self, val: Component, overwrite: bool = False):
+        super().append(val, overwrite)
+        self._with_hooks.clear()
+
+    def delete(self, val: Component):
+        super().delete(val)
+        self._with_hooks.clear()
+
+    def remove_key(self, key: str):
+        super().remove_key(key)
+        self._with_hooks.clear()
+
+    def pop(self, idx: Optional[int] = None):
+        super().pop(idx)
+        self._with_hooks.clear()
+
+    def insert(self, idx: int, val: Component):
+        super().insert(idx, val)
+        self._with_hooks.clear()
+
+    def clear(self):
+        super().clear()
+        self._with_hooks.clear()
+
+    def move_index(self, old_index: int, new_index: int):
+        super().move_index(old_index, new_index)
+        self._with_hooks.clear()
+
+    def sort(self, sort_func=None):
+        super().sort(sort_func)
+        self._with_hooks.clear()

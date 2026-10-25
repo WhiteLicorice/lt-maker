@@ -3,11 +3,10 @@ import xml.etree.ElementTree as ET
 from app.editor.lib.csv.csv_data_exporter import update_db_with_item_csv
 
 from app.utilities import str_utils, utils
-from app.utilities.data import Data
 from app.data.database.database import DB, Database
 from app.data.database import items
 
-from app.data.database.components import ComponentType
+from app.data.database.components import ComponentData, ComponentType
 
 import app.engine.item_component_access as ICA
 
@@ -69,7 +68,7 @@ def load_item(item, parent_dir):
         icon_index = (int(icon_index[0]), int(icon_index[1]))
 
     components = item.find('components').text.split(',') if item.find('components').text else []
-    final_components = Data()
+    final_components = ComponentData()
     for component in components:
         if component == 'weapon':
             weapon_comp = ICA.get_component('weapon')

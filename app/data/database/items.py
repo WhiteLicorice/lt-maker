@@ -4,9 +4,10 @@ from typing import Optional, Tuple
 
 import app.engine.item_component_access as ICA
 from app.data.category import CategorizedCatalog
+from app.data.database.components import ComponentData
 from app.data.database.item_components import ItemComponent
 from app.utilities import str_utils
-from app.utilities.data import Data, Prefab
+from app.utilities.data import Prefab
 from app.utilities.typing import NID
 
 
@@ -14,11 +15,11 @@ class ItemPrefab(Prefab):
     nid: NID
     name: str
     desc: str
-    components: Data[ItemComponent]
+    components: ComponentData
     icon_nid: Optional[NID]
     icon_index: Tuple[int, int]
 
-    def __init__(self, nid, name, desc, icon_nid=None, icon_index=(0, 0), components: Optional[Data[ItemComponent]]=None):
+    def __init__(self, nid, name, desc, icon_nid=None, icon_index=(0, 0), components: Optional[ComponentData]=None):
         self.nid = nid
         self.name = name
         self.desc = desc
@@ -26,7 +27,7 @@ class ItemPrefab(Prefab):
         self.icon_nid = icon_nid
         self.icon_index = icon_index
 
-        self.components = components or Data[ItemComponent]()
+        self.components = components or ComponentData()
         for component_key, component_value in self.components.items():
             self.__dict__[component_key] = component_value
 
@@ -67,7 +68,7 @@ class ItemPrefab(Prefab):
 
         # NOTE: Backwards Compatability. Guarantees that additional paired components
         # added since last version are default initialized.
-        all_components = Data()
+        all_components = ComponentData()
         for component in components:
             all_components.append(component)
             if component.paired_with:

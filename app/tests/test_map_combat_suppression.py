@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
+from app.data.database.components import ComponentData
 from app.tests.engine_harness import EngineTestCase
 
 SUPPRESSION_HOOKS = ('no_map_hp_display', 'no_map_hit_flash', 'no_map_hit_sfx',
@@ -13,7 +14,7 @@ class SuppressionComponentTests(unittest.TestCase):
     def call_hook(self, hook_name, components):
         from app.engine import item_system
         mock_item = MagicMock()
-        mock_item.components = components
+        mock_item.components = ComponentData(components)
         mock_item.parent_item = None
         mock_unit = MagicMock()
         mock_unit.skills = []

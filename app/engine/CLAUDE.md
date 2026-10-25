@@ -17,6 +17,8 @@ Items and skills are composed of **components**, not subclasses. A component (e.
 
 Each hook method has a **resolution policy** controlling how multiple components' return values combine: `ALL_DEFAULT_FALSE` (any False → False; e.g., `is_weapon`), `UNIQUE` (last-defined wins; e.g., `damage_formula`), `NUMERIC_ACCUM` (sum all numerics; e.g., `modify_damage`), `UNION` (merge all returned sets; e.g., `target_icon`). The policy is the `HookInfo(args, ResolvePolicy.X)` value of the hook's entry in `ITEM_HOOKS` / `SKILL_HOOKS` (`app/engine/component_system/compile_*_system.py`) — pick the right one when adding a new hook.
 
+The generated dispatch asks `components.with_hook(name)` rather than every component's `defines`, so an item's or skill's components — objects and DB prefabs alike — are a `ComponentData` (`app/data/database/components.py`), which remembers which components define each hook and forgets on any change to the list. Build a new one wherever components are put together, a test's fake item or skill included: a plain list or `Data` fails with `AttributeError: ... no attribute 'with_hook'`. Whether a component defines a hook must not change over its life.
+
 A per-combat consumption (`one_loss_per_combat` and kin in `usable_components.py`) must apply in the `cleanup_combat` hook, not `end_combat` — see `combat/CLAUDE.md`.
 
 ## Save / restart system
