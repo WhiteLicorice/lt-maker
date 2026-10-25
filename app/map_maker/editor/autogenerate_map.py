@@ -1,5 +1,7 @@
 from typing import Any, Callable, Dict, Tuple
 
+from enum import StrEnum
+
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtWidgets import QDoubleSpinBox, \
     QDialog, QGroupBox, QFormLayout, QSpinBox, \
@@ -122,6 +124,7 @@ class AutogenerateMapDialog(QDialog):
                 editor.setAlignment(Qt.AlignRight)
                 editor.setRange(-100, 100)
                 editor.setDecimals(3)
+                editor.setValue(theme_parameter.value)
                 self.boxes[theme_parameter.nid] = editor
             elif theme_parameter._type == int:
                 editor = QSpinBox(self)
@@ -141,6 +144,15 @@ class AutogenerateMapDialog(QDialog):
                 editor.setIconSize(QSize(32, 32))
                 idx = Terrain.get_all_floor().index(theme_parameter.value)
                 editor.setCurrentIndex(idx)
+                self.boxes[theme_parameter.nid] = editor
+            elif isinstance(theme_parameter._type, type) and issubclass(theme_parameter._type, StrEnum):
+                # A string-choice parameter (e.g. MacroLayout): plain ComboBox of the enum's
+                # members, displayed by their string value. Ordering is the enum definition
+                # order, so the index maps back to a member in get_parameters.
+                editor = ComboBox(self)
+                options = list(theme_parameter._type)
+                editor.addItems([option.value for option in options])
+                editor.setCurrentIndex(options.index(theme_parameter._type(theme_parameter.value)))
                 self.boxes[theme_parameter.nid] = editor
 
             editor.setToolTip(theme_parameter.desc)
@@ -174,6 +186,9 @@ class AutogenerateMapDialog(QDialog):
                 editor.setValue(value)
             elif parameter._type == percent:
                 editor.setValue(value * 100)
+            elif isinstance(parameter._type, type) and issubclass(parameter._type, StrEnum):
+                options = list(parameter._type)
+                editor.setCurrentIndex(options.index(parameter._type(value)))
             elif isinstance(editor, ComboBox):
                 idx = Terrain.get_all_floor().index(value)
                 editor.setCurrentIndex(idx)
@@ -199,6 +214,8 @@ class AutogenerateMapDialog(QDialog):
                 value = editor.value() / 100.0
             elif parameter._type == float:
                 value = editor.value()
+            elif isinstance(parameter._type, type) and issubclass(parameter._type, StrEnum):
+                value = list(parameter._type)[editor.currentIndex()]
             elif isinstance(editor, QSpinBox):
                 value = editor.value()
             elif isinstance(editor, ComboBox):

@@ -32,6 +32,7 @@ def _connected_components(positions):
 
 
 class WorldMakerPercentileThresholdTests(unittest.TestCase):
+
     def test_determinism(self):
         theme = _make_theme()
         tm1 = terrain_generation.generate_terrain(theme, 42)
@@ -149,6 +150,7 @@ def _chebyshev(a, b):
 
 
 class WorldMakerRiverTests(unittest.TestCase):
+
     def test_determinism(self):
         theme = _make_theme()
         tm1 = terrain_generation.generate_terrain(theme, 3)
@@ -189,14 +191,16 @@ class WorldMakerRiverTests(unittest.TestCase):
                         "seed %d: sources %s and %s too close" % (seed, sources[i], sources[j]))
 
     def test_every_river_terminates_or_was_erased(self):
-        # Kept rivers end at SEA / RIVER / off-map, or ran out of room (deadend/cap) with
-        # at least 3 painted tiles; anything shorter is never recorded (erased).
+        # A recorded river reached water: it ends at SEA / RIVER / off-map. Dead-end and
+        # capped walks never reach water and are erased (not painted, not recorded), so
+        # they must not appear in tm.rivers. Kept rivers also paint at least 3 tiles.
         theme = _make_theme()
-        allowed = set(terrain_generation.RiverEnd)
+        clean = {terrain_generation.RiverEnd.SEA, terrain_generation.RiverEnd.RIVER,
+                 terrain_generation.RiverEnd.OFFMAP}
         for seed in range(10):
             tm = terrain_generation.generate_terrain(theme, seed)
             for path, reason in tm.rivers:
-                self.assertIn(reason, allowed, "seed %d: unexpected reason %s" % (seed, reason))
+                self.assertIn(reason, clean, "seed %d: kept river with reason %s" % (seed, reason))
                 painted = [p for p in path if tm.terrain_grid[p] == Terrain.RIVER]
                 self.assertGreaterEqual(len(painted), 3,
                                         "seed %d: kept river shorter than 3 tiles" % seed)
@@ -211,6 +215,176 @@ class WorldMakerRiverTests(unittest.TestCase):
                 for pos in path[1:]:
                     self.assertNotIn(tm.terrain_grid[pos], (Terrain.MOUNTAIN, Terrain.CLIFF),
                                      "seed %d: river crosses %s" % (seed, tm.terrain_grid[pos]))
+
+    def test_lakes_exist_when_enabled_and_none_when_disabled(self):
+        # Lakes on for most seeds at 8%; exactly zero SEA gained when disabled.
+        on = _make_theme(lake_percent=0.08)
+        off = _make_theme(lake_percent=0.0)
+        seeds_with_lakes = 0
+        for seed in range(10):
+            base = {p for p, t in terrain_generation.generate_terrain(off, seed).terrain_grid.items()
+                    if t == Terrain.SEA}
+            lit = {p for p, t in terrain_generation.generate_terrain(on, seed).terrain_grid.items()
+                   if t == Terrain.SEA}
+            self.assertTrue(base <= lit, "seed %d: disabling lakes must only remove SEA" % seed)
+            if lit - base:
+                seeds_with_lakes += 1
+        self.assertGreaterEqual(seeds_with_lakes, 8,
+                                "lakes appeared on only %d/10 seeds" % seeds_with_lakes)
+
+    def test_no_lake_within_chebyshev_2_of_coastline(self):
+        # Lake tiles (SEA gained vs the lakes-disabled run) must sit > Chebyshev 2 from the
+        # pre-lake coastline, so they never fuse into the coast.
+        on = _make_theme(lake_percent=0.08)
+        off = _make_theme(lake_percent=0.0)
+        for seed in range(10):
+            base = {p for p, t in terrain_generation.generate_terrain(off, seed).terrain_grid.items()
+                    if t == Terrain.SEA}
+            lit = {p for p, t in terrain_generation.generate_terrain(on, seed).terrain_grid.items()
+                   if t == Terrain.SEA}
+            for (lx, ly) in lit - base:
+                for (sx, sy) in base:
+                    self.assertGreater(max(abs(lx - sx), abs(ly - sy)), 2,
+                                       "seed %d: lake at (%d,%d) hugs coast" % (seed, lx, ly))
+
+    def test_deserts_are_a_noop_when_disabled(self):
+        off = _make_theme(desert_percent=0.0)
+        for seed in range(10):
+            g = terrain_generation.generate_terrain(off, seed).terrain_grid
+            for t in g.values():
+                self.assertNotIn(t, (Terrain.DESERT, Terrain.DESERT_ROCK, Terrain.DESERT_CLIFF),
+                                 "seed %d: desert tile appeared with deserts disabled" % seed)
+
+    def test_desert_sand_skirt_outweighs_desert_core(self):
+        # SAND is the common arid tile, true DESERT only the rare core. The pass must add more
+        # SAND than DESERT. (DESERT_ROCK is excluded: it is mostly replaced mountains, a
+        # separate feature from the sand-skirt / desert-core relationship.)
+        on = _make_theme(desert_percent=0.15)
+        off = _make_theme(desert_percent=0.0)
+        for seed in range(10):
+            g_on = terrain_generation.generate_terrain(on, seed).terrain_grid
+            g_off = terrain_generation.generate_terrain(off, seed).terrain_grid
+            sand_on = {p for p, t in g_on.items() if t == Terrain.SAND}
+            sand_off = {p for p, t in g_off.items() if t == Terrain.SAND}
+            sand_gained = len(sand_on - sand_off)
+            core = sum(1 for t in g_on.values() if t == Terrain.DESERT)
+            if core == 0:
+                continue  # no arid land this seed
+            self.assertGreater(sand_gained, core,
+                               "seed %d: sand skirt %d not > desert core %d" % (seed, sand_gained, core))
+
+    def test_desert_never_directly_touches_vegetation(self):
+        # True DESERT reaches grass/forest only through the SAND skirt: no DESERT tile is
+        # 4-adjacent to vegetation (erosion guarantees this). Checking DESERT alone keeps the
+        # invariant crisp; scattered DESERT_ROCK sits on interior desert, not the eroded edge.
+        on = _make_theme(desert_percent=0.15)
+        veg = (Terrain.NOISY_GRASS, Terrain.FOREST, Terrain.SPARSE_FOREST, Terrain.THICKET)
+        for seed in range(10):
+            g = terrain_generation.generate_terrain(on, seed).terrain_grid
+            core = [p for p, t in g.items() if t == Terrain.DESERT]
+            if not core:
+                continue
+            violations = 0
+            for (x, y) in core:
+                for n in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+                    if g.get(n) in veg:
+                        violations += 1
+                        break
+            self.assertLessEqual(violations, max(1, len(core) // 20),
+                                 "seed %d: %d/%d desert tiles touch vegetation" % (seed, violations, len(core)))
+
+    def test_desert_rocks_are_sparse_and_on_desert(self):
+        # DESERT_ROCK is only the scatter on flat desert (mountains flatten to DESERT/SAND,
+        # they do not become rock). It must stay a small minority of the desert region.
+        on = _make_theme(desert_percent=0.15, desert_rock_chance=0.06)
+        saw_rock = False
+        for seed in range(10):
+            g = terrain_generation.generate_terrain(on, seed).terrain_grid
+            rocks = sum(1 for t in g.values() if t == Terrain.DESERT_ROCK)
+            region = sum(1 for t in g.values() if t in (Terrain.DESERT, Terrain.DESERT_ROCK))
+            if region == 0:
+                continue
+            saw_rock = saw_rock or rocks > 0
+            self.assertLess(rocks, region * 0.25,
+                            "seed %d: rocks %d not sparse vs region %d" % (seed, rocks, region))
+        self.assertTrue(saw_rock, "no desert rocks scattered across 10 seeds")
+
+    def test_desert_replaces_mountains_in_the_blob(self):
+        # Mountains inside an arid blob flatten to DESERT/SAND like hills, so enabling deserts
+        # strictly reduces the mountain count on at least some seeds (a blob covering a peak).
+        on = _make_theme(desert_percent=0.20)
+        off = _make_theme(desert_percent=0.0)
+        reduced = False
+        for seed in range(10):
+            mtn_on = sum(1 for t in terrain_generation.generate_terrain(on, seed).terrain_grid.values()
+                         if t == Terrain.MOUNTAIN)
+            mtn_off = sum(1 for t in terrain_generation.generate_terrain(off, seed).terrain_grid.values()
+                          if t == Terrain.MOUNTAIN)
+            self.assertLessEqual(mtn_on, mtn_off, "seed %d: deserts added mountains" % seed)
+            reduced = reduced or mtn_on < mtn_off
+        self.assertTrue(reduced, "deserts never replaced a mountain across 10 seeds")
+
+    def test_deserts_are_deterministic(self):
+        on = _make_theme(desert_percent=0.15)
+        for seed in range(5):
+            a = terrain_generation.generate_terrain(on, seed).terrain_grid
+            b = terrain_generation.generate_terrain(on, seed).terrain_grid
+            self.assertEqual(a, b, "seed %d: desert generation not deterministic" % seed)
+
+    def test_pangaea_is_one_landmass(self):
+        # A pangaea layout must collapse the land into a single dominant continent.
+        theme = _make_theme(size=(30, 30), macro_layout='pangaea')
+        for seed in range(10):
+            g = terrain_generation.generate_terrain(theme, seed).terrain_grid
+            land = {p for p, t in g.items() if t != Terrain.SEA}
+            if not land:
+                continue
+            largest = max(len(c) for c in _connected_components(land))
+            self.assertGreaterEqual(largest, 0.85 * len(land),
+                                    "seed %d: largest landmass %d/%d < 85%%" % (seed, largest, len(land)))
+
+    def test_enclosed_layouts_are_surrounded_by_sea(self):
+        # Pangaea and continents must be islands: no land on the outer tile ring, any seed.
+        for layout in ('pangaea', 'continents'):
+            theme = _make_theme(size=(40, 24), macro_layout=layout)
+            for seed in range(10):
+                g = terrain_generation.generate_terrain(theme, seed).terrain_grid
+                w, h = 40, 24
+                ring = [(x, y) for x in range(w) for y in range(h)
+                        if x in (0, w - 1) or y in (0, h - 1)]
+                land = [p for p in ring if g[p] != Terrain.SEA]
+                self.assertEqual(land, [], "%s seed %d: %d land tiles on border ring"
+                                 % (layout, seed, len(land)))
+
+    def test_continents_makes_multiple_landmasses(self):
+        # Continents should usually yield two separate sizable landmasses (noise can bridge
+        # them on some seeds -- require it on most, not all).
+        theme = _make_theme(size=(40, 28), macro_layout='continents')
+        good = 0
+        for seed in range(10):
+            g = terrain_generation.generate_terrain(theme, seed).terrain_grid
+            land = {p for p, t in g.items() if t != Terrain.SEA}
+            big = [c for c in _connected_components(land) if len(c) >= 20]
+            if len(big) >= 2:
+                good += 1
+        self.assertGreaterEqual(good, 7, "only %d/10 seeds had 2+ landmasses" % good)
+
+    def test_none_layout_is_a_noop(self):
+        # With no macro layout, the hint weight must not touch the output at all.
+        a = _make_theme(macro_layout='none', hint_weight=0.55)
+        b = _make_theme(macro_layout='none', hint_weight=0.0)
+        for seed in range(5):
+            ga = terrain_generation.generate_terrain(a, seed).terrain_grid
+            gb = terrain_generation.generate_terrain(b, seed).terrain_grid
+            self.assertEqual(ga, gb, "seed %d: 'none' layout was not a no-op" % seed)
+
+    def test_macro_layout_is_deterministic(self):
+        for layout in ('pangaea', 'continents', 'coastal'):
+            theme = _make_theme(size=(30, 24), macro_layout=layout)
+            for seed in range(4):
+                a = terrain_generation.generate_terrain(theme, seed).terrain_grid
+                b = terrain_generation.generate_terrain(theme, seed).terrain_grid
+                self.assertEqual(a, b, "%s seed %d: not deterministic" % (layout, seed))
 
 
 if __name__ == '__main__':
