@@ -140,7 +140,7 @@ class MapEditorView(QGraphicsView):
         mouse_pos = self.current_mouse_position
         for coord, (true_coord, terrain) in self.right_selection.items():
             if not terrain:
-                return
+                continue  # Empty tiles in the selection leave the map as it is
 
             renderer = RENDERERS.get(terrain)
             true_coord = mouse_pos[0] + coord[0], mouse_pos[1] + coord[1]
@@ -176,7 +176,8 @@ class MapEditorView(QGraphicsView):
             new_terrains = {}
             for coord, (true_coord, terrain) in self.right_selection.items():
                 true_pos = tile_pos[0] + coord[0], tile_pos[1] + coord[1]
-                if self.tilemap.check_bounds(true_pos):
+                # Empty tiles in the selection leave the map as it is
+                if terrain and self.tilemap.check_bounds(true_pos):
                     new_terrains[true_pos] = terrain
             self.tilemap.set_many(new_terrains)
 
@@ -211,7 +212,10 @@ class MapEditorView(QGraphicsView):
                         new_coord_x = (x % w) + topleft[0]
                         new_coord_y = (y % h) + topleft[1]
                         if (new_coord_x, new_coord_y) in coords:
-                            new_terrains[(x, y)] = self.right_selection[(new_coord_x, new_coord_y)][1]
+                            new_terrain = self.right_selection[(new_coord_x, new_coord_y)][1]
+                            # Empty tiles in the selection leave the map as it is
+                            if new_terrain:
+                                new_terrains[(x, y)] = new_terrain
             self.tilemap.set_many(new_terrains)
         else:
             new_terrain = self.window.terrain_painter_menu().get_current_terrain()
