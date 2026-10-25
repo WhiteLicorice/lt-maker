@@ -135,7 +135,7 @@ class AIController():
             if not item_funcs.available(self.unit, self.goal_item):
                 return False
             if self.goal_item in item_funcs.get_all_items(self.unit):
-                if self.unit.can_equip(self.goal_item):
+                if self.unit.can_equip(self.goal_item) and not self.unit.has_equipped(self.goal_item):
                     action.do(action.EquipItem(self.unit, self.goal_item))
             # Highlights
             if item_system.is_weapon(self.unit, self.goal_item):
@@ -424,7 +424,10 @@ class PrimaryAI():
         if self.item_index < len(self.items):
             item = self.items[self.item_index]
             logging.info("Testing %s" % item)
-            if self.unit.can_equip(item):
+            # An item equipped already is left as it is: equipping it again would do
+            # nothing but add to the action log, and the turnwheel would unequip and
+            # equip it again on its way back
+            if self.unit.can_equip(item) and not self.unit.has_equipped(item):
                 action.do(action.EquipItem(self.unit, item))
             self.get_all_valid_targets()
             self.possible_moves = self.get_possible_moves()
@@ -457,7 +460,7 @@ class PrimaryAI():
     def run(self):
         if self.item_index >= len(self.items):
             self.quick_move(self.orig_pos)
-            if self.orig_item and self.unit.can_equip(self.orig_item):
+            if self.orig_item and self.unit.can_equip(self.orig_item) and not self.unit.has_equipped(self.orig_item):
                 action.do(action.EquipItem(self.unit, self.orig_item))
             return (True, self.best_target, self.best_position, self.best_item)
 

@@ -723,10 +723,13 @@ class UnitObject(Prefab):
         # keep accessories sorted after items
         self.items = sorted(self.items, key=lambda item: item_system.is_accessory(self, item))
 
+    def has_equipped(self, item) -> bool:
+        """Whether item is equipped already, so that equipping it does nothing"""
+        return (item_system.is_accessory(self, item) and item is self.equipped_accessory) or \
+            item is self.equipped_weapon
+
     def equip(self, item):
-        if item_system.is_accessory(self, item) and item is self.equipped_accessory:
-            return  # Don't need to do anything
-        elif item is self.equipped_weapon:
+        if self.has_equipped(item):
             return  # Don't need to do anything
         logging.debug("Equipping %s" % item)
         if item_system.is_accessory(self, item):
