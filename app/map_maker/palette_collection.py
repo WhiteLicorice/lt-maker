@@ -71,7 +71,8 @@ class PaletteCollection:
                                     os.path.join(self.palette_dir, 'pool.png'), 
                                     os.path.join(self.palette_dir, 'pool_autotiles.png'), 
                                     shading_fn=os.path.join(self.palette_dir, 'pool_shading.png')),
-            Terrain.POOL_BRIDGE: Palette(self, os.path.join(self.palette_dir, 'pool_bridge.png')),
+            Terrain.POOL_BRIDGE: Palette(self, os.path.join(self.palette_dir, 'pool_bridge.png'),
+                                         shading_fn=os.path.join(self.palette_dir, 'pool_bridge.png')),
             Terrain.TREASURE: Palette(self, os.path.join(self.palette_dir, 'treasure.png')),
         }
 
