@@ -1,8 +1,19 @@
+import random
 import unittest
+from typing import Dict, Tuple
+from unittest.mock import patch
 
+import pygame
+
+from app.utilities import utils
+from app.utilities.typing import Pos
+import app.map_maker.utilities as map_utils
 from app.map_maker.map_prefab import MapPrefab
+from app.map_maker.painter_database import PAINTERS
 from app.map_maker.painters.mountain_painter import MountainPainter
+from app.map_maker.painters.pool_painter import PoolPainter
 from app.map_maker.terrain import Terrain
+import app.map_maker.pygame_renderers.draw_tilemap as pygame_draw_tilemap
 
 
 class FakeThread():
@@ -85,6 +96,197 @@ class MountainPainterThreadTests(unittest.TestCase):
         self.assertTrue(thread.stopped)
         self.assertEqual(seen, [False])
         self.assertEqual(self.painter.current_threads, [])
+
+
+def build_mixed_tilemap(size: int = 20) -> MapPrefab:
+    """Open sea with sand islands, a river, forests touching the map edge,
+    and a pool in an indoor floor -- every autotiled terrain plus the
+    painters that work out per-forest state in single_process"""
+    grid = {}
+    for x in range(size):
+        for y in range(size):
+            if x < size // 2:
+                terrain = Terrain.SAND if 2 <= x <= 3 and 2 <= y <= 4 else Terrain.SEA
+            elif x == size // 2 + 1:
+                terrain = Terrain.RIVER
+            elif x > 3 * size // 4 and y < size // 2 and (x + y) % 5:
+                terrain = Terrain.FOREST
+            elif y > 3 * size // 4:
+                terrain = Terrain.POOL if (x + y) % 4 == 0 else Terrain.FLOOR_1
+            else:
+                terrain = Terrain.FOREST if (x * y) % 7 == 0 else Terrain.GRASS
+            grid[(x, y)] = terrain
+    tilemap = MapPrefab('test')
+    tilemap.set_new_terrain_grid((size, size), grid)
+    return tilemap
+
+
+def build_pool_grid() -> Tuple[Tuple[int, int], Dict[Pos, Terrain]]:
+    """A pool wide enough to have open pool, ringed by floor, with a floor
+    tile inside it -- a size and terrain grid for set_new_terrain_grid"""
+    grid = {(x, y): Terrain.POOL if 1 <= x <= 14 and 1 <= y <= 14 else Terrain.FLOOR_1
+            for x in range(16) for y in range(16)}
+    grid[(4, 11)] = Terrain.FLOOR_1
+    return (16, 16), grid
+
+
+def draw_at_frame(tilemap: MapPrefab, frame: int) -> bytes:
+    # At autotile_fps=1 each autotile frame lasts 16.66 ms
+    with patch.object(pygame_draw_tilemap.time, 'time_ns', return_value=(int(frame * 16.66) + 1) * 1_000_000):
+        surf = pygame_draw_tilemap.draw_tilemap(tilemap, autotile_fps=1)
+    return pygame.image.tobytes(surf, 'RGBA')
+
+
+def fresh_draw_at_frame(tilemap: MapPrefab, frame: int) -> bytes:
+    """Every position drawn from scratch at this frame, with no autotile pass"""
+    tilemap.reset_all()
+    pygame_draw_tilemap.last_autotile_num = frame
+    return draw_at_frame(tilemap, frame)
+
+
+class DrawTilemapTests(unittest.TestCase):
+    def setUp(self):
+        pygame_draw_tilemap.last_autotile_num = 0
+        self.tilemap = build_mixed_tilemap()
+        draw_at_frame(self.tilemap, 0)
+
+    def test_autotile_frame_matches_fresh_draw(self):
+        """The autotile pass redraws from the coords cached at the last update,
+        so it must land on exactly what a full redraw at that frame gives"""
+        for frame in (1, 7, 15):
+            incremental = draw_at_frame(self.tilemap, frame)
+            self.assertEqual(incremental, fresh_draw_at_frame(self.tilemap, frame), frame)
+
+    def test_edits_then_autotile_frame_match_fresh_draw(self):
+        # Coast sea, the middle of a forest, a river turned to grass, and an erase
+        self.tilemap.set((9, 9), Terrain.SEA, Terrain.SAND)
+        self.tilemap.set((17, 3), self.tilemap.get_terrain((17, 3)), Terrain.FOREST)
+        self.tilemap.set((11, 5), Terrain.RIVER, Terrain.GRASS)
+        self.tilemap.erase_terrain((0, 0), Terrain.SEA)
+        draw_at_frame(self.tilemap, 3)
+        incremental = draw_at_frame(self.tilemap, 9)
+        self.assertEqual(incremental, fresh_draw_at_frame(self.tilemap, 9))
+
+    def test_land_near_open_sea_then_autotile_frame_match_fresh_draw(self):
+        """A bridge does not count as land, so turning one into land changes
+        which sea tiles up to 3 tiles away are open sea, though they are
+        not adjacent and not flood filled with it"""
+        grid = {(x, y): Terrain.SEA for x in range(16) for y in range(16)}
+        for x in range(16):
+            grid[(x, 8)] = Terrain.BRIDGEH
+        self.tilemap.set_new_terrain_grid((16, 16), grid)
+        draw_at_frame(self.tilemap, 0)
+        self.tilemap.set((8, 8), Terrain.BRIDGEH, Terrain.GRASS)
+        draw_at_frame(self.tilemap, 2)
+        incremental = draw_at_frame(self.tilemap, 9)
+        self.assertEqual(incremental, fresh_draw_at_frame(self.tilemap, 9))
+
+        self.tilemap.erase_terrain((8, 8), Terrain.GRASS)
+        draw_at_frame(self.tilemap, 11)
+        incremental = draw_at_frame(self.tilemap, 13)
+        self.assertEqual(incremental, fresh_draw_at_frame(self.tilemap, 13))
+
+    def test_floor_in_open_pool_then_autotile_frame_match_fresh_draw(self):
+        """A floor tile changes which pool tiles up to 2 tiles away are open
+        pool, though they are not adjacent and pools are not flood filled"""
+        self.tilemap.set_new_terrain_grid(*build_pool_grid())
+        draw_at_frame(self.tilemap, 0)
+        self.tilemap.set((8, 8), Terrain.POOL, Terrain.FLOOR_1)
+        draw_at_frame(self.tilemap, 2)
+        incremental = draw_at_frame(self.tilemap, 9)
+        self.assertEqual(incremental, fresh_draw_at_frame(self.tilemap, 9))
+
+        self.tilemap.erase_terrain((8, 8), Terrain.FLOOR_1)
+        draw_at_frame(self.tilemap, 11)
+        incremental = draw_at_frame(self.tilemap, 13)
+        self.assertEqual(incremental, fresh_draw_at_frame(self.tilemap, 13))
+
+    def test_set_many_then_autotile_frame_match_fresh_draw(self):
+        """set_many flood fills once against the map before and after every
+        change, instead of after each one, which must still mark every blob"""
+        # Bucket fill the grass and forest region with sea, joining the main sea
+        region = {pos for pos, terrain in self.tilemap.terrain_grid.items()
+                  if terrain in (Terrain.GRASS, Terrain.FOREST) and pos[0] < 16 and pos[1] < 12}
+        self.tilemap.set_many({pos: Terrain.SEA for pos in region})
+        draw_at_frame(self.tilemap, 2)
+        incremental = draw_at_frame(self.tilemap, 9)
+        self.assertEqual(incremental, fresh_draw_at_frame(self.tilemap, 9))
+
+        # Widen the forest in the top right: its bounds change for every tile in it,
+        # which must all be marked, not just the ones next to the new forest
+        self.tilemap.set_many({(x, y): Terrain.FOREST for x in range(12, 16) for y in range(10)})
+        forest = map_utils.flood_fill(self.tilemap, (12, 0))
+        self.assertIn((19, 9), forest)
+        self.assertLessEqual(forest, self.tilemap.terrain_grid_to_update)
+        draw_at_frame(self.tilemap, 4)
+        incremental = draw_at_frame(self.tilemap, 6)
+        self.assertEqual(incremental, fresh_draw_at_frame(self.tilemap, 6))
+
+        # Stamp a mix of flood filled terrains across sea, river and forest
+        stamp = [Terrain.FOREST, Terrain.SEA, Terrain.SAND, Terrain.CLIFF]
+        self.tilemap.set_many({(x, y): stamp[(x + y) % len(stamp)] for x in range(6, 19) for y in range(2, 8)})
+        draw_at_frame(self.tilemap, 11)
+        incremental = draw_at_frame(self.tilemap, 13)
+        self.assertEqual(incremental, fresh_draw_at_frame(self.tilemap, 13))
+
+    def test_random_edits_on_sea_match_fresh_draw(self):
+        """Sea is not flood filled, so every edit must mark each sea tile
+        whose sprite it can change -- the ones up to 3 tiles away"""
+        rng = random.Random(0)
+        brushes = [Terrain.GRASS, Terrain.SAND, Terrain.SEA, Terrain.RIVER,
+                   Terrain.BRIDGEH, Terrain.FOREST, None]
+        for step in range(40):
+            pos = (rng.randrange(self.tilemap.width), rng.randrange(self.tilemap.height))
+            brush = rng.choice(brushes)
+            if brush:
+                self.tilemap.set(pos, self.tilemap.get_terrain(pos), brush)
+            elif self.tilemap.get_terrain(pos):
+                self.tilemap.erase_terrain(pos, self.tilemap.get_terrain(pos))
+            incremental = draw_at_frame(self.tilemap, step % 16)
+            self.assertEqual(incremental, fresh_draw_at_frame(self.tilemap, step % 16), (step, pos, brush))
+
+    def test_autotile_coords_follow_autotile_set(self):
+        self.assertEqual(set(self.tilemap.autotile_coords), self.tilemap.autotile_set)
+        self.tilemap.set((5, 5), Terrain.SEA, Terrain.GRASS)
+        self.tilemap.erase_terrain((6, 6), Terrain.SEA)
+        self.assertNotIn((5, 5), self.tilemap.autotile_coords)
+        self.assertNotIn((6, 6), self.tilemap.autotile_coords)
+        self.tilemap.set((15, 5), Terrain.GRASS, Terrain.SEA)
+        draw_at_frame(self.tilemap, 0)
+        self.assertEqual(set(self.tilemap.autotile_coords), self.tilemap.autotile_set)
+
+
+class SeaPainterTests(unittest.TestCase):
+    def test_distance_to_closest_land_is_exact_under_4(self):
+        """get_coord only asks whether land is nearer than 2-4 tiles, so the
+        windowed search must be exact below 4 and report nothing nearer beyond it"""
+        tilemap = build_mixed_tilemap()
+        sea_painter = PAINTERS[Terrain.SEA]
+        for pos in tilemap.get_all_terrain(Terrain.SEA):
+            land = [other for other, terrain in tilemap.terrain_grid.items()
+                    if terrain not in (Terrain.SEA, Terrain.BRIDGEV, Terrain.BRIDGEH)]
+            brute_force = min(utils.distance(pos, other) for other in land)
+            distance = sea_painter._distance_to_closest_land(tilemap, pos)
+            if brute_force < 4:
+                self.assertEqual(distance, brute_force, pos)
+            else:
+                self.assertGreaterEqual(distance, 4, pos)
+
+
+class PoolPainterTests(unittest.TestCase):
+    def test_distance_to_closest_nonpool_is_exact_under_3(self):
+        """get_coord only asks whether a non-pool tile is nearer than 1-3 tiles,
+        so the windowed search must be exact below 3 and report nothing nearer beyond it"""
+        tilemap = MapPrefab('test')
+        tilemap.set_new_terrain_grid(*build_pool_grid())
+        nonpool = [other for other, terrain in tilemap.terrain_grid.items() if terrain != Terrain.POOL]
+        for pos in tilemap.get_all_terrain(Terrain.POOL):
+            brute_force = min(utils.distance(pos, other) for other in nonpool)
+            distance = PoolPainter._distance_to_closest_nonpool(tilemap, pos)
+            if brute_force < 3:
+                self.assertEqual(distance, brute_force, pos)
+            else:
+                self.assertGreaterEqual(distance, 3, pos)
 
 
 if __name__ == '__main__':

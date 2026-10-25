@@ -22,9 +22,17 @@ class SimpleRenderer:
     def get_display_pixmap(self) -> QPixmap:
         return self.palette.get_pixmap16(self.painter, self.painter.base_coord, 0)
 
-    def determine_sprite(self, tilemap, position: Pos, autotile_num: int) -> QPixmap:
-        coord = self.painter.get_coord(tilemap, position)
+    def get_sprite_coord(self, tilemap, position: Pos):
+        """Everything draw_sprite needs to draw this position.
+        Does not depend on the autotile frame, so the autotile
+        frames of a position can be drawn from a single call"""
+        return self.painter.get_coord(tilemap, position)
+
+    def draw_sprite(self, coord, autotile_num: int) -> QPixmap:
         return self.palette.get_pixmap16(self.painter, coord, autotile_num)
+
+    def determine_sprite(self, tilemap, position: Pos, autotile_num: int) -> QPixmap:
+        return self.draw_sprite(self.get_sprite_coord(tilemap, position), autotile_num)
 
 class SimpleRenderer8(SimpleRenderer):
     def __init__(self, painter: Painter, palette: Palette):
@@ -42,8 +50,8 @@ class SimpleRenderer8(SimpleRenderer):
         coord4 = self.painter.base_coord[0], self.painter.base_coord[1] + 3
         return self.palette.get_pixmap8(self.painter, coord1, coord2, coord3, coord4, 0)
 
-    def determine_sprite(self, tilemap, position: Pos, autotile_num: int) -> QPixmap:
-        coord1, coord2, coord3, coord4 = self.painter.get_coord(tilemap, position)
+    def draw_sprite(self, coord, autotile_num: int) -> QPixmap:
+        coord1, coord2, coord3, coord4 = coord
         return self.palette.get_pixmap8(self.painter, coord1, coord2, coord3, coord4, autotile_num)
 
 class DisplayRenderer8(SimpleRenderer8):

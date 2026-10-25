@@ -1,4 +1,4 @@
-from typing import Dict, List, Set, Tuple
+from typing import Any, Dict, Iterable, List, Set, Tuple
 
 from app.utilities.typing import NID, Pos
 
@@ -8,8 +8,17 @@ import app.map_maker.utilities as map_utils
 from app.map_maker.terrain import Terrain
 from app.map_maker.palette_collection import PaletteCollection
 from app.map_maker.painter_database import PAINTERS
+from app.map_maker.painters.sea_painter import SeaPainter
+from app.map_maker.painters.pool_painter import PoolPainter
 
 TILEX, TILEY = 15, 10
+
+# Whether a sea or pool tile is open water depends on the closest
+# land or non-pool tile up to this many tiles away along each axis
+OPEN_WATER_SEARCH_RADIUS: Dict[Terrain, int] = {
+    Terrain.SEA: SeaPainter.land_search_radius,
+    Terrain.POOL: PoolPainter.nonpool_search_radius,
+}
 
 class MapPrefab(Prefab):
     def __init__(self, nid: NID):
@@ -23,6 +32,9 @@ class MapPrefab(Prefab):
         self.terrain_grid_to_update: Set[Pos] = set()  # Positions
         self.tile_grid = {}  # Key: Position, Value: Tileset Coordinate (same size as terrain_grid)
         self.autotile_set: Set[Pos] = set()  # Positions
+        # Key: Position in autotile_set, Value: its renderer's sprite coord,
+        # so new autotile frames are drawn without recomputing it
+        self.autotile_coords: Dict[Pos, Any] = {}
 
         self.cliff_markers: List[Pos] = [(7, 5)]  # Markers for how to point cliffs
 
@@ -44,22 +56,53 @@ class MapPrefab(Prefab):
         if old_terrain and old_terrain_painter.check_flood_fill:
             # Need to check flood fill both before and after changing terrain
             self._update_flood_fill(pos, old_terrain_painter.check_flood_fill == 'diagonal')
+        self._place_terrain(pos, new_terrain)
+        if new_terrain_painter.check_flood_fill:
+            self._update_flood_fill(pos, new_terrain_painter.check_flood_fill == 'diagonal')
+
+    def set_many(self, new_terrains: Dict[Pos, Terrain]):
+        """
+        set() for every position at once. Flood fills each blob once before and
+        once after all the changes, rather than once per position -- a bucket
+        fill of n tiles of a flood filled terrain would otherwise visit n^2 tiles
+        """
+        self._update_blobs_around(new_terrains.keys())
+        for pos, new_terrain in new_terrains.items():
+            self._place_terrain(pos, new_terrain)
+        self._update_blobs_around(new_terrains.keys())
+
+    def _place_terrain(self, pos: Pos, new_terrain: Terrain):
         self.terrain_grid[pos] = new_terrain
         self.terrain_grid_to_update.add(pos)
         self._update_adjacent(pos)
         self._update_diagonal(pos)
-        if new_terrain_painter.check_flood_fill:
-            self._update_flood_fill(pos, new_terrain_painter.check_flood_fill == 'diagonal')
+        self._update_nearby_open_water(pos)
 
-        if new_terrain_painter.has_autotiles():
+        if PAINTERS.get(new_terrain).has_autotiles():
             self.autotile_set.add(pos)
         else:
             self.autotile_set.discard(pos)
+            self.autotile_coords.pop(pos, None)
+
+    def _update_blobs_around(self, positions: Iterable[Pos]):
+        # Marks the blob at each of these positions whose terrain needs flood fill.
+        # A blob holds one terrain, so a position in one already filled has the same blob
+        filled: Set[Pos] = set()
+        for pos in positions:
+            terrain = self.get_terrain(pos)
+            if pos in filled or not terrain:
+                continue
+            check_flood_fill = PAINTERS.get(terrain).check_flood_fill
+            if check_flood_fill:
+                blob_positions = map_utils.flood_fill(self, pos, check_flood_fill == 'diagonal')
+                filled |= blob_positions
+                self.terrain_grid_to_update |= blob_positions
 
     def set_new_terrain_grid(self, size: Tuple[int, int], terrain_grid: Dict[Pos, Terrain]):
         self.width, self.height = size
         self.terrain_grid = terrain_grid
         self.autotile_set.clear()
+        self.autotile_coords.clear()
         for pos, terrain in self.terrain_grid.items():
             terrain_painter = PAINTERS.get(terrain)
             if terrain_painter.has_autotiles():
@@ -90,6 +133,17 @@ class MapPrefab(Prefab):
         if self.check_bounds(northwest) and self.get_terrain(northwest):
             self.terrain_grid_to_update.add(northwest)
 
+    def _update_nearby_open_water(self, pos: Pos):
+        # Sea and pool tiles within their open water search radius
+        # of this position may change between open and closed water
+        r = max(OPEN_WATER_SEARCH_RADIUS.values())
+        for x in range(pos[0] - r, pos[0] + r + 1):
+            for y in range(pos[1] - r, pos[1] + r + 1):
+                terrain = self.get_terrain((x, y))
+                if terrain in OPEN_WATER_SEARCH_RADIUS:
+                    if max(abs(x - pos[0]), abs(y - pos[1])) <= OPEN_WATER_SEARCH_RADIUS[terrain]:
+                        self.terrain_grid_to_update.add((x, y))
+
     def _update_flood_fill(self, pos: Pos, diagonal: bool = False):
         blob_positions = map_utils.flood_fill(self, pos, diagonal)
         for p in blob_positions:
@@ -105,12 +159,14 @@ class MapPrefab(Prefab):
         if pos in self.terrain_grid:
             del self.terrain_grid[pos]
         self.autotile_set.discard(pos)
+        self.autotile_coords.pop(pos, None)
 
         if pos in self.tile_grid:
             del self.tile_grid[pos]
 
         self._update_adjacent(pos)
         self._update_diagonal(pos)
+        self._update_nearby_open_water(pos)
 
     def get_cardinal_terrain(self, pos: Pos) -> Tuple[Terrain, Terrain, Terrain, Terrain]:
         north = self.get_terrain((pos[0], pos[1] - 1))
@@ -132,6 +188,7 @@ class MapPrefab(Prefab):
         self.terrain_grid_to_update.clear()
         self.tile_grid.clear()
         self.autotile_set.clear()
+        self.autotile_coords.clear()
 
     def check_bounds(self, pos: Pos):
         return 0 <= pos[0] < self.width and 0 <= pos[1] < self.height
@@ -173,6 +230,8 @@ class MapPrefab(Prefab):
             if self.check_bounds(new_pos):
                 new_autotile_set.add(new_pos)
         self.autotile_set = new_autotile_set
+        # reset_all() below recomputes every autotile coord
+        self.autotile_coords.clear()
 
         # Cliff markers are map positions as well
         self.cliff_markers = [(int(utils.clamp(pos[0] + x_offset, 0, width - 1)),

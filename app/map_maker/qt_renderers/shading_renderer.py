@@ -11,9 +11,13 @@ from app.map_maker.qt_renderers.renderer_utils import find_limit16
 from app.map_maker.qt_renderers import SimpleRenderer
 
 class SimpleShadingRenderer(SimpleRenderer):
-    def determine_sprite(self, tilemap, position: Pos, autotile_num: int) -> QPixmap:
+    def get_sprite_coord(self, tilemap, position: Pos):
         coord = self.painter.get_coord(tilemap, position)
         shading_coord = self.painter.get_shading_coord(tilemap, position)
+        return coord, shading_coord
+
+    def draw_sprite(self, coord, autotile_num: int) -> QPixmap:
+        coord, shading_coord = coord
         base_pix = self.palette.get_pixmap16(self.painter, coord, autotile_num)
 
         shading_pix = None
@@ -63,9 +67,20 @@ class FloorShadingRenderer(SimpleRenderer):
         floor_type = palette_collection.metadata.get(self.metadata_arg, 'default')
         return self.painters.get(floor_type, self.painters['default'])
 
-    def determine_sprite(self, tilemap, position: Pos, autotile_num: int) -> QPixmap:
+    def get_sprite_coord(self, tilemap, position: Pos):
         coord = self.painter.get_coord(tilemap, position)
         shading_coord = self.painter.get_shading_coord(tilemap, position)
+
+        extra_coord = None
+        pillar_coord = self.painter.get_pillar_coord(tilemap, position)
+        if pillar_coord:
+            extra_coord = pillar_coord
+        elif self.painter.is_column_bottom(tilemap, position):
+            extra_coord = (7, 0)
+        return coord, shading_coord, extra_coord
+
+    def draw_sprite(self, coord, autotile_num: int) -> QPixmap:
+        coord, shading_coord, extra_coord = coord
 
         base_pix = self.palette.get_pixmap16(self.painter, coord, autotile_num)
 
@@ -74,11 +89,8 @@ class FloorShadingRenderer(SimpleRenderer):
             shading_pix = self.palette.get_shading_pixmap16(self.painter, shading_coord)
 
         extra_pix = None
-        pillar_coord = self.painter.get_pillar_coord(tilemap, position)
-        if pillar_coord:
-            extra_pix = self.palette.get_shading_pixmap16(self.painter, pillar_coord)
-        elif self.painter.is_column_bottom(tilemap, position):
-            extra_pix = self.palette.get_shading_pixmap16(self.painter, (7, 0))
+        if extra_coord:
+            extra_pix = self.palette.get_shading_pixmap16(self.painter, extra_coord)
 
         qpainter = QPainter(base_pix)
         if shading_pix:

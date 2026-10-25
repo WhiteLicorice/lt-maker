@@ -173,11 +173,12 @@ class MapEditorView(QGraphicsView):
 
     def paint_terrain(self, tile_pos: Pos):
         if self.right_selection:
+            new_terrains = {}
             for coord, (true_coord, terrain) in self.right_selection.items():
                 true_pos = tile_pos[0] + coord[0], tile_pos[1] + coord[1]
                 if self.tilemap.check_bounds(true_pos):
-                    old_terrain = self.tilemap.get_terrain(true_pos)
-                    self.tilemap.set(true_pos, old_terrain, terrain)
+                    new_terrains[true_pos] = terrain
+            self.tilemap.set_many(new_terrains)
 
         elif self.tilemap.check_bounds(tile_pos):
             terrain = self.window.terrain_painter_menu().get_current_terrain()
@@ -203,20 +204,18 @@ class MapEditorView(QGraphicsView):
             h = max(coord[1] for coord in coords) - topleft[1] + 1
 
             # Do the deed
+            new_terrains = {}
             for x in range(self.tilemap.width):
                 for y in range(self.tilemap.height):
                     if (x, y) in coords_to_replace:
                         new_coord_x = (x % w) + topleft[0]
                         new_coord_y = (y % h) + topleft[1]
                         if (new_coord_x, new_coord_y) in coords:
-                            old_terrain = self.tilemap.get_terrain((x, y))
-                            new_terrain = self.right_selection[(new_coord_x, new_coord_y)][1]
-                            self.tilemap.set((x, y), old_terrain, new_terrain)
+                            new_terrains[(x, y)] = self.right_selection[(new_coord_x, new_coord_y)][1]
+            self.tilemap.set_many(new_terrains)
         else:
             new_terrain = self.window.terrain_painter_menu().get_current_terrain()
-            for pos in coords_to_replace:
-                old_terrain = self.tilemap.get_terrain(pos)
-                self.tilemap.set(pos, old_terrain, new_terrain)
+            self.tilemap.set_many({pos: new_terrain for pos in coords_to_replace})
 
     def mousePressEvent(self, event):
         scene_pos = self.mapToScene(event.pos())

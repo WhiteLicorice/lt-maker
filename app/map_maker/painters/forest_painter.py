@@ -1,3 +1,5 @@
+from typing import Dict, Optional, Tuple
+
 from app.utilities.typing import Pos
 
 from app.map_maker.painter_utils import Painter
@@ -12,15 +14,29 @@ class ForestPainter(Painter):
     forest_like = (Terrain.FOREST, Terrain.THICKET)
     base_coord = (14, 0)
     
+    def __init__(self, base_coord: Optional[Pos] = None):
+        super().__init__(base_coord)
+        # Key: Position of a forest tile about to be drawn, Value: find_bounds of its forest
+        self.blob_bounds: Dict[Pos, Tuple[int, int, int, int, int, int, int, int]] = {}
+
     @property
     def check_flood_fill(self):
         return True
 
+    def single_process(self, tilemap):
+        # Every position in a forest shares its bounds, so flood fill
+        # each forest once rather than once per position
+        self.blob_bounds.clear()
+        for pos in tilemap.terrain_grid_to_update:
+            if pos not in self.blob_bounds and tilemap.get_terrain(pos) == Terrain.FOREST:
+                blob_positions = flood_fill(tilemap, pos)
+                bounds = find_bounds(tilemap, blob_positions)
+                for blob_pos in blob_positions:
+                    self.blob_bounds[blob_pos] = bounds
+
     def get_coord(self, tilemap, pos: Pos) -> Pos:
         north, east, south, west = tilemap.get_cardinal_terrain(pos)
-        blob_positions = flood_fill(tilemap, pos)
-        _, _, _, _, blob_width, blob_height, center_x, center_y = \
-            find_bounds(tilemap, blob_positions)
+        _, _, _, _, blob_width, blob_height, center_x, center_y = self.blob_bounds[pos]
         my_radius_width: float = abs(pos[0] + 0.5 - center_x)
         my_radius_height: float = abs(pos[1] + 0.5 - center_y)
         depth_w: float = (blob_width / 2) - my_radius_width

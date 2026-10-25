@@ -35,12 +35,14 @@ def draw_tilemap(tilemap: MapPrefab, autotile_fps=29) -> pygame.Surface:
 
         # Only process the ones that need to be updated
         if pos in tilemap.terrain_grid_to_update:
+            renderer = RENDERERS.get(terrain)
             if terrain not in processed_terrains:
-                painter = RENDERERS.get(terrain).painter
-                painter.single_process(tilemap)
+                renderer.painter.single_process(tilemap)
                 processed_terrains.add(terrain)
-            sprite = RENDERERS.get(terrain).determine_sprite(tilemap, pos, autotile_num)
-            tilemap.tile_grid[pos] = sprite
+            coord = renderer.get_sprite_coord(tilemap, pos)
+            if pos in tilemap.autotile_set:
+                tilemap.autotile_coords[pos] = coord
+            tilemap.tile_grid[pos] = renderer.draw_sprite(coord, autotile_num)
 
     # Autotiles
     global last_autotile_num
@@ -51,8 +53,9 @@ def draw_tilemap(tilemap: MapPrefab, autotile_fps=29) -> pygame.Surface:
                 terrain = tilemap.get_terrain(pos)
                 if not terrain:
                     continue
-                sprite = RENDERERS.get(terrain).determine_sprite(tilemap, pos, autotile_num)
-                tilemap.tile_grid[pos] = sprite
+                # Only the frame changed, so reuse the coord from the last update
+                coord = tilemap.autotile_coords[pos]
+                tilemap.tile_grid[pos] = RENDERERS.get(terrain).draw_sprite(coord, autotile_num)
         last_autotile_num = autotile_num
 
     # Draw the tile grid

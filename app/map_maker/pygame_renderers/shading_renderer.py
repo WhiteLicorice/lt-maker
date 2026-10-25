@@ -12,9 +12,13 @@ from app.map_maker.pygame_renderers.renderer_utils import find_limit16
 from app.map_maker.pygame_renderers import SimpleRenderer
 
 class SimpleShadingRenderer(SimpleRenderer):
-    def determine_sprite(self, tilemap, position: Pos, autotile_num: int) -> pygame.Surface:
+    def get_sprite_coord(self, tilemap, position: Pos):
         coord = self.painter.get_coord(tilemap, position)
         shading_coord = self.painter.get_shading_coord(tilemap, position)
+        return coord, shading_coord
+
+    def draw_sprite(self, coord, autotile_num: int) -> pygame.Surface:
+        coord, shading_coord = coord
         base_image = self.palette.get_image16(self.painter, coord, autotile_num)
 
         if shading_coord is not None:
@@ -44,6 +48,7 @@ class FloorShadingRenderer(SimpleRenderer):
             'ruins': RuinedFloorPainter(),
             'grass': GrassFloorPainter(),
         }
+        self.set_palette(palette)
 
     def set_palette(self, palette: Palette):
         self.palette = get_pygame_palette(palette)
@@ -59,9 +64,20 @@ class FloorShadingRenderer(SimpleRenderer):
         floor_type = palette_collection.metadata.get(self.metadata_arg, 'default')
         return self.painters.get(floor_type, self.painters['default'])
 
-    def determine_sprite(self, tilemap, position: Pos, autotile_num: int) -> pygame.Surface:
+    def get_sprite_coord(self, tilemap, position: Pos):
         coord = self.painter.get_coord(tilemap, position)
         shading_coord = self.painter.get_shading_coord(tilemap, position)
+
+        extra_coord = None
+        pillar_coord = self.painter.get_pillar_coord(tilemap, position)
+        if pillar_coord:
+            extra_coord = pillar_coord
+        elif self.painter.is_column_bottom(tilemap, position):
+            extra_coord = (7, 0)
+        return coord, shading_coord, extra_coord
+
+    def draw_sprite(self, coord, autotile_num: int) -> pygame.Surface:
+        coord, shading_coord, extra_coord = coord
 
         base_image = self.palette.get_image16(self.painter, coord, autotile_num)
 
@@ -70,11 +86,8 @@ class FloorShadingRenderer(SimpleRenderer):
             shading_image = self.palette.get_shading_image16(self.painter, shading_coord)
 
         extra_image = None
-        pillar_coord = self.painter.get_pillar_coord(tilemap, position)
-        if pillar_coord:
-            extra_image = self.palette.get_shading_image16(self.painter, pillar_coord)
-        elif self.painter.is_column_bottom(tilemap, position):
-            extra_image = self.palette.get_shading_image16(self.painter, (7, 0))
+        if extra_coord:
+            extra_image = self.palette.get_shading_image16(self.painter, extra_coord)
 
         if shading_image:
             base_image.blit(shading_image, (0, 0))

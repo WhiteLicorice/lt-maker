@@ -18,17 +18,30 @@ class PoolPainter(Painter):
         (2, 0): 6, (3, 0): 7, (4, 0): 7,
     }
 
+    # How far _distance_to_closest_nonpool looks for a non-pool tile. MapPrefab
+    # marks the pool within this radius of every edit for update, so it must match
+    nonpool_search_radius = 2
+
     def has_autotiles(self) -> bool:
         return True
 
     @staticmethod
-    def _distance_to_closest_nonpool(tilemap, pos: Pos) -> int:
-        min_distance: int = 99
-        for other_pos in tilemap.terrain_grid.keys():
-            if tilemap.get_terrain(other_pos) != Terrain.POOL:
-                distance = utils.distance(pos, other_pos)
-                if distance < min_distance:
-                    min_distance = distance
+    def _distance_to_closest_nonpool(tilemap, pos: Pos) -> float:
+        """
+        get_coord only compares this distance against an open pool threshold
+        below 3, so only non-pool tiles less than 3 tiles away matter. All of
+        them lie within nonpool_search_radius tiles along each axis; anything
+        farther counts as no non-pool tile (99)
+        """
+        min_distance: float = 99
+        r = PoolPainter.nonpool_search_radius
+        for x in range(pos[0] - r, pos[0] + r + 1):
+            for y in range(pos[1] - r, pos[1] + r + 1):
+                other_pos = (x, y)
+                if other_pos in tilemap.terrain_grid and tilemap.get_terrain(other_pos) != Terrain.POOL:
+                    distance = utils.distance(pos, other_pos)
+                    if distance < min_distance:
+                        min_distance = distance
         return min_distance
 
     @staticmethod
@@ -80,6 +93,7 @@ class PoolPainter(Painter):
 
     def get_coord(self, tilemap, pos: Pos) -> Pos:
         dist = PoolPainter._distance_to_closest_nonpool(tilemap, pos)
+        # _distance_to_closest_nonpool relies on this threshold staying below 3
         if dist > (1 + 2*random_random(pos)):  # Open Sea
             coord = random_choice([(1, k) for k in range(self.limit[1])], pos)
         else:  # Close Sea

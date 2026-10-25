@@ -490,8 +490,10 @@ class MapEditor(QMainWindow):
                 for idx, (pos, terrain) in enumerate(all_autotile_positions):
                     str_coord = "%d,%d" % (pos[0], pos[1])
                     s_dict['autotiles'][str_coord] = idx
+                    renderer = RENDERERS.get(terrain)
+                    coord = renderer.get_sprite_coord(self.current, pos)
                     for pidx in range(AUTOTILE_FRAMES):
-                        sprite = RENDERERS.get(terrain).determine_sprite(self.current, pos, pidx)
+                        sprite = renderer.draw_sprite(coord, pidx)
                         qpainter.drawPixmap(idx * TILEWIDTH, pidx * TILEHEIGHT, sprite)
                 qpainter.end()
                 autotile_image.save(autotile_path)

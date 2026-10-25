@@ -13,6 +13,11 @@ class SeaPainter(WangEdge16Painter):
     serration_chance = 0.6
     sand_start_px = 144
     sand_limit = {}
+    # How far _distance_to_closest_land looks for land. MapPrefab marks the
+    # sea within this radius of every edit for update, so it must match.
+    # Nothing else a sea tile reads is farther away (_modify_index reaches
+    # 2 tiles), so the sea needs no flood fill to stay up to date
+    land_search_radius = 3
 
     autotiles = {
         (0, 4): 0, (0, 5): 1, (0, 6): 2, (0, 7): 2, (0, 8): 3, (0, 9): 3, (0, 10): 3, (0, 11): 2, (0, 12): 4, (0, 13): 2, (0, 14): 5, (0, 15): 3, (0, 16): 2,
@@ -33,10 +38,6 @@ class SeaPainter(WangEdge16Painter):
         (29, 20): 57, (29, 21): 43, (29, 22): 35, (29, 23): 62, (30, 0): 0, (30, 1): 62, (30, 2): 0, (30, 3): 62, (30, 4): 0, (30, 5): 62, (30, 6): 0, (30, 7): 1, 
         (30, 8): 0, (30, 9): 62, (31, 0): 2, (31, 1): 43, (31, 2): 2, (31, 3): 43, (31, 4): 2, (31, 5): 3, (31, 6): 2, (31, 7): 43, (31, 8): 2, (31, 9): 43
     }
-
-    @property
-    def check_flood_fill(self):
-        return True
 
     def has_autotiles(self) -> bool:
         return True
@@ -76,12 +77,22 @@ class SeaPainter(WangEdge16Painter):
         return index
 
     def _distance_to_closest_land(self, tilemap, pos: Pos) -> float:
+        """
+        get_coord only compares this distance against an open sea threshold
+        below 4, so only land less than 4 tiles away matters. All of it lies
+        within land_search_radius tiles along each axis; anything farther
+        counts as no land (99)
+        """
         min_distance = 99
-        for other_pos in tilemap.terrain_grid.keys():
-            if tilemap.get_terrain(other_pos) not in (Terrain.SEA, Terrain.BRIDGEV, Terrain.BRIDGEH):
-                distance = utils.distance(pos, other_pos)
-                if distance < min_distance:
-                    min_distance = distance
+        r = self.land_search_radius
+        for x in range(pos[0] - r, pos[0] + r + 1):
+            for y in range(pos[1] - r, pos[1] + r + 1):
+                other_pos = (x, y)
+                if other_pos in tilemap.terrain_grid and \
+                        tilemap.get_terrain(other_pos) not in (Terrain.SEA, Terrain.BRIDGEV, Terrain.BRIDGEH):
+                    distance = utils.distance(pos, other_pos)
+                    if distance < min_distance:
+                        min_distance = distance
         return min_distance
 
     def get_coord(self, tilemap, pos: Pos) -> Tuple[Pos, Pos, Pos, Pos]:
@@ -90,6 +101,7 @@ class SeaPainter(WangEdge16Painter):
 
         if index == 15:
             dist = self._distance_to_closest_land(tilemap, pos)
+            # _distance_to_closest_land relies on this threshold staying below 4
             if dist > (2 + 2 * random_random(pos)):  # Open Sea (adds random number between 0 and 1 for rng)
                 # Measure distance to closest non sea, bridge terrain
                 new_coords = [(0, k) for k in range(2, 9)]
