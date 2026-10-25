@@ -71,7 +71,10 @@ class Action():
 
     @staticmethod
     def save_obj(value: Any) -> Tuple[str, Any]:
-        if isinstance(value, UnitObject):
+        if value is None or type(value) in (bool, int, float, str):
+            # Always picklable, so not pickled here to find out
+            value = ('generic', value)
+        elif isinstance(value, UnitObject):
             value = ('unit', value.nid)
         elif isinstance(value, ItemObject):
             value = ('item', value.uid)
