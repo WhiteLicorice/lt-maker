@@ -2797,22 +2797,23 @@ class AIState(MapState):
         if self.cur_group:
             group_units = [unit for unit in valid_units if unit.ai_group == self.cur_group]
             if group_units:
-                # Sort by distance to closest enemy (ascending)
-                group_units = sorted(group_units, key=lambda unit: game.target_system.distance_to_closest_enemy(unit))
-                # Sort by priority
-                group_units = sorted(group_units, key=lambda unit: DB.ai.get(unit.get_ai()).priority, reverse=True)
-                group_units.reverse()
-                return group_units.pop()
+                return self.first_to_act(group_units)
             else:
                 self.cur_group = None
         # So default to this
-        # Sort by distance to closest enemy (ascending)
-        valid_units = sorted(valid_units, key=lambda unit: game.target_system.distance_to_closest_enemy(unit))
-        # Sort by ai priority
-        valid_units = sorted(valid_units, key=lambda unit: DB.ai.get(unit.get_ai()).priority, reverse=True)
-        # Reverse, because we will be popping them off at the end
-        valid_units.reverse()
-        return valid_units.pop()
+        return self.first_to_act(valid_units)
+
+    @staticmethod
+    def first_to_act(units: List[UnitObject]) -> UnitObject:
+        """
+        The unit with the highest AI priority, and among those the closest to
+        an enemy. A tie goes to whichever comes first in units. Only the units
+        of the highest priority are measured
+        """
+        priority = {unit: DB.ai.get(unit.get_ai()).priority for unit in units}
+        top = max(priority.values())
+        return min((unit for unit in units if priority[unit] == top),
+                   key=game.target_system.distance_to_closest_enemy)
 
     def take_input(self, event):
         # Skip combats while START is held down
