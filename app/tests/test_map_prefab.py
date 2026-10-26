@@ -1,4 +1,5 @@
 import random
+import sys
 import unittest
 from typing import Dict, Tuple
 from unittest.mock import patch
@@ -10,6 +11,7 @@ from app.utilities import utils
 from app.utilities.typing import Pos
 import app.map_maker.utilities as map_utils
 from app.map_maker.map_prefab import MapPrefab
+from app.map_maker.mountain_processing_csp import CSPProcess
 from app.map_maker.painter_database import PAINTERS
 from app.map_maker.painters.mountain_painter import MountainPainter
 from app.map_maker.painters.pool_painter import PoolPainter
@@ -97,6 +99,23 @@ class MountainPainterThreadTests(unittest.TestCase):
         self.assertTrue(thread.stopped)
         self.assertEqual(seen, [False])
         self.assertEqual(self.painter.current_threads, [])
+
+
+class CSPProcessTests(unittest.TestCase):
+    def test_group_larger_than_recursion_limit(self):
+        """The search goes one level deeper per tile, so a group with more
+        tiles than Python's recursion limit must still be solved"""
+        painter = MountainPainter()
+        painter._initial_process()
+        tilemap = MapPrefab('test')
+        tilemap.width, tilemap.height = 36, 36
+        group = {(x, y) for x in range(2, 34) for y in range(2, 34) if not (x < 5 and y < 5)}
+        self.assertGreater(len(group), sys.getrecursionlimit())
+        process = CSPProcess(tilemap, painter.mountain_data, painter.noneless_rules, group, gui_processing=False)
+        with patch('builtins.print'):
+            process.process_group()
+        self.assertTrue(process.did_complete)
+        self.assertEqual(set(process.organization), group)
 
 
 def build_mixed_tilemap(size: int = 20) -> MapPrefab:

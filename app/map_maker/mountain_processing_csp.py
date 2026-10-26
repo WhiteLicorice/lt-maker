@@ -243,39 +243,70 @@ class CSPProcess:
         return True
 
     def _search(self, unassigned: Set[Pos], domains, assignment) -> bool:
-        if self.broke_out:
-            return False
-        self.counter += 1
-        if self.counter > self.step_limit:
-            # Safety valve for a pathological / undetected-unsat instance;
-            # also the path by which stop() takes effect.
-            self.broke_out = True
-            return False
-        if not unassigned:
-            return True
+        # Depth-first search, one level per tile. The levels are kept on an
+        # explicit stack, since a group can have more tiles than Python's
+        # recursion limit. Each level is [pos, values left to try at pos,
+        # trail of the value assigned to pos (None while unassigned)].
+        stack: List[list] = []
+        while True:
+            if self.broke_out:
+                return False
+            self.counter += 1
+            if self.counter > self.step_limit:
+                # Safety valve for a pathological / undetected-unsat instance;
+                # also the path by which stop() takes effect.
+                self.broke_out = True
+                return False
+            if not unassigned:
+                return True
 
-        pos = self._select_var(unassigned, domains)
-        unassigned.discard(pos)
-        for val in self._order_values(pos, domains, assignment):
-            assignment[pos] = val
-            trail = []
-            # Collapse pos to {val}, recording the removal, then re-establish
-            # arc consistency across the network from pos outward.
-            di = domains[pos]
-            removed_self = di - {val}
-            if removed_self:
-                di.difference_update(removed_self)
-                trail.append((pos, removed_self))
-            arcs = [(npos, pos, _OPPOSITE[d]) for npos, d in self._neighbors[pos]
-                    if npos not in assignment]
-            if self._ac3(arcs, domains, trail):
-                if self._search(unassigned, domains, assignment):
-                    return True
-            for p, r in trail:
-                domains[p] |= r
-            del assignment[pos]
-        unassigned.add(pos)
-        return False
+            pos = self._select_var(unassigned, domains)
+            unassigned.discard(pos)
+            stack.append([pos, iter(self._order_values(pos, domains, assignment)), None])
+
+            # Assign the next value that keeps the network arc-consistent,
+            # backtracking up the stack while a level runs out of values
+            while stack:
+                level = stack[-1]
+                pos, values, trail = level
+                if trail is not None:
+                    self._unassign(pos, trail, domains, assignment)
+                    level[2] = None
+                for val in values:
+                    trail = self._assign(pos, val, domains, assignment)
+                    if trail is not None:
+                        level[2] = trail
+                        break
+                if level[2] is not None:
+                    break
+                unassigned.add(pos)
+                stack.pop()
+            if not stack:
+                return False
+
+    def _assign(self, pos: Pos, val: Pos, domains, assignment) -> Optional[list]:
+        # Returns the trail of domain removals, or None (with nothing changed)
+        # if the assignment wipes out a domain
+        assignment[pos] = val
+        trail = []
+        # Collapse pos to {val}, recording the removal, then re-establish
+        # arc consistency across the network from pos outward.
+        di = domains[pos]
+        removed_self = di - {val}
+        if removed_self:
+            di.difference_update(removed_self)
+            trail.append((pos, removed_self))
+        arcs = [(npos, pos, _OPPOSITE[d]) for npos, d in self._neighbors[pos]
+                if npos not in assignment]
+        if self._ac3(arcs, domains, trail):
+            return trail
+        self._unassign(pos, trail, domains, assignment)
+        return None
+
+    def _unassign(self, pos: Pos, trail: list, domains, assignment):
+        for p, r in trail:
+            domains[p] |= r
+        del assignment[pos]
 
     # ------------------------------------------------------- domain / border
     # Border/domain rules: a tile's edge toward the group boundary must allow a
