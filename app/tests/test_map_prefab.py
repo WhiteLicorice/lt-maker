@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 import pygame
 
+from app.constants import TILEWIDTH, TILEHEIGHT
 from app.utilities import utils
 from app.utilities.typing import Pos
 import app.map_maker.utilities as map_utils
@@ -130,11 +131,15 @@ def build_pool_grid() -> Tuple[Tuple[int, int], Dict[Pos, Terrain]]:
     return (16, 16), grid
 
 
-def draw_at_frame(tilemap: MapPrefab, frame: int) -> bytes:
+def update_at_frame(tilemap: MapPrefab, frame: int):
     # At autotile_fps=1 each autotile frame lasts 16.66 ms
     with patch.object(pygame_draw_tilemap.time, 'time_ns', return_value=(int(frame * 16.66) + 1) * 1_000_000):
-        surf = pygame_draw_tilemap.draw_tilemap(tilemap, autotile_fps=1)
-    return pygame.image.tobytes(surf, 'RGBA')
+        pygame_draw_tilemap.update_tile_grid(tilemap, autotile_fps=1)
+
+
+def draw_at_frame(tilemap: MapPrefab, frame: int) -> bytes:
+    update_at_frame(tilemap, frame)
+    return pygame.image.tobytes(pygame_draw_tilemap.simple_draw_tilemap(tilemap), 'RGBA')
 
 
 def fresh_draw_at_frame(tilemap: MapPrefab, frame: int) -> bytes:
@@ -254,6 +259,54 @@ class DrawTilemapTests(unittest.TestCase):
         self.tilemap.set((15, 5), Terrain.GRASS, Terrain.SEA)
         draw_at_frame(self.tilemap, 0)
         self.assertEqual(set(self.tilemap.autotile_coords), self.tilemap.autotile_set)
+
+
+class TileGridChangedTests(unittest.TestCase):
+    """The map maker view keeps its own image of the map and draws on it
+    again only the tiles in tile_grid_changed, so that must hold every
+    position whose tile was set or removed"""
+    def setUp(self):
+        pygame_draw_tilemap.last_autotile_num = 0
+        self.tilemap = build_mixed_tilemap()
+        update_at_frame(self.tilemap, 0)
+        self.image = pygame_draw_tilemap.simple_draw_tilemap(self.tilemap)
+        self.tilemap.tile_grid_changed.clear()
+
+    def assert_image_up_to_date(self, frame: int, msg=None):
+        """Brings self.image up to date the way the view does, and checks it against a full draw"""
+        update_at_frame(self.tilemap, frame)
+        for pos in self.tilemap.tile_grid_changed:
+            rect = (pos[0] * TILEWIDTH, pos[1] * TILEHEIGHT, TILEWIDTH, TILEHEIGHT)
+            self.image.fill((0, 0, 0, 0), rect)
+            if pos in self.tilemap.tile_grid:
+                self.image.blit(self.tilemap.tile_grid[pos], rect)
+        self.tilemap.tile_grid_changed.clear()
+        full_image = pygame_draw_tilemap.simple_draw_tilemap(self.tilemap)
+        self.assertEqual(pygame.image.tobytes(self.image, 'RGBA'), pygame.image.tobytes(full_image, 'RGBA'), msg)
+
+    def test_edits_erases_and_autotile_frames(self):
+        rng = random.Random(2)
+        brushes = [Terrain.GRASS, Terrain.SAND, Terrain.SEA, Terrain.RIVER,
+                   Terrain.FOREST, Terrain.POOL, None]
+        for step in range(40):
+            pos = (rng.randrange(self.tilemap.width), rng.randrange(self.tilemap.height))
+            brush = rng.choice(brushes)
+            if brush:
+                self.tilemap.set(pos, self.tilemap.get_terrain(pos), brush)
+            elif self.tilemap.get_terrain(pos):
+                self.tilemap.erase_terrain(pos, self.tilemap.get_terrain(pos))
+            self.assert_image_up_to_date(step % 16, (step, pos, brush))
+        self.tilemap.set_many({(x, y): Terrain.SEA for x in range(12, 18) for y in range(4)})
+        self.assert_image_up_to_date(3)
+
+    def test_resize_in_place_and_clear(self):
+        # Same size, shifted: every tile moves, and the ones shifted off leave the image
+        self.tilemap.resize(self.tilemap.width, self.tilemap.height, 2, -3)
+        self.assert_image_up_to_date(5)
+        self.tilemap.clear()
+        # clear() also shrinks the map, which a view meets by drawing it all again
+        self.tilemap.width, self.tilemap.height = 20, 20
+        self.assert_image_up_to_date(6)
 
 
 class SeaPainterTests(unittest.TestCase):

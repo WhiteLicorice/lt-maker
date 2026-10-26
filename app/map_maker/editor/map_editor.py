@@ -334,6 +334,7 @@ class MapEditor(QMainWindow):
 
     def void_right_selection(self):
         self.view.right_selection.clear()
+        self.view.update_view()
 
     def check_brush(self):
         self.brush_action.setChecked(True)
@@ -342,14 +343,17 @@ class MapEditor(QMainWindow):
     def set_brush(self, val):
         self.cliff_marker_widget.reset()
         self.current_tool = PaintTool.Brush
+        self.view.update_view()
 
     def set_fill(self, val):
         self.cliff_marker_widget.reset()
         self.current_tool = PaintTool.Fill
+        self.view.update_view()
 
     def set_erase(self, val):
         self.cliff_marker_widget.reset()
         self.current_tool = PaintTool.Erase
+        self.view.update_view()
 
     def choose_cliff_marker(self, checked):
         if checked:
@@ -361,6 +365,7 @@ class MapEditor(QMainWindow):
         self.paint_action.setChecked(False)
         self.erase_action.setChecked(False)
         self.current_tool = PaintTool.CliffMarker
+        self.view.update_view()
 
     def remove_cliff_marker(self):
         if len(self.current.cliff_markers) > 1:
@@ -389,6 +394,7 @@ class MapEditor(QMainWindow):
 
     def gridline_toggle(self, val):
         self.view.draw_gridlines = val
+        self.view.update_view()
 
     def autotile_fps_changed(self, val):
         self.current.autotile_fps = val

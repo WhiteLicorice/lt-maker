@@ -1,14 +1,14 @@
 from enum import IntEnum
 
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene
-from PyQt5.QtCore import Qt, QRect
-from PyQt5.QtGui import QPainter, QPixmap, QColor, QPen
+from PyQt5.QtCore import Qt, QRect, QRectF
+from PyQt5.QtGui import QPainter, QImage, QColor, QPen
 
 from app.constants import TILEWIDTH, TILEHEIGHT, WINWIDTH, WINHEIGHT
 
 from app.utilities.typing import Pos
 
-from app.map_maker.editor.draw_tilemap import draw_tilemap
+from app.map_maker.editor.draw_tilemap import update_tile_grid, simple_draw_tilemap
 import app.map_maker.utilities as map_utils
 from app.map_maker.qt_renderers.renderer_database import RENDERERS
 from app.editor import timer
@@ -38,6 +38,11 @@ class MapEditorView(QGraphicsView):
         self.screen_scale = 1
 
         self.tilemap = None
+        # Every tile of the tilemap, drawn behind the scene. Only the
+        # tiles whose sprites change are drawn on it again
+        self.map_image: QImage = None
+        # The grid lines, drawn over the map. Only drawn again when the map changes size
+        self.grid_image: QImage = None
 
         self.current_mouse_position = (0, 0)
         self.old_middle_pos = None
@@ -52,39 +57,81 @@ class MapEditorView(QGraphicsView):
         timer.get_timer().tick_elapsed.connect(self.tick)
 
     def tick(self):
-        if self.tilemap:
-            self.update_view()
+        if self.tilemap and self.update_map_image():
+            self.viewport().update()
 
     def set_current(self, current):
         self.tilemap = current
+        self.map_image = None
         self.update_view()
 
-    def clear_scene(self):
-        self.scene.clear()
-
     def update_view(self):
+        """Brings the map image up to date and repaints everything,
+        for when what is drawn over the map may have changed too"""
         if self.tilemap:
-            pixmap = QPixmap.fromImage(self.get_map_image())
-            self.working_image = pixmap
-        else:
-            return
-        self.show_map()
+            self.update_map_image()
+        self.viewport().update()
 
-    def get_map_image(self):
+    def update_map_image(self) -> bool:
+        """Redraws the tiles of map_image whose sprites changed since
+        it was last drawn. Returns whether anything was redrawn"""
         if self.draw_autotiles:
-            image = draw_tilemap(self.tilemap, autotile_fps=self.tilemap.autotile_fps)
+            update_tile_grid(self.tilemap, autotile_fps=self.tilemap.autotile_fps)
         else:
-            image = draw_tilemap(self.tilemap, autotile_fps=0)
+            update_tile_grid(self.tilemap, autotile_fps=0)
+
+        width, height = self.tilemap.width * TILEWIDTH, self.tilemap.height * TILEHEIGHT
+        if self.map_image is None or (self.map_image.width(), self.map_image.height()) != (width, height):
+            self.map_image = simple_draw_tilemap(self.tilemap)
+            self.grid_image = self.draw_grid_image()
+            self.scene.setSceneRect(0, 0, width, height)
+            self.tilemap.tile_grid_changed.clear()
+            return True
+        if not self.tilemap.tile_grid_changed:
+            return False
 
         painter = QPainter()
+        painter.begin(self.map_image)
+        # Each tile replaces whatever was drawn there before, transparency included
+        painter.setCompositionMode(QPainter.CompositionMode_Source)
+        for pos in self.tilemap.tile_grid_changed:
+            if pos in self.tilemap.tile_grid:
+                painter.drawPixmap(pos[0] * TILEWIDTH, pos[1] * TILEHEIGHT, self.tilemap.tile_grid[pos])
+            else:
+                painter.fillRect(pos[0] * TILEWIDTH, pos[1] * TILEHEIGHT, TILEWIDTH, TILEHEIGHT, Qt.transparent)
+        painter.end()
+        self.tilemap.tile_grid_changed.clear()
+        return True
+
+    def draw_grid_image(self) -> QImage:
+        image = QImage(self.tilemap.width * TILEWIDTH, self.tilemap.height * TILEHEIGHT, QImage.Format_ARGB32)
+        image.fill(QColor(0, 0, 0, 0))
+        painter = QPainter()
         painter.begin(image)
+        painter.setPen(QPen(QColor(0, 0, 0, 128), 1, Qt.DotLine))
+        for x in range(self.tilemap.width):
+            painter.drawLine(x * TILEWIDTH, 0, x * TILEWIDTH, self.tilemap.height * TILEHEIGHT)
+        for y in range(self.tilemap.height):
+            painter.drawLine(0, y * TILEHEIGHT, self.tilemap.width * TILEWIDTH, y * TILEHEIGHT)
+        painter.end()
+        return image
+
+    def drawBackground(self, painter: QPainter, rect: QRectF):
+        super().drawBackground(painter, rect)
+        if self.map_image:
+            exposed = rect.intersected(QRectF(self.map_image.rect()))
+            painter.drawImage(exposed, self.map_image, exposed)
+
+    def drawForeground(self, painter: QPainter, rect: QRectF):
+        if not self.tilemap:
+            return
+        # Nothing drawn over the map reaches past its edges
+        painter.setClipRect(QRectF(0, 0, self.tilemap.width * TILEWIDTH, self.tilemap.height * TILEHEIGHT))
+
         # Draw grid lines
         if self.draw_gridlines:
-            painter.setPen(QPen(QColor(0, 0, 0, 128), 1, Qt.DotLine))
-            for x in range(self.tilemap.width):
-                painter.drawLine(x * TILEWIDTH, 0, x * TILEWIDTH, self.tilemap.height * TILEHEIGHT)
-            for y in range(self.tilemap.height):
-                painter.drawLine(0, y * TILEHEIGHT, self.tilemap.width * TILEWIDTH, y * TILEHEIGHT)
+            exposed = rect.intersected(QRectF(self.grid_image.rect()))
+            painter.drawImage(exposed, self.grid_image, exposed)
 
             # Draw cliff markers
             painter.setPen(QPen(QColor(255, 0, 0, 128), 2))
@@ -107,13 +154,6 @@ class MapEditorView(QGraphicsView):
         else:
             # Currently drawing with a terrain
             self.draw_normal_cursor(painter)
-
-        painter.end()
-        return image
-        
-    def show_map(self):
-        self.clear_scene()
-        self.scene.addPixmap(self.working_image)
 
     def draw_simple_cursor(self, qpainter):
         mouse_pos = self.current_mouse_position
@@ -258,11 +298,15 @@ class MapEditorView(QGraphicsView):
         elif event.button() == Qt.MiddleButton:
             self.old_middle_pos = event.pos()
 
+        self.update_view()
+
     def mouseMoveEvent(self, event):
         scene_pos = self.mapToScene(event.pos())
         tile_pos = int(scene_pos.x() // TILEWIDTH), \
             int(scene_pos.y() // TILEHEIGHT)
 
+        # Within one tile, the cursor, painting and selection all stay the same
+        moved_tile = tile_pos != self.current_mouse_position
         self.current_mouse_position = tile_pos
 
         self.window.set_position_bar(tile_pos)
@@ -289,6 +333,9 @@ class MapEditorView(QGraphicsView):
             self.verticalScrollBar().setValue(self.verticalScrollBar().value() + offset.y())
             self.horizontalScrollBar().setValue(self.horizontalScrollBar().value() + offset.x())
 
+        if moved_tile:
+            self.update_view()
+
     def mouseReleaseEvent(self, event):
         if self.window.current_tool == PaintTool.Brush:
             if event.button() == Qt.LeftButton:
@@ -300,6 +347,8 @@ class MapEditorView(QGraphicsView):
         elif self.window.current_tool == PaintTool.Erase:
             if event.button() == Qt.LeftButton:
                 self.left_selecting = False
+
+        self.update_view()
 
     def zoom_in(self):
         if self.screen_scale < self.max_scale:

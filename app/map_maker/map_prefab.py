@@ -31,6 +31,8 @@ class MapPrefab(Prefab):
         self.terrain_grid: Dict[Pos, Terrain] = {}
         self.terrain_grid_to_update: Set[Pos] = set()  # Positions
         self.tile_grid = {}  # Key: Position, Value: Tileset Coordinate (same size as terrain_grid)
+        # Positions whose tile_grid entry was set or removed since a view last drew them
+        self.tile_grid_changed: Set[Pos] = set()
         self.autotile_set: Set[Pos] = set()  # Positions
         # Key: Position in autotile_set, Value: its renderer's sprite coord,
         # so new autotile frames are drawn without recomputing it
@@ -163,6 +165,7 @@ class MapPrefab(Prefab):
 
         if pos in self.tile_grid:
             del self.tile_grid[pos]
+            self.tile_grid_changed.add(pos)
 
         self._update_adjacent(pos)
         self._update_diagonal(pos)
@@ -186,6 +189,7 @@ class MapPrefab(Prefab):
         self.width, self.height = TILEX, TILEY
         self.terrain_grid.clear()
         self.terrain_grid_to_update.clear()
+        self.tile_grid_changed.update(self.tile_grid)
         self.tile_grid.clear()
         self.autotile_set.clear()
         self.autotile_coords.clear()
@@ -216,7 +220,9 @@ class MapPrefab(Prefab):
             new_pos = pos[0] + x_offset, pos[1] + y_offset
             if self.check_bounds(new_pos):
                 new_tile_grid[new_pos] = tile_coord
+        self.tile_grid_changed.update(self.tile_grid)
         self.tile_grid = new_tile_grid
+        self.tile_grid_changed.update(self.tile_grid)
 
         # The autotile positions must be shifted along with the terrain they
         # belong to. Leaving them at their old positions means draw_tilemap's

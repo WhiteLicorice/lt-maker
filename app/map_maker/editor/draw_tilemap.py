@@ -15,16 +15,12 @@ def get_tilemap_pixmap(tilemap) -> QPixmap:
 
 last_autotile_num = 0
 
-def draw_tilemap(tilemap: MapPrefab, autotile_fps=29) -> QImage:
-    # import time
-    # start = time.time_ns() / 1e6
-    image = QImage(tilemap.width * TILEWIDTH,
-                   tilemap.height * TILEHEIGHT,
-                   QImage.Format_ARGB32)
-    image.fill(QColor(0, 0, 0, 0))
-
-    qpainter = QPainter()
-    qpainter.begin(image)
+def update_tile_grid(tilemap: MapPrefab, autotile_fps=29):
+    """
+    Redraws the sprite of every position marked for update, and of every
+    autotile when the autotile frame has changed. Each position whose
+    sprite is redrawn is added to tilemap.tile_grid_changed
+    """
     ms = QDateTime.currentMSecsSinceEpoch()
 
     if autotile_fps:
@@ -34,26 +30,22 @@ def draw_tilemap(tilemap: MapPrefab, autotile_fps=29) -> QImage:
         autotile_num = 0
 
     # Process terrain
-    # a = time.time_ns() / 1e6
     processed_terrains: Set[Terrain] = set()
-    for pos in sorted(tilemap.terrain_grid):
+    for pos in sorted(tilemap.terrain_grid_to_update):
         # Determine what terrain is in this position
         terrain = tilemap.get_terrain(pos)
         if not terrain:
             continue
 
-        # Only process the ones that need to be updated
-        if pos in tilemap.terrain_grid_to_update:
-            renderer = RENDERERS.get(terrain)
-            if terrain not in processed_terrains:
-                renderer.painter.single_process(tilemap)
-                processed_terrains.add(terrain)
-            coord = renderer.get_sprite_coord(tilemap, pos)
-            if pos in tilemap.autotile_set:
-                tilemap.autotile_coords[pos] = coord
-            tilemap.tile_grid[pos] = renderer.draw_sprite(coord, autotile_num)
-
-    # b = time.time_ns() / 1e6
+        renderer = RENDERERS.get(terrain)
+        if terrain not in processed_terrains:
+            renderer.painter.single_process(tilemap)
+            processed_terrains.add(terrain)
+        coord = renderer.get_sprite_coord(tilemap, pos)
+        if pos in tilemap.autotile_set:
+            tilemap.autotile_coords[pos] = coord
+        tilemap.tile_grid[pos] = renderer.draw_sprite(coord, autotile_num)
+        tilemap.tile_grid_changed.add(pos)
 
     # Autotiles
     global last_autotile_num
@@ -67,25 +59,15 @@ def draw_tilemap(tilemap: MapPrefab, autotile_fps=29) -> QImage:
                 # Only the frame changed, so reuse the coord from the last update
                 coord = tilemap.autotile_coords[pos]
                 tilemap.tile_grid[pos] = RENDERERS.get(terrain).draw_sprite(coord, autotile_num)
+                tilemap.tile_grid_changed.add(pos)
         last_autotile_num = autotile_num
-    # c = time.time_ns() / 1e6
-
-    # Draw the tile grid
-    for pos, pix in tilemap.tile_grid.items():
-        assert pix.width() == TILEWIDTH, (pos, pix.width())
-        assert pix.height() == TILEHEIGHT, (pos, pix.height())
-        qpainter.drawPixmap(pos[0] * TILEWIDTH,
-                            pos[1] * TILEHEIGHT,
-                            pix)
-    qpainter.end()
 
     # Make sure we don't need to update it anymore
     tilemap.terrain_grid_to_update.clear()
-    # end = time.time_ns() / 1e6
 
-    # print('%.1f %.1f %.1f %.1f' % ((end - start, b - a, c - b, end - c)))
-
-    return image
+def draw_tilemap(tilemap: MapPrefab, autotile_fps=29) -> QImage:
+    update_tile_grid(tilemap, autotile_fps)
+    return simple_draw_tilemap(tilemap)
 
 def simple_draw_tilemap(tilemap: MapPrefab) -> QImage:
     image = QImage(tilemap.width * TILEWIDTH,

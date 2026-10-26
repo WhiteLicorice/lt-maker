@@ -28,6 +28,7 @@ class MountainRenderer(SimpleRenderer):
         for pos in self.painter.organization.keys():
             sprite = self.determine_sprite(tilemap, pos, 0)
             tilemap.tile_grid[pos] = sprite
+            tilemap.tile_grid_changed.add(pos)
         if thread in self.painter.current_threads:
             self.painter.current_threads.remove(thread)
 
@@ -36,3 +37,4 @@ class MountainRenderer(SimpleRenderer):
         for pos, coord in thread.organization.items():
             sprite = self.palette.get_pixmap16(self.painter, coord, 0)
             tilemap.tile_grid[pos] = sprite
+            tilemap.tile_grid_changed.add(pos)
