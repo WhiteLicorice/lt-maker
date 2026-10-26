@@ -2313,10 +2313,10 @@ class CombatTargetingState(MapState):
         self._process_next_target_asap = False
 
         self.ability_name = game.memory.get('ability')
+        # A weapon chosen through Spells shows the battle forecast too
+        game.ui_view.prepare_attack_info()
         if self.ability_name == 'Spells':
             game.ui_view.prepare_spell_info()
-        else:
-            game.ui_view.prepare_attack_info()
         self.display_single_attack()
         # Backed out of, the battle forecast slides out before the state is left
         self.closing = False
